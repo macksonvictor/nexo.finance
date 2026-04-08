@@ -1,5 +1,5 @@
 import { eq, and, desc, isNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { InsertUser, users, months, caixas, transactions, metas } from "../drizzle/schema";
 import type { InsertMonth, InsertCaixa, InsertTransaction, InsertMeta } from "../drizzle/schema";
 import { ENV } from './_core/env';
