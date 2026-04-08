@@ -1,0 +1,593 @@
+/* NEXO – Vault Architecture Design System
+ * Swiss Design + Private Banking UX
+ * Paleta: #0D0D0D, #1A1A1A, #2E2E2E, #BFBFBF, #F5F5F5
+ * Tipografia: Space Grotesk + JetBrains Mono
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-nexo-positive: oklch(0.45 0.12 145);
+  --color-nexo-negative: oklch(0.45 0.12 25);
+  --color-nexo-surface: oklch(0.15 0 0);
+  --color-nexo-surface-elevated: oklch(0.2 0 0);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.07 0 0);
+  --foreground: oklch(0.93 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.93 0 0);
+  --primary: oklch(0.93 0 0);
+  --primary-foreground: oklch(0.07 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.75 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(0.93 0 0);
+  --destructive: oklch(0.5 0.15 25);
+  --destructive-foreground: oklch(0.93 0 0);
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(0.55 0 0);
+  --chart-1: oklch(0.75 0 0);
+  --chart-2: oklch(0.6 0 0);
+  --chart-3: oklch(0.45 0 0);
+  --chart-4: oklch(0.35 0 0);
+  --chart-5: oklch(0.25 0 0);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.75 0 0);
+  --sidebar-primary: oklch(0.93 0 0);
+  --sidebar-primary-foreground: oklch(0.07 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.55 0 0);
+}
+
+/* Dark theme is the default and only theme for NEXO */
+.dark {
+  --background: oklch(0.07 0 0);
+  --foreground: oklch(0.93 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.93 0 0);
+  --primary: oklch(0.93 0 0);
+  --primary-foreground: oklch(0.07 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.75 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(0.93 0 0);
+  --destructive: oklch(0.5 0.15 25);
+  --destructive-foreground: oklch(0.93 0 0);
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(0.55 0 0);
+  --chart-1: oklch(0.75 0 0);
+  --chart-2: oklch(0.6 0 0);
+  --chart-3: oklch(0.45 0 0);
+  --chart-4: oklch(0.35 0 0);
+  --chart-5: oklch(0.25 0 0);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.75 0 0);
+  --sidebar-primary: oklch(0.93 0 0);
+  --sidebar-primary-foreground: oklch(0.07 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.55 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
+  }
+
+  /* ─── NEXO 3D / Dark Neumorphism System ─────────────────────────────────────
+   * Cria profundidade visual com sombras em camadas:
+   * - sombra clara no topo/esquerda (simula luz vindo de cima)
+   * - sombra escura embaixo/direita (simula profundidade)
+   * - borda sutil com gradiente
+   * Resultado: elementos parecem "levitar" sobre o fundo
+   * ─────────────────────────────────────────────────────────────────────────── */
+
+  /* Nível 0 – Fundo (sem elevação) */
+  .nexo-depth-0 {
+    background: oklch(0.07 0 0);
+    box-shadow: none;
+  }
+
+  /* Nível 1 – Levemente elevado (cards base) */
+  .nexo-depth-1 {
+    background: oklch(0.11 0 0);
+    box-shadow:
+      0 1px 0 0 oklch(0.18 0 0) inset,
+      0 -1px 0 0 oklch(0.06 0 0) inset,
+      0 4px 12px -2px oklch(0 0 0 / 0.5),
+      0 1px 3px oklch(0 0 0 / 0.3);
+    border: 1px solid oklch(0.17 0 0);
+  }
+
+  /* Nível 2 – Elevado (cards interativos) */
+  .nexo-depth-2 {
+    background: oklch(0.13 0 0);
+    box-shadow:
+      0 1px 0 0 oklch(0.22 0 0) inset,
+      0 -1px 0 0 oklch(0.05 0 0) inset,
+      1px 0 0 0 oklch(0.18 0 0) inset,
+      0 8px 24px -4px oklch(0 0 0 / 0.6),
+      0 2px 6px oklch(0 0 0 / 0.35),
+      0 1px 2px oklch(0 0 0 / 0.4);
+    border: 1px solid oklch(0.2 0 0);
+  }
+
+  /* Nível 3 – Alto (cards destacados, modais) */
+  .nexo-depth-3 {
+    background: oklch(0.15 0 0);
+    box-shadow:
+      0 1px 0 0 oklch(0.26 0 0) inset,
+      0 -1px 0 0 oklch(0.05 0 0) inset,
+      1px 0 0 0 oklch(0.22 0 0) inset,
+      0 16px 40px -8px oklch(0 0 0 / 0.7),
+      0 6px 16px -4px oklch(0 0 0 / 0.45),
+      0 2px 4px oklch(0 0 0 / 0.4);
+    border: 1px solid oklch(0.22 0 0);
+  }
+
+  /* Nível 4 – Flutuante (modais, popovers) */
+  .nexo-depth-4 {
+    background: oklch(0.17 0 0);
+    box-shadow:
+      0 1px 0 0 oklch(0.3 0 0) inset,
+      0 -1px 0 0 oklch(0.04 0 0) inset,
+      1px 0 0 0 oklch(0.25 0 0) inset,
+      0 24px 60px -12px oklch(0 0 0 / 0.8),
+      0 10px 28px -6px oklch(0 0 0 / 0.5),
+      0 4px 8px oklch(0 0 0 / 0.45);
+    border: 1px solid oklch(0.25 0 0);
+  }
+
+  /* Hover: eleva o card um nível */
+  .nexo-depth-1:hover,
+  .nexo-depth-2:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 oklch(0.26 0 0) inset,
+      0 -1px 0 0 oklch(0.05 0 0) inset,
+      1px 0 0 0 oklch(0.22 0 0) inset,
+      0 16px 40px -8px oklch(0 0 0 / 0.7),
+      0 6px 16px -4px oklch(0 0 0 / 0.45),
+      0 2px 4px oklch(0 0 0 / 0.4);
+    border-color: oklch(0.28 0 0);
+    transition: all 0.2s ease;
+  }
+
+  /* Pressed: afunda o card */
+  .nexo-depth-2:active {
+    transform: translateY(1px);
+    box-shadow:
+      0 1px 0 0 oklch(0.16 0 0) inset,
+      0 2px 6px oklch(0 0 0 / 0.5) inset,
+      0 2px 8px oklch(0 0 0 / 0.3);
+    transition: all 0.1s ease;
+  }
+
+  /* Brilho sutil no topo (efeito de luz) */
+  .nexo-glow-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.4 0 0 / 0.6), transparent);
+    border-radius: 50%;
+  }
+
+  /* Card com borda gradiente (efeito premium) */
+  .nexo-card-premium {
+    position: relative;
+    background: oklch(0.13 0 0);
+    border-radius: 0.75rem;
+  }
+  .nexo-card-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      oklch(0.3 0 0 / 0.8) 0%,
+      oklch(0.15 0 0 / 0.2) 50%,
+      oklch(0.08 0 0 / 0.4) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* NEXO Custom Components */
+  .nexo-card {
+    @apply rounded-xl p-5 transition-all duration-200;
+    background: oklch(0.12 0 0);
+    box-shadow:
+      0 1px 0 0 oklch(0.2 0 0) inset,
+      0 -1px 0 0 oklch(0.06 0 0) inset,
+      0 8px 24px -4px oklch(0 0 0 / 0.55),
+      0 2px 6px oklch(0 0 0 / 0.3);
+    border: 1px solid oklch(0.19 0 0);
+  }
+
+  .nexo-card:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 oklch(0.25 0 0) inset,
+      0 -1px 0 0 oklch(0.05 0 0) inset,
+      0 14px 36px -6px oklch(0 0 0 / 0.65),
+      0 4px 10px oklch(0 0 0 / 0.35);
+    border-color: oklch(0.26 0 0);
+  }
+
+  .nexo-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .nexo-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: oklch(0.55 0 0);
+  }
+
+  .nexo-grid-line {
+    border-color: oklch(0.15 0 0);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.25 0 0);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.35 0 0);
+  }
+}
+
+/* Animations */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progressFill {
+  from { width: 0; }
+}
+
+.animate-count-up {
+  animation: countUp 0.4s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-progress-fill {
+  animation: progressFill 0.8s ease-out forwards;
+}
+
+
+/* ─── MOBILE RESPONSIVENESS ────────────────────────────────────────────────────
+ * Otimizações para dispositivos móveis
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Aumentar área de clique em mobile */
+  button,
+  [role="button"],
+  a[href] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Melhorar espaçamento em mobile */
+  .nexo-card {
+    @apply p-4;
+  }
+
+  /* Reduzir tamanho de fontes em mobile */
+  h1 {
+    @apply text-2xl;
+  }
+
+  h2 {
+    @apply text-xl;
+  }
+
+  h3 {
+    @apply text-lg;
+  }
+
+  /* Melhorar legibilidade em mobile */
+  body {
+    font-size: 16px; /* Evita zoom automático em iOS */
+  }
+
+  /* Overflow-x previne scroll horizontal */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+
+  /* Touch-friendly inputs */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Evita zoom em iOS */
+    min-height: 44px;
+  }
+
+  /* Melhorar grids em mobile */
+  .grid-cols-3 {
+    @apply grid-cols-2;
+  }
+
+  .grid-cols-4 {
+    @apply grid-cols-2;
+  }
+
+  /* Reduzir gaps em mobile */
+  .gap-6 {
+    @apply gap-3;
+  }
+
+  .gap-8 {
+    @apply gap-4;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+  .min-h-screen {
+    min-height: auto;
+  }
+
+  h1 {
+    @apply text-xl;
+  }
+
+  .nexo-card {
+    @apply p-3;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .container {
+    max-width: 100%;
+  }
+
+  .max-w-7xl {
+    max-width: 100%;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+/* Prevent horizontal scroll on all devices */
+* {
+  max-width: 100%;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent text selection on interactive elements */
+button,
+[role="button"],
+a[href] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Better focus states for accessibility */
+button:focus-visible,
+[role="button"]:focus-visible,
+a[href]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid oklch(0.55 0 0);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode support (already dark by default, but good to have) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+
+/* Loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 10px rgba(191, 191, 191, 0.2);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(191, 191, 191, 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #1A1A1A, #2E2E2E, #1A1A1A);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Safe area support for notch devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
