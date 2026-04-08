@@ -1,5 +1,9 @@
 import { boolean, integer, pgEnum, pgTable, text, timestamp, varchar, doublePrecision, serial } from "drizzle-orm/pg-core";
 
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const planEnum = pgEnum("plan", ["free", "premium", "pro", "elite"]);
+
+
 /**
  * Core user table backing auth flow.
  */
@@ -9,9 +13,9 @@ export const users = pgTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: pgEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   // Plano: free = até 5 caixas, premium = ilimitado
-  plan: pgEnum("plan", ["free", "premium", "pro", "elite"]).default("free").notNull(),
+  plan: planEnum("plan").default("free").notNull(),
   stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
   planExpiresAt: timestamp("planExpiresAt"),
