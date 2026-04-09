@@ -108,7 +108,7 @@ export default function Home() {
               className="flex items-center justify-center gap-3 w-full bg-[#F5F5F5] text-[#0D0D0D] py-3 px-6 rounded-xl font-semibold hover:bg-white transition-colors"
             >
               <LogIn className="w-5 h-5" />
-              Entrar com Manus
+              Entrar para continuar
             </a>
 
             <p className="text-[#BFBFBF]/60 text-xs text-center">

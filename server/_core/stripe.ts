@@ -1,8 +1,22 @@
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-03-25.dahlia',
-});
+const STRIPE_API_VERSION: Stripe.LatestApiVersion = '2026-03-25.dahlia';
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripeClient: Stripe | null = null;
+
+function getStripeClient() {
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
+  }
+
+  if (!stripeClient) {
+    stripeClient = new Stripe(stripeSecretKey, {
+      apiVersion: STRIPE_API_VERSION,
+    });
+  }
+
+  return stripeClient;
+}
 
 /**
  * Plan pricing configuration
@@ -10,19 +24,19 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export const PLAN_PRICES = {
   premium: {
     name: 'Premium',
-    priceId: process.env.STRIPE_PREMIUM_PRICE_ID || 'price_premium',
+    priceId: process.env.STRIPE_PREMIUM_PRICE_ID || 'price_1TC89MLKoRkR9SJROKQ9JlbD',
     amount: 1990,
     currency: 'brl',
   },
   pro: {
     name: 'Pro',
-    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_pro',
+    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_1TC8D6LKoRkR9SJRJlBWu4JV',
     amount: 4990,
     currency: 'brl',
   },
   elite: {
     name: 'Elite',
-    priceId: process.env.STRIPE_ELITE_PRICE_ID || 'price_elite',
+    priceId: process.env.STRIPE_ELITE_PRICE_ID || 'price_1TC8G9LKoRkR9SJRIKLOrAQl',
     amount: 9990,
     currency: 'brl',
   },
@@ -37,6 +51,7 @@ export async function createCheckoutSession(
   returnUrl: string
 ) {
   const plan = PLAN_PRICES[planTier];
+  const stripe = getStripeClient();
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -65,6 +80,8 @@ export async function createCheckoutSession(
  * Create or retrieve a Stripe customer
  */
 export async function getOrCreateCustomer(email: string, name?: string) {
+  const stripe = getStripeClient();
+
   try {
     const customers = await stripe.customers.list({
       email,
@@ -89,6 +106,8 @@ export async function getOrCreateCustomer(email: string, name?: string) {
  * Get subscription details
  */
 export async function getSubscription(subscriptionId: string) {
+  const stripe = getStripeClient();
+
   try {
     return stripe.subscriptions.retrieve(subscriptionId);
   } catch (error) {
@@ -101,6 +120,8 @@ export async function getSubscription(subscriptionId: string) {
  * Cancel subscription
  */
 export async function cancelSubscription(subscriptionId: string) {
+  const stripe = getStripeClient();
+
   try {
     return stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
@@ -118,6 +139,8 @@ export async function createBillingPortalSession(
   customerId: string,
   returnUrl: string
 ) {
+  const stripe = getStripeClient();
+
   try {
     return stripe.billingPortal.sessions.create({
       customer: customerId,
@@ -137,6 +160,8 @@ export function verifyWebhookSignature(
   signature: string,
   secret: string
 ) {
+  const stripe = getStripeClient();
+
   try {
     return stripe.webhooks.constructEvent(body, signature, secret);
   } catch (error) {

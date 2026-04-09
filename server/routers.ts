@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
+import type { Request } from "express";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getPlanLimits, type PlanTier } from "@shared/plans";
@@ -41,6 +40,23 @@ import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
 import { createCheckoutSession, getOrCreateCustomer, createBillingPortalSession } from "./_core/stripe";
 
+function getAppBaseUrl(req: Request) {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/$/, "");
+  }
+
+  const forwardedProto = req.get("x-forwarded-proto");
+  const protocol = forwardedProto?.split(",")[0]?.trim() || req.protocol;
+  const forwardedHost = req.get("x-forwarded-host");
+  const host = forwardedHost?.split(",")[0]?.trim() || req.get("host");
+
+  if (!host) {
+    return "http://localhost:3000";
+  }
+
+  return `${protocol}://${host}`;
+}
+
 
 
 export const appRouter = router({
@@ -48,9 +64,7 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    logout: publicProcedure.mutation(() => {
       return { success: true } as const;
     }),
   }),
@@ -622,7 +636,7 @@ Calcule e explique: 1) Índice de Disciplina Financeira (0-100) 2) Índice de Ri
           }
 
           // Create checkout session
-          const returnUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL?.replace('/api', '') || 'http://localhost:3000'}/planos`;
+          const returnUrl = `${getAppBaseUrl(ctx.req)}/planos`;
           const session = await createCheckoutSession(customerId, input.planTier, returnUrl);
 
           return {
@@ -643,7 +657,7 @@ Calcule e explique: 1) Índice de Disciplina Financeira (0-100) 2) Índice de Ri
       }
 
       try {
-        const returnUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL?.replace('/api', '') || 'http://localhost:3000'}/planos`;
+        const returnUrl = `${getAppBaseUrl(ctx.req)}/planos`;
         const session = await createBillingPortalSession(user.stripeCustomerId, returnUrl);
 
         return {
@@ -658,4 +672,3 @@ Calcule e explique: 1) Índice de Disciplina Financeira (0-100) 2) Índice de Ri
 });
 
 export type AppRouter = typeof appRouter;
-

@@ -7,12 +7,16 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SplashScreen } from "./components/SplashScreen";
 import Home from "./pages/Home";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
 import { PlanosView } from "./components/PlanosView";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"\\"} component={Home} />
+      <Route path={"/"} component={Home} />
+      <Route path={"/sign-in"} component={SignInPage} />
+      <Route path={"/sign-up"} component={SignUpPage} />
       <Route path={"/planos"} component={PlanosView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

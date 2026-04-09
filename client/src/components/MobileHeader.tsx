@@ -1,11 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
-import { Menu, X, Bell, Brain, LogOut, Clock, AlertTriangle, CheckCheck, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
-import type { ViewType } from '@/types/finance';
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import type { ViewType } from "@/types/finance";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertTriangle,
+  Bell,
+  Brain,
+  CheckCheck,
+  Clock,
+  Info,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-type NotifType = 'meta_expiring' | 'meta_expired' | 'caixa_limit' | 'backup_ready' | 'system';
+type NotifType =
+  | "meta_expiring"
+  | "meta_expired"
+  | "caixa_limit"
+  | "backup_ready"
+  | "system";
 
 const NOTIF_ICONS: Record<NotifType, React.ReactNode> = {
   meta_expiring: <Clock className="w-4 h-4 text-yellow-400" />,
@@ -16,9 +32,10 @@ const NOTIF_ICONS: Record<NotifType, React.ReactNode> = {
 };
 
 function timeAgo(date: Date | string): string {
-  const d = new Date(date);
-  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return 'agora';
+  const value = new Date(date);
+  const diff = Math.floor((Date.now() - value.getTime()) / 1000);
+
+  if (diff < 60) return "agora";
   if (diff < 3600) return `${Math.floor(diff / 60)}min atrás`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
   return `${Math.floor(diff / 86400)}d atrás`;
@@ -33,7 +50,6 @@ interface MobileHeaderProps {
 }
 
 export function MobileHeader({
-  currentView,
   onViewChange,
   onMenuToggle,
   menuOpen,
@@ -43,63 +59,66 @@ export function MobileHeader({
   const [showProfile, setShowProfile] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
+  const { logout } = useAuth();
 
-  const { data: countData } = trpc.notifications.unreadCount.useQuery(undefined, {
-    refetchInterval: 30_000,
-  });
-  const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
-    enabled: showNotifications,
-  });
+  const { data: countData } = trpc.notifications.unreadCount.useQuery(
+    undefined,
+    {
+      refetchInterval: 30_000,
+    }
+  );
+  const { data: notifications = [] } = trpc.notifications.list.useQuery(
+    undefined,
+    {
+      enabled: showNotifications,
+    }
+  );
 
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: () => {
-      utils.notifications.unreadCount.invalidate();
-      utils.notifications.list.invalidate();
+      void utils.notifications.unreadCount.invalidate();
+      void utils.notifications.list.invalidate();
     },
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {
-      utils.notifications.unreadCount.invalidate();
-      utils.notifications.list.invalidate();
-      toast.success('Todas as notificações marcadas como lidas');
-    },
-  });
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      toast.success('Sessão encerrada com sucesso');
-      window.location.href = '/';
+      void utils.notifications.unreadCount.invalidate();
+      void utils.notifications.list.invalidate();
+      toast.success("Todas as notificações marcadas como lidas");
     },
   });
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
         setShowProfile(false);
       }
     }
-    if (showNotifications || showProfile) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    if (showNotifications || showProfile) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showNotifications, showProfile]);
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    toast.success("Sessão encerrada com sucesso");
+    void logout();
     setShowProfile(false);
   };
 
   const handleAIClick = () => {
-    onViewChange('ia');
+    onViewChange("ia");
     setShowProfile(false);
     setShowNotifications(false);
   };
 
   return (
     <>
-      {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 h-14 md:hidden bg-[#0D0D0D] border-b border-[#2E2E2E] z-50 flex items-center justify-between px-4">
-        {/* Left: Menu Button */}
         <button
           onClick={() => onMenuToggle(!menuOpen)}
           className="p-2 hover:bg-[#1A1A1A] rounded-lg transition-colors"
@@ -112,7 +131,6 @@ export function MobileHeader({
           )}
         </button>
 
-        {/* Center: Logo */}
         <div className="flex items-center gap-2">
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310419663029060724/aggEn83aN4BBeDW87zXfDe/nexo-logo_e6d80dd3.png"
@@ -122,9 +140,7 @@ export function MobileHeader({
           <span className="text-sm font-semibold text-[#F5F5F5]">NEXO</span>
         </div>
 
-        {/* Right: Icons */}
         <div className="flex items-center gap-1" ref={panelRef}>
-          {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => {
@@ -140,7 +156,6 @@ export function MobileHeader({
               )}
             </button>
 
-            {/* Notification Panel */}
             <AnimatePresence>
               {showNotifications && (
                 <motion.div
@@ -151,7 +166,9 @@ export function MobileHeader({
                 >
                   <div className="p-5 space-y-4">
                     {notifications.length === 0 ? (
-                      <p className="text-base text-[#BFBFBF] text-center py-8">Nenhuma notificação</p>
+                      <p className="text-base text-[#BFBFBF] text-center py-8">
+                        Nenhuma notificação
+                      </p>
                     ) : (
                       <>
                         {notifications.map((notif) => (
@@ -165,8 +182,12 @@ export function MobileHeader({
                                 {NOTIF_ICONS[notif.type as NotifType]}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-lg font-bold text-[#F5F5F5] line-clamp-3 leading-snug">{notif.title}</p>
-                                <p className="text-sm text-[#BFBFBF] mt-2">{timeAgo(notif.createdAt)}</p>
+                                <p className="text-lg font-bold text-[#F5F5F5] line-clamp-3 leading-snug">
+                                  {notif.title}
+                                </p>
+                                <p className="text-sm text-[#BFBFBF] mt-2">
+                                  {timeAgo(notif.createdAt)}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -185,7 +206,6 @@ export function MobileHeader({
             </AnimatePresence>
           </div>
 
-          {/* IA Nexo */}
           <button
             onClick={handleAIClick}
             className="p-2 hover:bg-[#1A1A1A] rounded-lg transition-colors"
@@ -195,7 +215,6 @@ export function MobileHeader({
             <Brain size={18} className="text-[#BFBFBF]" />
           </button>
 
-          {/* Profile */}
           <div className="relative">
             <button
               onClick={() => {
@@ -208,17 +227,16 @@ export function MobileHeader({
               {user?.avatar ? (
                 <img
                   src={user.avatar}
-                  alt={user.name || 'Perfil'}
+                  alt={user.name || "Perfil"}
                   className="w-6 h-6 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-[#2E2E2E] flex items-center justify-center text-xs text-[#BFBFBF] font-semibold">
-                  {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}
                 </div>
               )}
             </button>
 
-            {/* Profile Menu */}
             <AnimatePresence>
               {showProfile && (
                 <motion.div
@@ -228,19 +246,18 @@ export function MobileHeader({
                   className="absolute top-12 right-0 w-72 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl shadow-lg z-50"
                 >
                   <div className="p-5 space-y-5">
-                    {/* User Info */}
                     <div className="pb-5 border-b border-[#2E2E2E]">
                       <p className="text-lg font-bold text-[#F5F5F5] truncate leading-tight">
-                        {user?.name || user?.email || 'Usuário'}
+                        {user?.name || user?.email || "Usuário"}
                       </p>
-                      <p className="text-sm text-[#BFBFBF] truncate mt-2">{user?.email}</p>
+                      <p className="text-sm text-[#BFBFBF] truncate mt-2">
+                        {user?.email}
+                      </p>
                     </div>
 
-                    {/* Logout */}
                     <button
                       onClick={handleLogout}
-                      disabled={logoutMutation.isPending}
-                      className="w-full flex items-center gap-3 px-5 py-4 text-base font-semibold text-[#F5F5F5] bg-[#2E2E2E] hover:bg-[#3E3E3E] rounded-lg transition-colors disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-5 py-4 text-base font-semibold text-[#F5F5F5] bg-[#2E2E2E] hover:bg-[#3E3E3E] rounded-lg transition-colors"
                     >
                       <LogOut size={20} />
                       Sair
@@ -253,7 +270,6 @@ export function MobileHeader({
         </div>
       </header>
 
-      {/* Spacer para conteúdo não ficar embaixo do header */}
       <div className="h-14 md:hidden" />
     </>
   );
