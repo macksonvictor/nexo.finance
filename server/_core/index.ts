@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { ENV } from "./env";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./static";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -101,6 +101,7 @@ async function startServer() {
   );
 
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);
