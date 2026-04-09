@@ -1,22 +1,23 @@
 # NEXO Documentation
 
-## Visão Geral
+## Visao Geral
 
-NEXO é uma aplicação de gestão financeira pessoal baseada em orçamento por caixas, metas, histórico, relatórios, notificações e planos pagos.
+NEXO e uma aplicacao de gestao financeira pessoal baseada em orcamento por caixas, metas, historico, relatorios, notificacoes e planos pagos.
 
 ## Arquitetura
 
 - `client/`: interface React + Vite
 - `server/`: API Express + tRPC
-- `drizzle/`: schema e migrações
+- `drizzle/`: schema e migracoes
 - `shared/`: tipos e constantes compartilhadas
+- `tests/`: testes automatizados da base validada
 
-## Autenticação
+## Autenticacao
 
-- O frontend usa Clerk com páginas de `sign-in` e `sign-up`
+- O frontend usa Clerk com paginas de `sign-in` e `sign-up`
 - O backend usa `@clerk/express` para autenticar requests
-- O usuário autenticado é sincronizado na tabela `users`
-- O campo `openId` da tabela `users` passou a armazenar o `userId` do Clerk para manter compatibilidade com a lógica já existente
+- O usuario autenticado e sincronizado na tabela `users`
+- O campo `openId` da tabela `users` armazena o `userId` do Clerk para manter compatibilidade com a logica anterior
 
 ## Banco de Dados
 
@@ -31,12 +32,36 @@ Principais entidades:
 - `bankConnections`
 - `notifications`
 
-## Serviços Opcionais
+## Integracoes Opcionais
 
-- IA: configurada por `OPENAI_API_KEY`, `OPENAI_BASE_URL` e `LLM_MODEL`
+- IA: `OPENAI_API_KEY`, `OPENAI_BASE_URL` e `LLM_MODEL`
 - Alertas internos: `OWNER_NOTIFICATION_WEBHOOK_URL`
-- Stripe: checkout e portal de cobrança
+- Stripe: checkout e portal de cobranca
+- Analytics: `VITE_ANALYTICS_ENDPOINT` e `VITE_ANALYTICS_WEBSITE_ID`
+
+## Execucao
+
+Local:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Producao:
+
+```bash
+pnpm build
+pnpm start
+```
+
+Docker:
+
+```bash
+docker build -t nexo .
+docker run --env-file .env -p 3000:3000 nexo
+```
 
 ## Deploy
 
-O projeto está preparado para deploy no Railway com `pnpm build` e `pnpm start`.
+O projeto esta pronto para deploy no Railway, mas nao depende do Railway para funcionar. Com as mesmas variaveis de ambiente ele pode rodar em qualquer servidor Node.js ou via Docker.

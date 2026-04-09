@@ -4,11 +4,11 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import rateLimit from "express-rate-limit";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { ENV } from "./env";
 import { serveStatic, setupVite } from "./vite";
-import rateLimit from "express-rate-limit";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -85,7 +85,7 @@ async function startServer() {
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: "Muitas requisições. Tente novamente em instantes." },
+    message: { error: "Muitas requisicoes. Tente novamente em instantes." },
   });
   app.use(globalLimiter);
 
