@@ -1,17 +1,63 @@
 # NEXO FINANCE
 
-Aplicacao full-stack de gestao financeira pessoal focada em orcamento por caixas, metas, historico, relatorios e assistente de IA.
+[![CI](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml/badge.svg?branch=stable)](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml)
 
-Esta base ja foi limpa das dependencias do Manus e hoje roda de forma portavel com Node.js, Railway ou Docker.
+NEXO Finance e uma plataforma de gestao financeira pessoal desenhada para transformar receita, caixas, metas, historico e inteligencia financeira em um sistema claro, bonito e evolutivo.
 
-## Estado atual
+## Visao do produto
 
-- Base principal estabilizada em `stable`
-- Autenticacao com Clerk
-- Banco em MySQL com Drizzle ORM
-- Pagamentos com Stripe
-- IA via provider compativel com OpenAI, incluindo Groq
+O NEXO nasce com uma proposta simples: dar ao usuario uma forma mais disciplinada, visual e inteligente de cuidar do proprio dinheiro.
+
+Direcao do produto:
+
+- organizar a vida financeira por caixas e metas
+- transformar historico em leitura real de comportamento
+- usar IA para recomendar, alertar e explicar
+- sustentar um modelo SaaS com planos escalaveis
+- evoluir para uma experiencia premium pronta para distribuicao publica
+
+## Modelo do produto
+
+O produto foi pensado para operar em camadas:
+
+- `Free`: entrada no ecossistema NEXO
+- `Premium`: experiencia ampliada para uso continuo
+- `Pro`: camada mais forte de automacao e inteligencia
+- `Elite`: proposta mais completa e de maior valor
+
+## Estado atual da base
+
+- branch principal estabilizada em `stable`
+- frontend com React 19 + Vite + Tailwind CSS
+- backend com Express + tRPC
+- MySQL com Drizzle ORM
+- autenticacao com Clerk
+- pagamentos com Stripe
+- IA via API compativel com OpenAI, incluindo Groq
+- deploy atual em Railway
+- suporte a Docker
 - CI no GitHub Actions com `check`, `test` e `build`
+
+## O que ja existe
+
+- dashboard financeiro
+- gestao de caixas
+- metas financeiras
+- historico de movimentacoes
+- relatorios e visualizacoes
+- planos pagos
+- integracao base para NEXO AI
+
+## Roadmap do produto
+
+Inspirado no plano mestre do projeto, o foco atual do NEXO fica organizado assim:
+
+1. fortalecer a fundacao tecnica, seguranca e confiabilidade
+2. elevar a experiencia da interface e do dashboard
+3. refinar o sistema de caixas, transacoes e calculos em tempo real
+4. expandir metas, historico e a camada de IA NEXO
+5. amadurecer relatorios, notificacoes e automacoes
+6. fechar monetizacao, conformidade juridica e publicacao
 
 ## Stack
 
@@ -24,16 +70,41 @@ Esta base ja foi limpa das dependencias do Manus e hoje roda de forma portavel c
 - IA: OpenAI-compatible API
 - Hospedagem atual: Railway
 
-## Principais funcionalidades
+## Rodando localmente
 
-- Dashboard financeiro
-- Gestao de caixas
-- Metas
-- Historico
-- Relatorios
-- Open Banking preparado na interface
-- Planos pagos
-- Assistente NEXO AI
+1. Instale as dependencias:
+
+```bash
+pnpm install
+```
+
+2. Copie o arquivo de ambiente:
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Bash:
+
+```bash
+cp .env.example .env
+```
+
+3. Preencha as variaveis obrigatorias.
+
+4. Rode em desenvolvimento:
+
+```bash
+pnpm dev
+```
+
+5. Abra:
+
+```txt
+http://localhost:3000
+```
 
 ## Scripts
 
@@ -44,34 +115,6 @@ pnpm start
 pnpm check
 pnpm test
 pnpm format
-```
-
-## Rodando localmente
-
-1. Instale as dependencias:
-
-```bash
-pnpm install
-```
-
-2. Copie o arquivo de exemplo:
-
-```bash
-cp .env.example .env
-```
-
-3. Preencha ao menos as variaveis obrigatorias.
-
-4. Rode em modo desenvolvimento:
-
-```bash
-pnpm dev
-```
-
-5. Abra:
-
-```txt
-http://localhost:3000
 ```
 
 ## Variaveis de ambiente
@@ -114,9 +157,9 @@ OPENAI_BASE_URL=https://api.groq.com/openai/v1
 LLM_MODEL=llama-3.3-70b-versatile
 ```
 
-## Validacao da base
+## Qualidade da base
 
-Os comandos abaixo sao a referencia minima de qualidade da base:
+Referencia minima de validacao:
 
 ```bash
 pnpm check
@@ -124,7 +167,12 @@ pnpm test
 pnpm build
 ```
 
-O CI do GitHub Actions executa esse fluxo automaticamente em push para `stable`, `codex/**` e em pull requests para `stable`.
+O workflow em `.github/workflows/ci.yml` executa esse fluxo automaticamente em:
+
+- push para `stable`
+- push para `codex/**`
+- pull requests para `stable`
+- execucao manual via `workflow_dispatch`
 
 ## Deploy
 
@@ -149,11 +197,11 @@ docker build -t nexo .
 docker run --env-file .env -p 3000:3000 nexo
 ```
 
-## Observacao importante sobre Clerk em producao
+## Clerk em producao
 
-Para login publico em producao com Clerk, o projeto precisa de dominio proprio.
+Para fechar login publico em producao com Clerk, o projeto precisa de dominio proprio.
 
-Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do deploy, mas nao fecha corretamente o fluxo final do Clerk em modo Production.
+Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do deploy, mas nao substitui o fluxo final de producao do Clerk.
 
 ## Estrutura
 
@@ -173,7 +221,7 @@ Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do dep
 
 ## Resumo pratico
 
-- O NEXO roda localmente sem custo extra
-- O projeto nao depende mais do Manus
-- Railway continua sendo opcional, nao uma dependencia do codigo
-- O proximo passo para producao publica real e ter dominio proprio para Clerk Production
+- o NEXO roda localmente sem custo extra
+- o projeto esta organizado para evoluir sem ficar preso a uma unica plataforma
+- a base tecnica ja esta validada com build, testes e CI
+- o proximo passo de producao publica real e dominio proprio para o Clerk
