@@ -4,6 +4,8 @@
 
 NEXO Finance e uma plataforma de gestao financeira pessoal desenhada para transformar receita, caixas, metas, historico e inteligencia financeira em um sistema claro, bonito e evolutivo.
 
+**Conceito central:** todo real recebe uma missao.
+
 ## Visao do produto
 
 O NEXO nasce com uma proposta simples: dar ao usuario uma forma mais disciplinada, visual e inteligente de cuidar do proprio dinheiro.
@@ -15,6 +17,52 @@ Direcao do produto:
 - usar IA para recomendar, alertar e explicar
 - sustentar um modelo SaaS com planos escalaveis
 - evoluir para uma experiencia premium pronta para distribuicao publica
+
+## Identidade do produto
+
+O NEXO segue uma direcao visual premium inspirada em interfaces de alta confianca, private banking UX e uma leitura mais arquitetonica do dinheiro.
+
+Direcao criativa:
+
+- linguagem visual inspirada em `Vault Architecture`
+- atmosfera escura, limpa e precisa
+- foco em contraste, hierarquia e sensacao de controle
+- caixas financeiras tratadas como compartimentos de cofre
+- tipografia e numeracao pensadas para clareza, sofisticacao e leitura rapida
+
+Paleta-base do produto:
+
+- preto principal: `#0D0D0D`
+- cinza aco: `#2E2E2E`
+- branco suave: `#F5F5F5`
+- cinza claro: `#BFBFBF`
+- verde escuro: `#2D5016`
+- vermelho discreto: `#8B2500`
+
+Direcao tipografica:
+
+- titulos com presenca geometrica
+- corpo com leitura premium e limpa
+- valores financeiros com linguagem monoespacada e precisa
+
+## Autoria
+
+NEXO Finance e um produto independente criado por **Mackson Gaspar**.
+
+Sobre a apresentacao da marca:
+
+- `NEXO Finance` e o nome do produto
+- `Tesserakt` pode aparecer como marca, estudio autoral ou estrutura criativa por tras do projeto
+- como o projeto ainda esta sendo conduzido solo, o melhor caminho e ser honesto
+
+Recomendacao de assinatura:
+
+```txt
+Criado por Mackson Gaspar
+Produto independente da Tesserakt
+```
+
+Eu nao recomendaria fingir uma equipe maior agora. Fica mais forte dizer a verdade e deixar a marca crescer com voce.
 
 ## Modelo do produto
 
@@ -37,6 +85,18 @@ O produto foi pensado para operar em camadas:
 - deploy atual em Railway
 - suporte a Docker
 - CI no GitHub Actions com `check`, `test` e `build`
+
+## Preview tecnico
+
+Deploy publico atual de validacao:
+
+- [NEXO Finance no Railway](https://wholesome-liberation-production.up.railway.app/)
+
+Observacao:
+
+- esse link serve como ambiente tecnico de preview
+- o dominio oficial ainda nao foi definido
+- para producao publica completa com Clerk, o projeto ainda precisa de dominio proprio
 
 ## O que ja existe
 
@@ -216,8 +276,28 @@ Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do dep
 
 - [README.md](./README.md)
 - [NEXO_DOCUMENTATION.md](./NEXO_DOCUMENTATION.md)
+- [SUPPORT.md](./SUPPORT.md)
 - [.env.example](./.env.example)
 - [Dockerfile](./Dockerfile)
+
+## Suporte
+
+Canal principal de suporte atual:
+
+- e-mail: `macksongaspar@gmail.com`
+
+Sugestao de posicionamento:
+
+- suporte operacional e contato inicial por e-mail
+- futuro dominio proprio pode assumir esse canal depois
+
+Para abrir um atendimento mais eficiente, o ideal e enviar:
+
+- e-mail da conta usada no app
+- descricao curta do problema
+- print ou video
+- horario aproximado do erro
+- navegador ou dispositivo usado
 
 ## Resumo pratico
 
