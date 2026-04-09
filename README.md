@@ -1,4 +1,4 @@
-# NEXO
+# NEXO FINANCE
 
 Aplicacao full-stack de gestao financeira pessoal com React, Vite, Express, tRPC, Drizzle e MySQL.
 
