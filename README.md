@@ -1,36 +1,113 @@
-# NEXO FINANCE
+# NEXO - Sistema de Gestao Financeira Pessoal
 
 [![CI](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml/badge.svg?branch=stable)](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml)
 
-NEXO Finance e uma plataforma de gestao financeira pessoal desenhada para transformar receita, caixas, metas, historico e inteligencia financeira em um sistema claro, bonito e evolutivo.
+**Todo real recebe uma missao.**
 
-**Conceito central:** todo real recebe uma missao.
+Um aplicativo web premium de gestao financeira pessoal baseado em **Orcamento Base Zero**, com foco em disciplina, crescimento patrimonial e uma experiencia visual mais sofisticada, clara e intencional.
 
-## Visao do produto
+Preview tecnico atual:
 
-O NEXO nasce com uma proposta simples: dar ao usuario uma forma mais disciplinada, visual e inteligente de cuidar do proprio dinheiro.
+- [https://wholesome-liberation-production.up.railway.app/](https://wholesome-liberation-production.up.railway.app/)
 
-Direcao do produto:
+Observacao:
 
-- organizar a vida financeira por caixas e metas
-- transformar historico em leitura real de comportamento
-- usar IA para recomendar, alertar e explicar
-- sustentar um modelo SaaS com planos escalaveis
-- evoluir para uma experiencia premium pronta para distribuicao publica
+- esse link funciona hoje como ambiente tecnico de validacao
+- o dominio oficial ainda nao foi definido
+- para producao publica completa com Clerk, o projeto ainda precisa de dominio proprio
 
-## Identidade do produto
+---
 
-O NEXO segue uma direcao visual premium inspirada em interfaces de alta confianca, private banking UX e uma leitura mais arquitetonica do dinheiro.
+## Visao Geral
 
-Direcao criativa:
+**NEXO** e uma aplicacao full-stack de gestao financeira pessoal que organiza receita, caixas, metas, historico, relatorios e inteligencia financeira em uma unica experiencia.
 
-- linguagem visual inspirada em `Vault Architecture`
-- atmosfera escura, limpa e precisa
-- foco em contraste, hierarquia e sensacao de controle
-- caixas financeiras tratadas como compartimentos de cofre
-- tipografia e numeracao pensadas para clareza, sofisticacao e leitura rapida
+Ele foi pensado para quem quer controlar as financas com mais precisao e presenca visual, fugindo da cara de planilha fria e aproximando a experiencia de um sistema premium de decisao financeira pessoal.
 
-Paleta-base do produto:
+## O Que e NEXO?
+
+NEXO e uma solucao para quem quer acompanhar a propria vida financeira com clareza, disciplina e consistencia.
+
+Diferente de apps convencionais de gastos, o NEXO trabalha com a logica de **Orcamento Base Zero**, onde a receita do mes e distribuida entre caixas com missao definida.
+
+## Conceito Central
+
+Cada real que entra deve ser alocado com intencao.
+
+Na pratica, isso significa:
+
+- organizar o dinheiro em caixas financeiras
+- definir prioridades com clareza
+- acompanhar metas e progresso ao longo do tempo
+- transformar historico em leitura de comportamento
+- usar inteligencia para orientar melhor as decisoes
+
+---
+
+## Funcionalidades Principais
+
+### Dashboard Premium
+
+- visualizacao de receita, distribuicao e gastos
+- score financeiro com leitura sintetica da disciplina do usuario
+- graficos e indicadores de acompanhamento
+- leitura de investimento vs consumo
+
+### Sistema de Caixas
+
+- criacao de caixas por categoria
+- organizacao de valores alocados por objetivo
+- registro de movimentacoes e acompanhamento de saldo
+- barras de progresso e leitura visual da utilizacao
+
+Categorias-base:
+
+- essencial
+- investimento
+- lazer
+- reserva
+- outro
+
+### Metas Financeiras
+
+- definicao de metas com valor alvo
+- acompanhamento do progresso acumulado
+- leitura de prazo e evolucao
+- apoio visual para acompanhamento continuo
+
+### Historico Mensal
+
+- visualizacao de meses anteriores
+- comparacao de evolucao ao longo do tempo
+- leitura consolidada de receita, gastos e comportamento
+- base para relatorios e analises futuras
+
+### Exportacao de Dados
+
+- exportacao em CSV
+- geracao de PDF
+- consolidacao de caixas, transacoes e metas
+
+### NEXO AI
+
+- camada de IA em evolucao para analise, recomendacao e leitura financeira
+- integracao atual com APIs compativeis com OpenAI, incluindo Groq
+- base preparada para ampliar insights, alertas e recomendacoes
+
+### Open Banking
+
+- base de interface e estrutura preparadas para expansao
+- conexoes bancarias e automacoes seguem como frente de evolucao do produto
+
+---
+
+## Design Premium
+
+### Estilo
+
+Direcao visual inspirada em `Vault Architecture`, Swiss Design e interfaces de alta confianca.
+
+### Paleta
 
 - preto principal: `#0D0D0D`
 - cinza aco: `#2E2E2E`
@@ -39,106 +116,29 @@ Paleta-base do produto:
 - verde escuro: `#2D5016`
 - vermelho discreto: `#8B2500`
 
-Direcao tipografica:
+### Tipografia
 
-- titulos com presenca geometrica
-- corpo com leitura premium e limpa
+- titulos com linguagem geometrica e premium
+- corpo com leitura limpa e forte
 - valores financeiros com linguagem monoespacada e precisa
 
-## Autoria
+### Movimento
 
-NEXO Finance e um produto independente criado por **Mackson Gaspar**.
+- transicoes suaves
+- metricas com leitura progressiva
+- barras e elementos de acompanhamento com reforco visual
 
-Sobre a apresentacao da marca:
+---
 
-- `NEXO Finance` e o nome do produto
-- `Tesserakt` pode aparecer como marca, estudio autoral ou estrutura criativa por tras do projeto
-- como o projeto ainda esta sendo conduzido solo, o melhor caminho e ser honesto
+## Como Comecar
 
-Recomendacao de assinatura:
-
-```txt
-Criado por Mackson Gaspar
-Produto independente da Tesserakt
-```
-
-Eu nao recomendaria fingir uma equipe maior agora. Fica mais forte dizer a verdade e deixar a marca crescer com voce.
-
-## Modelo do produto
-
-O produto foi pensado para operar em camadas:
-
-- `Free`: entrada no ecossistema NEXO
-- `Premium`: experiencia ampliada para uso continuo
-- `Pro`: camada mais forte de automacao e inteligencia
-- `Elite`: proposta mais completa e de maior valor
-
-## Estado atual da base
-
-- branch principal estabilizada em `stable`
-- frontend com React 19 + Vite + Tailwind CSS
-- backend com Express + tRPC
-- MySQL com Drizzle ORM
-- autenticacao com Clerk
-- pagamentos com Stripe
-- IA via API compativel com OpenAI, incluindo Groq
-- deploy atual em Railway
-- suporte a Docker
-- CI no GitHub Actions com `check`, `test` e `build`
-
-## Preview tecnico
-
-Deploy publico atual de validacao:
-
-- [NEXO Finance no Railway](https://wholesome-liberation-production.up.railway.app/)
-
-Observacao:
-
-- esse link serve como ambiente tecnico de preview
-- o dominio oficial ainda nao foi definido
-- para producao publica completa com Clerk, o projeto ainda precisa de dominio proprio
-
-## O que ja existe
-
-- dashboard financeiro
-- gestao de caixas
-- metas financeiras
-- historico de movimentacoes
-- relatorios e visualizacoes
-- planos pagos
-- integracao base para NEXO AI
-
-## Roadmap do produto
-
-Inspirado no plano mestre do projeto, o foco atual do NEXO fica organizado assim:
-
-1. fortalecer a fundacao tecnica, seguranca e confiabilidade
-2. elevar a experiencia da interface e do dashboard
-3. refinar o sistema de caixas, transacoes e calculos em tempo real
-4. expandir metas, historico e a camada de IA NEXO
-5. amadurecer relatorios, notificacoes e automacoes
-6. fechar monetizacao, conformidade juridica e publicacao
-
-## Stack
-
-- Frontend: React 19 + Vite + Tailwind CSS
-- Backend: Express + tRPC
-- Banco: MySQL
-- ORM: Drizzle
-- Autenticacao: Clerk
-- Pagamentos: Stripe
-- IA: OpenAI-compatible API
-- Hospedagem atual: Railway
-
-## Rodando localmente
-
-1. Instale as dependencias:
+### Instalacao
 
 ```bash
 pnpm install
 ```
 
-2. Copie o arquivo de ambiente:
+Copie o arquivo de ambiente:
 
 PowerShell:
 
@@ -152,21 +152,84 @@ Bash:
 cp .env.example .env
 ```
 
-3. Preencha as variaveis obrigatorias.
-
-4. Rode em desenvolvimento:
+Preencha as variaveis obrigatorias e rode:
 
 ```bash
 pnpm dev
 ```
 
-5. Abra:
+Acesse:
 
 ```txt
 http://localhost:3000
 ```
 
-## Scripts
+### Primeiro Uso
+
+1. configure o ambiente
+2. acesse o app
+3. autentique-se
+4. organize sua receita e suas caixas
+5. acompanhe metas, historico e distribuicao
+
+---
+
+## Stack Tecnico
+
+| Camada | Tecnologia |
+| --- | --- |
+| Frontend | React 19 + Vite |
+| Backend | Express + tRPC |
+| Banco | MySQL |
+| ORM | Drizzle |
+| Autenticacao | Clerk |
+| Pagamentos | Stripe |
+| Estado | Zustand |
+| Animacoes | Framer Motion |
+| Graficos | Recharts |
+| Exportacao | jsPDF + jsPDF-AutoTable |
+| IA | OpenAI-compatible API |
+| Deploy atual | Railway |
+| Portabilidade | Docker |
+
+---
+
+## Estrutura do Projeto
+
+```txt
+nexo/
+|-- client/
+|   `-- src/
+|       |-- components/
+|       |-- contexts/
+|       |-- hooks/
+|       |-- lib/
+|       |-- pages/
+|       |-- stores/
+|       |-- types/
+|       |-- _core/
+|       |-- App.tsx
+|       |-- const.ts
+|       |-- index.css
+|       `-- main.tsx
+|-- server/
+|   |-- _core/
+|   |-- db.ts
+|   |-- index.ts
+|   `-- routers.ts
+|-- drizzle/
+|-- shared/
+|-- tests/
+|-- .github/workflows/
+|-- package.json
+`-- README.md
+```
+
+---
+
+## Qualidade e Operacao
+
+### Comandos Disponiveis
 
 ```bash
 pnpm dev
@@ -177,9 +240,28 @@ pnpm test
 pnpm format
 ```
 
-## Variaveis de ambiente
+### Validacao da Base
 
-Obrigatorias para a aplicacao base:
+Referencia minima de qualidade:
+
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
+
+O projeto tambem possui CI no GitHub Actions para executar esse fluxo automaticamente em:
+
+- push para `stable`
+- push para `codex/**`
+- pull requests para `stable`
+- execucao manual via `workflow_dispatch`
+
+---
+
+## Dados e Ambiente
+
+### Variaveis de ambiente base
 
 ```bash
 DATABASE_URL=
@@ -188,7 +270,7 @@ CLERK_SECRET_KEY=
 APP_URL=http://localhost:3000
 ```
 
-Importantes para o produto completo:
+### Variaveis importantes para o produto completo
 
 ```bash
 OWNER_USER_ID=
@@ -198,7 +280,7 @@ STRIPE_PRO_PRICE_ID=
 STRIPE_ELITE_PRICE_ID=
 ```
 
-Opcionais:
+### Variaveis opcionais
 
 ```bash
 VITE_ANALYTICS_ENDPOINT=
@@ -217,31 +299,23 @@ OPENAI_BASE_URL=https://api.groq.com/openai/v1
 LLM_MODEL=llama-3.3-70b-versatile
 ```
 
-## Qualidade da base
+### Privacidade e estado atual
 
-Referencia minima de validacao:
+- autenticacao via Clerk
+- persistencia principal em MySQL com Drizzle ORM
+- deploy tecnico atual no Railway
+- producao publica final com Clerk depende de dominio proprio
 
-```bash
-pnpm check
-pnpm test
-pnpm build
-```
-
-O workflow em `.github/workflows/ci.yml` executa esse fluxo automaticamente em:
-
-- push para `stable`
-- push para `codex/**`
-- pull requests para `stable`
-- execucao manual via `workflow_dispatch`
+---
 
 ## Deploy
 
 ### Railway
 
-1. Conecte o repositorio ao Railway
-2. Configure as variaveis do `.env.example`
-3. Defina `APP_URL` com a URL publica do deploy
-4. Use:
+1. conecte o repositorio ao Railway
+2. configure as variaveis do `.env.example`
+3. defina `APP_URL` com a URL publica do deploy
+4. use:
 
 ```bash
 Build: pnpm build
@@ -250,29 +324,56 @@ Start: pnpm start
 
 ### Docker
 
-O projeto inclui `Dockerfile` e `.dockerignore` para deploy portavel:
-
 ```bash
 docker build -t nexo .
 docker run --env-file .env -p 3000:3000 nexo
 ```
 
-## Clerk em producao
+---
 
-Para fechar login publico em producao com Clerk, o projeto precisa de dominio proprio.
+## Responsividade
 
-Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do deploy, mas nao substitui o fluxo final de producao do Clerk.
+- mobile: leitura e interacao adaptadas
+- tablet: distribuicao intermediaria
+- desktop: experiencia mais completa
 
-## Estrutura
+---
 
-- `client/`: interface React + Vite
-- `server/`: API Express + tRPC
-- `drizzle/`: schema e configuracao do banco
-- `shared/`: tipos e constantes compartilhadas
-- `tests/`: testes automatizados
-- `.github/workflows/`: automacoes de CI
+## Roadmap
 
-## Documentacao complementar
+### Fundacao Tecnica
+
+- fortalecer seguranca e confiabilidade
+- ampliar protecoes e maturidade operacional
+- evoluir estrutura de deploy e observabilidade
+
+### Interface e Experiencia
+
+- elevar dashboard e visualizacoes
+- refinar sistema de caixas e transacoes
+- melhorar fluidez e feedback visual
+
+### IA NEXO
+
+- expandir analises
+- aprofundar recomendacoes
+- melhorar camada de insights e interpretacao financeira
+
+### Automacoes e Produto
+
+- relatorios mais avancados
+- notificacoes
+- automacoes e acompanhamentos mais inteligentes
+
+### Negocio e Publicacao
+
+- amadurecer monetizacao
+- fechar requisitos juridicos
+- preparar publicacao publica completa
+
+---
+
+## Documentacao
 
 - [README.md](./README.md)
 - [NEXO_DOCUMENTATION.md](./NEXO_DOCUMENTATION.md)
@@ -280,28 +381,48 @@ Uma URL temporaria como `*.up.railway.app` pode servir para teste tecnico do dep
 - [.env.example](./.env.example)
 - [Dockerfile](./Dockerfile)
 
+---
+
 ## Suporte
 
-Canal principal de suporte atual:
+Canal atual de suporte:
 
-- e-mail: `macksongaspar@gmail.com`
+- `macksongaspar@gmail.com`
 
-Sugestao de posicionamento:
+Guia rapido:
 
-- suporte operacional e contato inicial por e-mail
-- futuro dominio proprio pode assumir esse canal depois
+- envie o e-mail da conta usada
+- descreva o problema com objetividade
+- anexe print ou video se possivel
+- informe horario aproximado e dispositivo
 
-Para abrir um atendimento mais eficiente, o ideal e enviar:
+Mais detalhes em:
 
-- e-mail da conta usada no app
-- descricao curta do problema
-- print ou video
-- horario aproximado do erro
-- navegador ou dispositivo usado
+- [SUPPORT.md](./SUPPORT.md)
 
-## Resumo pratico
+---
 
-- o NEXO roda localmente sem custo extra
-- o projeto esta organizado para evoluir sem ficar preso a uma unica plataforma
-- a base tecnica ja esta validada com build, testes e CI
-- o proximo passo de producao publica real e dominio proprio para o Clerk
+## Autoria
+
+NEXO Finance e um projeto autoral de **Mackson Gaspar**.
+
+Apresentacao recomendada da marca:
+
+```txt
+Criado por Mackson Gaspar
+Um projeto autoral Tesserakt
+```
+
+Essa formulacao preserva a verdade, fortalece a marca e nao inventa uma equipe que ainda nao existe.
+
+---
+
+## Licenca
+
+Licenca atual do repositorio: `MIT`
+
+---
+
+**Versao atual:** 1.0.0  
+**Branch principal:** `stable`  
+**Status atual:** base validada, CI ativo e deploy tecnico funcionando
