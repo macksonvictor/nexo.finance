@@ -33,7 +33,7 @@ function getInitialSidebarState() {
 }
 
 export default function Home() {
-  const { user, loading, isAuthenticated, isGuestPreview } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const {
     hasOnboarded,
     getCurrentMonth,
@@ -105,7 +105,7 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated && !isGuestPreview) {
+  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0D0D0D] px-4">
         <div className="max-w-sm space-y-8 text-center">
@@ -184,26 +184,6 @@ export default function Home() {
     return <Onboarding />;
   }
 
-  const previewMessage = (
-    <div className="flex h-full min-h-[420px] items-center justify-center">
-      <div className="max-w-xl rounded-3xl border border-[#242424] bg-[#141414] px-8 py-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-        <img
-          src={BRAND_LOGO_SRC}
-          alt={BRAND_NAME}
-          className="mx-auto mb-5 h-20 w-20 object-contain"
-        />
-        <h3 className="text-2xl font-semibold tracking-tight text-[#F5F5F5]">
-          Preview do {BRAND_AI_NAME}
-        </h3>
-        <p className="mt-3 text-sm leading-relaxed text-[#A0A0A0]">
-          O chat completo depende da autenticação ativa. No link público do
-          Railway, enquanto o Clerk estiver em Development, o NEXO exibe o app
-          em modo preview para não travar em tela preta.
-        </p>
-      </div>
-    </div>
-  );
-
   const renderView = () => {
     switch (currentView) {
       case "dashboard":
@@ -232,11 +212,7 @@ export default function Home() {
       case "planos":
         return <PlanosView />;
       case "ia":
-        return isGuestPreview ? (
-          previewMessage
-        ) : (
-          <NexoAIView onNavigate={(view) => setCurrentView(view as ViewType)} />
-        );
+        return <NexoAIView onNavigate={(view) => setCurrentView(view as ViewType)} />;
       default:
         return <DashboardView />;
     }
@@ -256,7 +232,6 @@ export default function Home() {
         user={user}
         isPremium={isPremium}
         isAdmin={isAdmin}
-        isPreviewMode={isGuestPreview}
       />
 
       {sidebarOpen && (
@@ -283,7 +258,6 @@ export default function Home() {
           user={user}
           isPremium={isPremium}
           isAdmin={isAdmin}
-          isPreviewMode={isGuestPreview}
         />
       </div>
 
@@ -299,7 +273,6 @@ export default function Home() {
           user={user}
           isPremium={isPremium}
           isAdmin={isAdmin}
-          isPreviewMode={isGuestPreview}
           collapsed={desktopSidebarCollapsed}
           onToggleCollapse={() =>
             setDesktopSidebarCollapsed((collapsed) => !collapsed)
@@ -319,7 +292,6 @@ export default function Home() {
           user={user}
           isPremium={isPremium}
           isAdmin={isAdmin}
-          isPreviewMode={isGuestPreview}
         />
 
         <main
@@ -337,7 +309,7 @@ export default function Home() {
         </main>
       </div>
 
-      {currentView !== "ia" && !isGuestPreview && (
+      {currentView !== "ia" && (
         <button
           onClick={() => setCurrentView("ia")}
           className="fixed bottom-4 right-4 z-30 inline-flex items-center gap-3 rounded-full border border-[#2E2E2E] bg-[#111111]/96 px-4 py-3 text-sm text-[#F5F5F5] shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-colors hover:border-[#404040] md:bottom-6 md:right-6"

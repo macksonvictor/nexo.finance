@@ -9,17 +9,14 @@ import { SplashScreen } from "./components/SplashScreen";
 import Home from "./pages/Home";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
-import { isRailwayPreviewWithoutClerk } from "./lib/runtime";
 import { PlanosView } from "./components/PlanosView";
 function Router() {
-  const previewWithoutClerk = isRailwayPreviewWithoutClerk();
-
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/sign-in"} component={previewWithoutClerk ? Home : SignInPage} />
-      <Route path={"/sign-up"} component={previewWithoutClerk ? Home : SignUpPage} />
+      <Route path={"/sign-in"} component={SignInPage} />
+      <Route path={"/sign-up"} component={SignUpPage} />
       <Route path={"/planos"} component={PlanosView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
