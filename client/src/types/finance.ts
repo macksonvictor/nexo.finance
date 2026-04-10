@@ -60,6 +60,7 @@ export interface FinanceState {
   // Actions
   setIncome: (amount: number) => void;
   setCurrentMonth: (monthId: string) => void;
+  syncCurrentMonth: () => void;
   addCaixa: (caixa: Omit<Caixa, 'id' | 'spent' | 'transactions' | 'createdAt'>) => void;
   updateCaixa: (id: string, updates: Partial<Caixa>) => void;
   deleteCaixa: (id: string) => void;

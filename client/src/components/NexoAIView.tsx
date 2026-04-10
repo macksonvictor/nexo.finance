@@ -1,389 +1,675 @@
-/**
- * NexoAIView – Interface completa da IA Nexo
- * Chat financeiro inteligente com modos: Análise, Sabotagem, Simulação, Recomendações
- */
-import { useState, useRef, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
-import { NexoAILoader } from './NexoAILoader';
-import { PaywallGate } from './PaywallGate';
-import { useFinanceStore } from '@/stores/useFinanceStore';
-import { Streamdown } from 'streamdown';
-import { toast } from 'sonner';
-import { SkeletonChatMessage } from './SkeletonLoader';
-import type { PlanTier } from '@shared/plans';
+import { FormEvent, RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { NexoAIResponseLoader } from "./NexoAIResponseLoader";
+import { NexoCubeLogo } from "./NexoCubeLogo";
+import { PaywallGate } from "./PaywallGate";
+import { BRAND_AI_NAME } from "@/lib/branding";
+import { useFinanceStore } from "@/stores/useFinanceStore";
+import { Streamdown } from "streamdown";
+import { toast } from "sonner";
+import type { PlanTier } from "@shared/plans";
 import {
+  BarChart3,
   Brain,
-  AlertTriangle,
-  TrendingUp,
+  ChevronDown,
   Lightbulb,
   MessageSquare,
   Send,
-  ChevronRight,
-  Sparkles,
-  BarChart3,
   Shield,
+  Sparkles,
+  TrendingUp,
+  TriangleAlert,
+  X,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
-type AIMode = 'analysis' | 'sabotage' | 'risk' | 'predict' | 'simulate' | 'impact' | 'indicators' | 'recommendations' | 'chat';
+type AIMode =
+  | "analysis"
+  | "sabotage"
+  | "risk"
+  | "predict"
+  | "simulate"
+  | "impact"
+  | "indicators"
+  | "recommendations"
+  | "chat";
 
 interface AIMessage {
   id: string;
-  role: 'user' | 'ai';
+  role: "user" | "ai";
   content: string;
   mode: AIMode;
   timestamp: Date;
 }
 
-const MODES: { id: AIMode; label: string; icon: React.ReactNode; description: string; color: string }[] = [
+interface ModeMeta {
+  id: AIMode;
+  label: string;
+  shortLabel: string;
+  icon: React.ReactNode;
+  description: string;
+  color: string;
+  starter?: string;
+  suggestions: string[];
+}
+
+const MODES: ModeMeta[] = [
   {
-    id: 'analysis',
-    label: 'Diagnóstico',
-    icon: <BarChart3 size={16} />,
-    description: 'Análise completa da sua situação financeira e perfil comportamental',
-    color: '#BFBFBF',
-  },
-  {
-    id: 'sabotage',
-    label: 'Sabotagem',
-    icon: <AlertTriangle size={16} />,
-    description: 'Detecta padrões de autossabotagem e gastos emocionais',
-    color: '#cc4444',
-  },
-  {
-    id: 'risk',
-    label: 'Índice de Risco',
-    icon: <Shield size={16} />,
-    description: 'Índice de Vulnerabilidade Financeira (0-100) com recomendações',
-    color: '#e07a30',
-  },
-  {
-    id: 'predict',
-    label: 'Previsão',
-    icon: <Zap size={16} />,
-    description: 'Probabilidade de ficar sem dinheiro no mês com modelo preditivo',
-    color: '#9a4a9a',
-  },
-  {
-    id: 'simulate',
-    label: 'Simulador',
-    icon: <TrendingUp size={16} />,
-    description: 'Simula cenários: economizar, investir, reduzir gastos (6m, 1a, 5a)',
-    color: '#4a9a6a',
-  },
-  {
-    id: 'impact',
-    label: 'Impacto de Gastos',
-    icon: <Brain size={16} />,
-    description: 'Calcula o impacto real de cada gasto nas suas metas e reservas',
-    color: '#4a7a9a',
-  },
-  {
-    id: 'indicators',
-    label: 'Indicadores',
-    icon: <Sparkles size={16} />,
-    description: 'Índices de Disciplina, Risco, Consistência e Crescimento Patrimonial',
-    color: '#7a9a4a',
-  },
-  {
-    id: 'recommendations',
-    label: 'Recomendações',
-    icon: <Lightbulb size={16} />,
-    description: 'Plano de ação personalizado com metas de curto e longo prazo',
-    color: '#8a7a4a',
-  },
-  {
-    id: 'chat',
-    label: 'Chat Livre',
+    id: "chat",
+    label: "Chat Livre",
+    shortLabel: "Chat",
     icon: <MessageSquare size={16} />,
-    description: 'Pergunte qualquer coisa sobre finanças pessoais',
-    color: '#4a6a9a',
+    description: "Converse livremente com a IA sobre suas finanças, metas e decisões.",
+    color: "#7BA8FF",
+    starter: "O que está me travando financeiramente este mês?",
+    suggestions: [
+      "Onde estou desperdiçando dinheiro este mês?",
+      "Como posso melhorar meu fluxo de caixa sem cortar tudo?",
+      "O que devo priorizar primeiro nas minhas metas?",
+    ],
+  },
+  {
+    id: "analysis",
+    label: "Diagnóstico",
+    shortLabel: "Diagnóstico",
+    icon: <BarChart3 size={16} />,
+    description: "Leitura geral da sua situação financeira e dos padrões do mês.",
+    color: "#BFBFBF",
+    starter: "Faça um diagnóstico geral da minha situação financeira atual.",
+    suggestions: [
+      "Faça um diagnóstico geral da minha situação financeira atual.",
+      "Quais são os maiores gargalos do meu mês?",
+      "Onde estou mais desequilibrado hoje?",
+    ],
+  },
+  {
+    id: "sabotage",
+    label: "Sabotagem",
+    shortLabel: "Sabotagem",
+    icon: <TriangleAlert size={16} />,
+    description: "Detecta gastos emocionais, excesso e padrões de autossabotagem.",
+    color: "#E36A5D",
+    starter: "Encontre sinais de autossabotagem ou gastos impulsivos nos meus dados.",
+    suggestions: [
+      "Encontre sinais de autossabotagem ou gastos impulsivos nos meus dados.",
+      "Quais compras parecem emocionais ou repetitivas demais?",
+      "Onde estou sabotando meus objetivos sem perceber?",
+    ],
+  },
+  {
+    id: "risk",
+    label: "Índice de Risco",
+    shortLabel: "Risco",
+    icon: <Shield size={16} />,
+    description: "Calcula vulnerabilidade financeira e riscos ocultos do mês.",
+    color: "#E4A050",
+    starter: "Calcule meu índice de risco financeiro e me diga onde estou vulnerável.",
+    suggestions: [
+      "Calcule meu índice de risco financeiro e me diga onde estou vulnerável.",
+      "Quais reservas estão mais expostas hoje?",
+      "Se eu perder renda agora, qual seria meu ponto mais frágil?",
+    ],
+  },
+  {
+    id: "predict",
+    label: "Previsão",
+    shortLabel: "Previsão",
+    icon: <Zap size={16} />,
+    description: "Projeta se o seu caixa aguenta até o fim do mês com o ritmo atual.",
+    color: "#B26FF0",
+    starter: "Se eu continuar assim, corro risco de ficar sem dinheiro antes do fim do mês?",
+    suggestions: [
+      "Se eu continuar assim, corro risco de ficar sem dinheiro antes do fim do mês?",
+      "Qual tendência meus gastos estão mostrando?",
+      "O mês fecha no azul ou apertado?",
+    ],
+  },
+  {
+    id: "simulate",
+    label: "Simulador",
+    shortLabel: "Simulador",
+    icon: <TrendingUp size={16} />,
+    description: "Simula cenários de economia, renda extra e crescimento patrimonial.",
+    color: "#53B087",
+    starter: "Simule o impacto de guardar mais dinheiro todo mês.",
+    suggestions: [
+      "Simule o impacto de guardar mais dinheiro todo mês.",
+      "E se eu conseguir uma renda extra recorrente?",
+      "O que muda se eu reduzir meus gastos variáveis?",
+    ],
+  },
+  {
+    id: "impact",
+    label: "Impacto de Gastos",
+    shortLabel: "Impacto",
+    icon: <Brain size={16} />,
+    description: "Mostra o peso real dos gastos sobre metas, reservas e folga do mês.",
+    color: "#62A6D1",
+    starter: "Quais gastos estão ferindo mais minhas metas e reservas?",
+    suggestions: [
+      "Quais gastos estão ferindo mais minhas metas e reservas?",
+      "Qual gasto pesa mais no meu futuro?",
+      "Onde pequenos cortes teriam maior efeito?",
+    ],
+  },
+  {
+    id: "indicators",
+    label: "Indicadores",
+    shortLabel: "Indicadores",
+    icon: <Sparkles size={16} />,
+    description: "Resume disciplina, consistência, crescimento e saúde financeira.",
+    color: "#A7C15C",
+    starter: "Mostre meus indicadores principais e explique o que eles querem dizer.",
+    suggestions: [
+      "Mostre meus indicadores principais e explique o que eles querem dizer.",
+      "Qual nota você daria para a minha disciplina financeira?",
+      "Onde estou evoluindo e onde estou estagnado?",
+    ],
+  },
+  {
+    id: "recommendations",
+    label: "Recomendações",
+    shortLabel: "Recomendações",
+    icon: <Lightbulb size={16} />,
+    description: "Cria um plano de ação com próximos passos claros para melhorar.",
+    color: "#D5B465",
+    starter: "Monte um plano de ação prático para eu melhorar minhas finanças.",
+    suggestions: [
+      "Monte um plano de ação prático para eu melhorar minhas finanças.",
+      "Qual deveria ser meu próximo passo mais inteligente?",
+      "Me entregue um plano simples para os próximos 30 dias.",
+    ],
   },
 ];
 
-export function NexoAIView({ onNavigate }: { onNavigate?: (view: string) => void }) {
+const TOOL_ORDER: AIMode[] = [
+  "analysis",
+  "risk",
+  "predict",
+  "simulate",
+  "impact",
+  "indicators",
+  "recommendations",
+  "sabotage",
+];
+
+export function NexoAIView({
+  onNavigate,
+}: {
+  onNavigate?: (view: string) => void;
+}) {
   const { currentMonthId: selectedMonth } = useFinanceStore();
   const [messages, setMessages] = useState<AIMessage[]>([]);
-  const [activeMode, setActiveMode] = useState<AIMode>('analysis');
-  const [chatInput, setChatInput] = useState('');
+  const [activeMode, setActiveMode] = useState<AIMode>("chat");
+  const [input, setInput] = useState("");
   const [simulateExtra, setSimulateExtra] = useState(500);
   const [isLoading, setIsLoading] = useState(false);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const modeMenuRef = useRef<HTMLFormElement>(null);
 
-  // Buscar plano do usuário
   const { data: planData } = trpc.finance.getPlan.useQuery();
-  const userPlan = (planData?.plan ?? 'free') as PlanTier;
+  const userPlan = (planData?.plan ?? "free") as PlanTier;
   const isAdmin = planData?.isAdmin ?? false;
+
+  const activeModeMeta = useMemo(
+    () => MODES.find((mode) => mode.id === activeMode)!,
+    [activeMode]
+  );
 
   const analyzeMutation = trpc.ai.analyze.useMutation({
     onSuccess: (data) => {
-        const rawContent = data.content;
-        const aiMsg: AIMessage = {
-          id: Date.now().toString(),
-          role: 'ai',
-          content: typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent),
-          mode: data.mode as AIMode,
-          timestamp: new Date(),
-        };
+      const aiMsg: AIMessage = {
+        id: Date.now().toString(),
+        role: "ai",
+        content:
+          typeof data.content === "string"
+            ? data.content
+            : JSON.stringify(data.content, null, 2),
+        mode: data.mode as AIMode,
+        timestamp: new Date(),
+      };
+
       setMessages((prev) => [...prev, aiMsg]);
       setIsLoading(false);
     },
-    onError: (err) => {
-      toast.error('Erro ao consultar IA: ' + err.message);
+    onError: (error) => {
+      toast.error("Erro ao consultar a IA: " + error.message);
       setIsLoading(false);
     },
   });
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const handleAnalyze = (mode: AIMode, question?: string) => {
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modeMenuRef.current && !modeMenuRef.current.contains(event.target as Node)) {
+        setModeMenuOpen(false);
+      }
+    }
+
+    if (modeMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [modeMenuOpen]);
+
+  function handleAnalyze(mode: AIMode, question?: string) {
     if (!selectedMonth) {
-      toast.error('Selecione um mês primeiro');
+      toast.error("Selecione um mês primeiro");
       return;
     }
+
+    const finalQuestion = question?.trim() || "";
+
+    if (mode === "chat" && !finalQuestion) {
+      return;
+    }
+
     setIsLoading(true);
+
     const userMsg: AIMessage = {
-      id: Date.now().toString() + '-user',
-      role: 'user',
-      content: getModeUserMessage(mode, question, simulateExtra),
+      id: Date.now().toString() + "-user",
+      role: "user",
+      content: getModeUserMessage(mode, finalQuestion, simulateExtra),
       mode,
       timestamp: new Date(),
     };
+
     setMessages((prev) => [...prev, userMsg]);
+
     analyzeMutation.mutate({
       monthId: selectedMonth,
       mode,
-      question: question ?? undefined,
-      simulateExtra: mode === 'simulate' ? simulateExtra : undefined,
+      question: finalQuestion || undefined,
+      simulateExtra: mode === "simulate" ? simulateExtra : undefined,
     });
-  };
+  }
 
-  const handleChatSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    handleAnalyze('chat', chatInput.trim());
-    setChatInput('');
-  };
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const fallback = activeMode === "chat" ? "" : activeModeMeta.starter ?? "";
+    const question = input.trim() || fallback;
+    handleAnalyze(activeMode, question);
+    setInput("");
+  }
 
-  const getModeUserMessage = (mode: AIMode, question?: string, extra?: number): string => {
-    switch (mode) {
-      case 'analysis': return '📊 Analise minha situação financeira e perfil comportamental deste mês';
-      case 'sabotage': return '🔍 Detecte padrões de autossabotagem e gastos emocionais nos meus dados';
-      case 'risk': return '🛡️ Calcule meu Índice de Vulnerabilidade Financeira (0-100) e riscos ocultos';
-      case 'predict': return '⚡ Qual a probabilidade de eu ficar sem dinheiro este mês? Faça uma previsão';
-      case 'simulate': return `📈 Simule cenários: economizar R$ ${extra ?? 500}/mês nos próximos 6 meses, 1 ano e 5 anos`;
-      case 'impact': return '🎯 Calcule o impacto real de cada gasto nas minhas metas e reservas';
-      case 'indicators': return '✨ Calcule meus índices de Disciplina, Risco, Consistência e Crescimento Patrimonial';
-      case 'recommendations': return '💡 Crie um plano de ação personalizado com metas de curto e longo prazo';
-      case 'chat': return question ?? '';
-      default: return '';
-    }
-  };
-
-  const getModeColor = (mode: AIMode) => MODES.find((m) => m.id === mode)?.color ?? '#BFBFBF';
+  function handleSelectMode(mode: AIMode) {
+    setActiveMode(mode);
+    setModeMenuOpen(false);
+    setInput("");
+  }
 
   return (
     <PaywallGate
       userPlan={userPlan}
       requiredPlan="premium"
-      featureName="IA Nexo – Assistente Financeiro Inteligente"
-      onUpgrade={() => onNavigate?.('planos')}
+      featureName={BRAND_AI_NAME}
+      onUpgrade={() => onNavigate?.("planos")}
       isAdmin={isAdmin}
     >
-    <div className="flex flex-col h-screen md:h-full min-h-0 bg-[#0D0D0D] w-full">
-      {/* Header */}
-      <div className="flex-none px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4 border-b border-[#2E2E2E]">
-        <div className="flex items-center gap-3 mb-1">
-          <Sparkles size={18} className="text-[#BFBFBF]" />
-          <h1 className="text-lg md:text-xl font-semibold text-[#F5F5F5] tracking-tight">Nexo</h1>
-          <span className="text-[10px] font-mono text-[#4a4a4a] nexo-depth-2 border border-[#2E2E2E] px-2 py-0.5 rounded-full">
-            BETA
-          </span>
-        </div>
-        <p className="text-xs text-[#4a4a4a] font-medium">Assistente financeiro inteligente — análise em tempo real</p>
-      </div>
-
-      {/* Mode Selector */}
-      <div className="flex-none px-4 md:px-6 py-2 md:py-3 border-b border-[#1A1A1A] overflow-x-auto">
-        <div className="flex gap-2 pb-1 scrollbar-hide">
-          {MODES.map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => setActiveMode(mode.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border flex-shrink-0 ${
-                activeMode === mode.id
-                  ? 'bg-[#2E2E2E] text-[#F5F5F5] border-[#3E3E3E]'
-                  : 'bg-transparent text-[#4a4a4a] border-transparent hover:text-[#BFBFBF] hover:border-[#2E2E2E]'
-              }`}
-            >
-              <span style={{ color: activeMode === mode.id ? mode.color : undefined }}>
-                {mode.icon}
-              </span>
-              {mode.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-3 md:py-4 space-y-4 min-h-0 w-full">
-        {messages.length === 0 && !isLoading && (
-          <WelcomeScreen activeMode={activeMode} onStart={() => handleAnalyze(activeMode)} />
-        )}
-
-        {isLoading && messages.length === 0 && (
-          <div className="space-y-4">
-            <SkeletonChatMessage />
-            <div className="flex justify-start">
-              <SkeletonChatMessage />
-            </div>
-            <SkeletonChatMessage />
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {msg.role === 'ai' && (
-              <div className="flex-none w-7 h-7 rounded-full nexo-depth-2 border border-[#2E2E2E] flex items-center justify-center mt-1">
-                <Brain size={12} className="text-[#BFBFBF]" />
-              </div>
-            )}
-            <div
-              className={`max-w-xs md:max-w-[85%] rounded-xl px-3 md:px-4 py-2 md:py-3 text-sm break-words ${
-                msg.role === 'user'
-                  ? 'bg-[#2E2E2E] text-[#F5F5F5]'
-                  : 'bg-[#1A1A1A] border border-[#2E2E2E] text-[#F5F5F5]'
-              }`}
-            >
-              {msg.role === 'ai' ? (
-                <div className="prose prose-invert prose-sm max-w-none text-[#BFBFBF] leading-relaxed">
-                  <Streamdown>{msg.content}</Streamdown>
-                </div>
-              ) : (
-                <p className="text-sm">{msg.content}</p>
-              )}
-              <p className="text-[10px] text-[#3a3a3a] mt-2 font-mono">
-                {msg.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+      <div className="flex h-full min-h-0 w-full flex-col bg-[#0D0D0D]">
+        <div className="border-b border-[#222222] px-4 py-4 md:px-6">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F5]">
+                {BRAND_AI_NAME}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#7C7C7C]">
+                Comece pelo chat livre. Quando quiser aprofundar, abra uma
+                ferramenta específica.
               </p>
             </div>
-          </div>
-        ))}
 
-        {isLoading && (
-          <div className="flex gap-3 justify-start">
-            <div className="flex-none w-7 h-7 rounded-full nexo-depth-2 border border-[#2E2E2E] flex items-center justify-center mt-1">
-              <Brain size={12} className="text-[#BFBFBF]" />
-            </div>
-            <div className="nexo-depth-2 border border-[#2E2E2E] rounded-xl px-6 py-5">
-              <NexoAILoader size={64} label="Nexo está analisando..." />
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Action Area */}
-      <div className="flex-none px-6 py-4 border-t border-[#2E2E2E] space-y-3">
-        {/* Simulate Extra Input */}
-        {activeMode === 'simulate' && (
-          <div className="flex items-center gap-3 nexo-depth-2 border border-[#2E2E2E] rounded-lg px-4 py-2">
-            <TrendingUp size={14} className="text-[#4a9a6a] flex-none" />
-            <span className="text-xs text-[#BFBFBF]">Renda extra simulada:</span>
-            <span className="text-xs text-[#4a4a4a]">R$</span>
-            <input
-              type="number"
-              value={simulateExtra}
-              onChange={(e) => setSimulateExtra(Number(e.target.value))}
-              className="flex-1 bg-transparent text-[#F5F5F5] text-sm font-mono outline-none"
-              min={0}
-              step={100}
-            />
-          </div>
-        )}
-
-        {/* Chat Input */}
-        {activeMode === 'chat' ? (
-          <form onSubmit={handleChatSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Pergunte qualquer coisa sobre finanças..."
-              className="flex-1 nexo-depth-2 border border-[#2E2E2E] rounded-lg px-4 py-2.5 text-sm text-[#F5F5F5] placeholder-[#3a3a3a] outline-none focus:border-[#3E3E3E] transition-colors"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !chatInput.trim()}
-              className="w-10 h-10 rounded-lg bg-[#2E2E2E] hover:bg-[#3E3E3E] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-            >
-              <Send size={14} className="text-[#F5F5F5]" />
-            </button>
-          </form>
-        ) : (
-          <button
-            onClick={() => handleAnalyze(activeMode)}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#2E2E2E] hover:bg-[#3E3E3E] disabled:opacity-40 disabled:cursor-not-allowed text-[#F5F5F5] text-sm font-medium transition-colors border border-[#3E3E3E]"
-          >
-            {isLoading ? (
-              <>
-                <span className="w-3 h-3 rounded-full border border-[#BFBFBF] border-t-transparent animate-spin" />
-                Analisando...
-              </>
-            ) : (
-              <>
-                {MODES.find((m) => m.id === activeMode)?.icon}
-                {MODES.find((m) => m.id === activeMode)?.label}
-                <ChevronRight size={14} />
-              </>
+            {activeMode !== "chat" && (
+              <div className="flex items-center gap-2 self-start rounded-2xl border border-[#2A2A2A] bg-[#141414] px-3 py-2 text-sm text-[#D2D2D2]">
+                <span style={{ color: activeModeMeta.color }}>
+                  {activeModeMeta.icon}
+                </span>
+                <span>{activeModeMeta.label}</span>
+                <button
+                  onClick={() => handleSelectMode("chat")}
+                  className="ml-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#303030] bg-[#181818] text-[#8F8F8F] transition-colors hover:text-[#F5F5F5]"
+                  title="Voltar ao chat"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             )}
-          </button>
-        )}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
+            {messages.length === 0 && !isLoading ? (
+              <EmptyState
+                activeMode={activeMode}
+                onSelectPrompt={setInput}
+              />
+            ) : (
+              <div className="space-y-4 pb-6">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 ${
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {msg.role === "ai" && (
+                      <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
+                        <NexoCubeLogo size={26} />
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-[90%] rounded-2xl px-4 py-3 md:max-w-[82%] ${
+                        msg.role === "user"
+                          ? "bg-[#2A2A2A] text-[#F5F5F5]"
+                          : "border border-[#242424] bg-[#141414] text-[#F5F5F5]"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-[#737373]">
+                        <span
+                          className="inline-flex h-2 w-2 rounded-full"
+                          style={{ backgroundColor: getModeColor(msg.mode) }}
+                        />
+                        {MODES.find((mode) => mode.id === msg.mode)?.shortLabel}
+                      </div>
+
+                      {msg.role === "ai" ? (
+                        <div className="prose prose-invert prose-sm max-w-none text-[#DADADA] leading-relaxed">
+                          <Streamdown>{msg.content}</Streamdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                      )}
+
+                      <p className="mt-3 text-[10px] font-mono text-[#5A5A5A]">
+                        {msg.timestamp.toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex justify-start gap-3 px-2 py-2 sm:px-4">
+                    <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
+                      <NexoAIResponseLoader size={30} visualScale={4.5} label="" />
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-[#222222] px-4 py-4 md:px-6">
+          <div className="mx-auto w-full max-w-5xl">
+            <Composer
+              activeMode={activeMode}
+              activeModeMeta={activeModeMeta}
+              input={input}
+              isLoading={isLoading}
+              modeMenuOpen={modeMenuOpen}
+              modeMenuRef={modeMenuRef}
+              onChangeInput={setInput}
+              onOpenModeMenu={() => setModeMenuOpen((open) => !open)}
+              onSelectMode={handleSelectMode}
+              onSubmit={handleSubmit}
+              simulateExtra={simulateExtra}
+              onChangeSimulateExtra={setSimulateExtra}
+            />
+          </div>
+        </div>
       </div>
-    </div>
     </PaywallGate>
   );
 }
 
-function WelcomeScreen({ activeMode, onStart }: { activeMode: AIMode; onStart: () => void }) {
-  const mode = MODES.find((m) => m.id === activeMode)!;
+function Composer({
+  activeMode,
+  activeModeMeta,
+  input,
+  isLoading,
+  modeMenuOpen,
+  modeMenuRef,
+  onChangeInput,
+  onOpenModeMenu,
+  onSelectMode,
+  onSubmit,
+  simulateExtra,
+  onChangeSimulateExtra,
+}: {
+  activeMode: AIMode;
+  activeModeMeta: ModeMeta;
+  input: string;
+  isLoading: boolean;
+  modeMenuOpen: boolean;
+  modeMenuRef: RefObject<HTMLFormElement | null>;
+  onChangeInput: (value: string) => void;
+  onOpenModeMenu: () => void;
+  onSelectMode: (mode: AIMode) => void;
+  onSubmit: (event: FormEvent) => void;
+  simulateExtra: number;
+  onChangeSimulateExtra: (value: number) => void;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 gap-6">
-      <NexoAILoader size={100} label="" />
-      <div className="text-center space-y-2">
-        <h2 className="text-lg font-semibold text-[#F5F5F5]">Nexo</h2>
-        <p className="text-sm text-[#4a4a4a] max-w-xs">{mode.description}</p>
+    <div className="space-y-3">
+      <form onSubmit={onSubmit} className="relative" ref={modeMenuRef}>
+        <div className="flex items-center gap-2 rounded-[28px] border border-[#262626] bg-[#121212] px-3 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.01)]">
+          <Sparkles size={16} className="ml-1 shrink-0 text-[#717171]" />
+          <input
+            type="text"
+            value={input}
+            onChange={(event) => onChangeInput(event.target.value)}
+            placeholder={
+              activeMode === "chat"
+                ? "O que você quer saber?"
+                : activeModeMeta.starter
+            }
+            className="flex-1 bg-transparent text-sm text-[#F5F5F5] outline-none placeholder:text-[#5C5C5C]"
+            disabled={isLoading}
+          />
+
+          <button
+            type="button"
+            onClick={onOpenModeMenu}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
+              modeMenuOpen || activeMode !== "chat"
+                ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
+                : "border-[#2A2A2A] bg-[#171717] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
+            }`}
+          >
+            {activeMode === "chat" ? (
+              <MessageSquare size={15} />
+            ) : (
+              <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
+            )}
+            <span className="hidden sm:inline">
+              {activeMode === "chat" ? "Chat Livre" : activeModeMeta.shortLabel}
+            </span>
+            <ChevronDown
+              size={15}
+              className={`transition-transform ${modeMenuOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          <button
+            type="submit"
+            disabled={isLoading || (activeMode === "chat" && !input.trim())}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F5F5F5] text-[#0D0D0D] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {isLoading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border border-[#0D0D0D] border-t-transparent" />
+            ) : (
+              <Send size={16} />
+            )}
+          </button>
+        </div>
+
+        {modeMenuOpen && (
+          <div className="absolute bottom-[calc(100%+10px)] right-0 z-30 w-[320px] rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
+            <div className="mb-1 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#767676]">
+              Ferramentas
+            </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => onSelectMode("chat")}
+                type="button"
+                className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
+                  activeMode === "chat" ? "bg-[#1F2745]" : "hover:bg-[#1C1C1C]"
+                }`}
+              >
+                <span className="mt-0.5 text-[#7BA8FF]">
+                  <MessageSquare size={16} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#F5F5F5]">Chat Livre</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#8A8A8A]">
+                    Conversa livre sobre o seu momento financeiro.
+                  </p>
+                </div>
+              </button>
+
+              {TOOL_ORDER.map((modeId) => {
+                const mode = MODES.find((entry) => entry.id === modeId)!;
+                const selected = activeMode === mode.id;
+
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => onSelectMode(mode.id)}
+                    type="button"
+                    className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
+                      selected ? "bg-[#1E1E1E]" : "hover:bg-[#1A1A1A]"
+                    }`}
+                  >
+                    <span className="mt-0.5" style={{ color: mode.color }}>
+                      {mode.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#F5F5F5]">
+                        {mode.label}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-[#808080]">
+                        {mode.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </form>
+
+      {activeMode === "simulate" && (
+        <div className="flex items-center gap-3 rounded-2xl border border-[#262626] bg-[#141414] px-4 py-3">
+          <TrendingUp size={14} className="shrink-0 text-[#53B087]" />
+          <span className="text-xs text-[#A0A0A0]">Renda extra simulada:</span>
+          <span className="text-xs text-[#707070]">R$</span>
+          <input
+            type="number"
+            value={simulateExtra}
+            onChange={(event) => onChangeSimulateExtra(Number(event.target.value))}
+            className="flex-1 bg-transparent text-sm font-mono text-[#F5F5F5] outline-none"
+            min={0}
+            step={100}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {activeModeMeta.suggestions.map((prompt) => (
+          <button
+            key={`${activeMode}-${prompt}`}
+            onClick={() => onChangeInput(prompt)}
+            type="button"
+            className="rounded-full border border-[#2A2A2A] bg-[#141414] px-3 py-1.5 text-xs text-[#9C9C9C] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
+          >
+            {prompt}
+          </button>
+        ))}
       </div>
-      <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
-        <FeatureCard icon={<Brain size={14} />} label="Análise em tempo real" />
-        <FeatureCard icon={<Shield size={14} />} label="Dados privados" />
-        <FeatureCard icon={<Zap size={14} />} label="Insights acionáveis" />
-        <FeatureCard icon={<Sparkles size={14} />} label="IA financeira" />
-      </div>
-      <button
-        onClick={onStart}
-        className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#2E2E2E] hover:bg-[#3E3E3E] text-[#F5F5F5] text-sm font-medium transition-colors border border-[#3E3E3E]"
-      >
-        {mode.icon}
-        Iniciar {mode.label}
-        <ChevronRight size={14} />
-      </button>
     </div>
   );
 }
 
-function FeatureCard({ icon, label }: { icon: React.ReactNode; label: string }) {
+function EmptyState({
+  activeMode,
+  onSelectPrompt,
+}: {
+  activeMode: AIMode;
+  onSelectPrompt: (prompt: string) => void;
+}) {
+  const activeModeMeta = MODES.find((mode) => mode.id === activeMode)!;
+
   return (
-    <div className="flex items-center gap-2 nexo-depth-2 border border-[#2E2E2E] rounded-lg px-3 py-2">
-      <span className="text-[#4a4a4a]">{icon}</span>
-      <span className="text-xs text-[#4a4a4a]">{label}</span>
+    <div className="flex h-full flex-col items-center justify-center py-10 text-center">
+      <div className="space-y-5">
+        <div className="mx-auto flex items-center justify-center">
+          <NexoCubeLogo size={92} />
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-3xl font-semibold tracking-tight text-[#F5F5F5]">
+            {activeMode === "chat" ? BRAND_AI_NAME : activeModeMeta.label}
+          </h3>
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8A8A8A] md:text-[15px]">
+            {activeMode === "chat"
+              ? "Comece pelo chat livre. Se quiser aprofundar, escolha uma ferramenta no seletor."
+              : activeModeMeta.description}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {activeModeMeta.suggestions.slice(0, 3).map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => onSelectPrompt(prompt)}
+              className="rounded-full border border-[#2A2A2A] bg-[#141414] px-4 py-2 text-sm text-[#BFBFBF] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+function getModeUserMessage(mode: AIMode, question?: string, extra?: number): string {
+  switch (mode) {
+    case "analysis":
+      return question || "Analise minha situação financeira e meu perfil comportamental deste mês.";
+    case "sabotage":
+      return question || "Detecte padrões de autossabotagem e gastos emocionais nos meus dados.";
+    case "risk":
+      return question || "Calcule meu índice de vulnerabilidade financeira e os riscos ocultos.";
+    case "predict":
+      return question || "Qual a probabilidade de eu ficar sem dinheiro este mês? Faça uma previsão.";
+    case "simulate":
+      return question || `Simule cenários considerando R$ ${extra ?? 500} de renda extra por mês.`;
+    case "impact":
+      return question || "Calcule o impacto real de cada gasto nas minhas metas e reservas.";
+    case "indicators":
+      return question || "Calcule meus indicadores de disciplina, risco, consistência e crescimento patrimonial.";
+    case "recommendations":
+      return question || "Crie um plano de ação personalizado com metas de curto e longo prazo.";
+    case "chat":
+    default:
+      return question ?? "";
+  }
+}
+
+function getModeColor(mode: AIMode) {
+  return MODES.find((entry) => entry.id === mode)?.color ?? "#BFBFBF";
 }

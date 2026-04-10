@@ -1,17 +1,20 @@
-// NEXO – Vault Architecture: Onboarding screen
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import { useFinanceStore } from '@/stores/useFinanceStore';
-import { formatMonthYear } from '@/lib/formatters';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { useFinanceStore } from "@/stores/useFinanceStore";
+import { formatMonthYear } from "@/lib/formatters";
+import { BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/branding";
 
 export function Onboarding() {
-  const { currentMonthId, setIncome, completeOnboarding, initMonth } = useFinanceStore();
-  const [inputValue, setInputValue] = useState('');
+  const { currentMonthId, setIncome, completeOnboarding, initMonth } =
+    useFinanceStore();
+  const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = () => {
-    const value = parseFloat(inputValue.replace(/[^\d.,]/g, '').replace(',', '.'));
+    const value = parseFloat(
+      inputValue.replace(/[^\d.,]/g, "").replace(",", ".")
+    );
     if (value > 0) {
       initMonth(currentMonthId);
       setIncome(value);
@@ -19,117 +22,102 @@ export function Onboarding() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmit();
-  };
-
-  const formatInputDisplay = (val: string) => {
-    const num = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.'));
-    if (isNaN(num) || val === '') return '';
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter") handleSubmit();
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-      {/* Background pattern */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
       <div
         className="absolute inset-0 opacity-30"
         style={{
-          backgroundImage: `url(https://d2xsxph8kpxj0f.cloudfront.net/310419663029060724/aggEn83aN4BBeDW87zXfDe/nexo-hero-bg-aaDiC7fGHnv6EPxEBN6wN9.webp)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundImage:
+            "url(https://d2xsxph8kpxj0f.cloudfront.net/310419663029060724/aggEn83aN4BBeDW87zXfDe/nexo-hero-bg-aaDiC7fGHnv6EPxEBN6wN9.webp)",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
         }}
       />
 
-      {/* Content */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 flex flex-col items-center text-center max-w-md px-6"
+        className="relative z-10 flex max-w-md flex-col items-center px-6 text-center"
       >
-        {/* Logo */}
         <motion.img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310419663029060724/aggEn83aN4BBeDW87zXfDe/nexo-logo_e6d80dd3.png"
-          alt="NEXO"
-          className="w-16 h-16 mb-8"
+          src={BRAND_LOGO_SRC}
+          alt={BRAND_NAME}
+          className="mb-6 h-24 w-24 object-contain"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         />
 
-        {/* Breadcrumb */}
-        <motion.div
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
           className="nexo-label mb-4 flex items-center gap-2"
         >
           <span>Início</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="capitalize">{formatMonthYear(currentMonthId)}</span>
-        </motion.div>
+          <span className="text-muted-foreground/40">•</span>
+          <span>{formatMonthYear(currentMonthId)}</span>
+        </motion.p>
 
-        {/* Title */}
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight mb-3"
+          className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl"
         >
-          Qual é sua receita?
+          Qual é a sua receita?
         </motion.h1>
 
-        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-sm text-muted-foreground mb-10 leading-relaxed max-w-xs"
+          className="mb-10 mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground"
         >
           Todo real recebe uma missão.
           <br />
           Informe sua receita para começar a distribuir.
         </motion.p>
 
-        {/* Input */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.4 }}
-          className="flex items-center gap-2 w-full max-w-sm"
+          className="flex w-full max-w-sm items-center gap-2"
         >
           <div
-            className={`flex-1 relative rounded-lg border transition-all duration-200 ${
+            className={`relative flex-1 rounded-lg border transition-all duration-200 ${
               isFocused
-                ? 'border-foreground/30 bg-card'
-                : 'border-border bg-card/50'
+                ? "border-foreground/30 bg-card"
+                : "border-border bg-card/50"
             }`}
           >
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono text-muted-foreground">
               R$
             </span>
             <input
               type="text"
               inputMode="decimal"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(event) => setInputValue(event.target.value)}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                setIsFocused(false);
-                // Keep the value as-is, just validate
-              }}
+              onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
               placeholder="0"
-              className="w-full bg-transparent pl-11 pr-4 py-4 text-lg font-mono text-foreground placeholder:text-muted-foreground/40 outline-none"
+              className="w-full bg-transparent px-4 py-4 pl-11 text-lg font-mono text-foreground outline-none placeholder:text-muted-foreground/40"
             />
           </div>
           <button
             onClick={handleSubmit}
-            disabled={!inputValue || parseFloat(inputValue.replace(',', '.')) <= 0}
-            className="h-[56px] w-[56px] rounded-lg bg-foreground text-background flex items-center justify-center transition-all duration-200 hover:bg-foreground/90 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+            disabled={!inputValue || parseFloat(inputValue.replace(",", ".")) <= 0}
+            className="flex h-[56px] w-[56px] items-center justify-center rounded-lg bg-foreground text-background transition-all duration-200 hover:bg-foreground/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="h-5 w-5" />
           </button>
         </motion.div>
       </motion.div>

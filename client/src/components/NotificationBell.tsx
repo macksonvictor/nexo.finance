@@ -1,60 +1,98 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, CheckCheck, AlertTriangle, Clock, Info } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, Bell, CheckCheck, Clock, Info, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
-type NotifType = 'meta_expiring' | 'meta_expired' | 'caixa_limit' | 'backup_ready' | 'system';
+type NotifType =
+  | "meta_expiring"
+  | "meta_expired"
+  | "caixa_limit"
+  | "backup_ready"
+  | "system";
 
 const NOTIF_ICONS: Record<NotifType, React.ReactNode> = {
-  meta_expiring: <Clock className="w-4 h-4 text-yellow-400" />,
-  meta_expired: <AlertTriangle className="w-4 h-4 text-red-400" />,
-  caixa_limit: <AlertTriangle className="w-4 h-4 text-orange-400" />,
-  backup_ready: <CheckCheck className="w-4 h-4 text-green-400" />,
-  system: <Info className="w-4 h-4 text-[#BFBFBF]" />,
+  meta_expiring: <Clock className="h-4 w-4 text-yellow-400" />,
+  meta_expired: <AlertTriangle className="h-4 w-4 text-red-400" />,
+  caixa_limit: <AlertTriangle className="h-4 w-4 text-orange-400" />,
+  backup_ready: <CheckCheck className="h-4 w-4 text-green-400" />,
+  system: <Info className="h-4 w-4 text-[#BFBFBF]" />,
 };
 
 const NOTIF_COLORS: Record<NotifType, string> = {
-  meta_expiring: 'border-l-yellow-400/60',
-  meta_expired: 'border-l-red-400/60',
-  caixa_limit: 'border-l-orange-400/60',
-  backup_ready: 'border-l-green-400/60',
-  system: 'border-l-[#BFBFBF]/30',
+  meta_expiring: "border-l-yellow-400/60",
+  meta_expired: "border-l-red-400/60",
+  caixa_limit: "border-l-orange-400/60",
+  backup_ready: "border-l-green-400/60",
+  system: "border-l-[#BFBFBF]/30",
 };
 
 function timeAgo(date: Date | string): string {
-  const d = new Date(date);
-  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return 'agora';
-  if (diff < 3600) return `${Math.floor(diff / 60)}min atrás`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
-  return `${Math.floor(diff / 86400)}d atrás`;
+  const parsedDate = new Date(date);
+  const diff = Math.floor((Date.now() - parsedDate.getTime()) / 1000);
+
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min atrás`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} h atrás`;
+  return `${Math.floor(diff / 86400)} d atrás`;
 }
 
-export function NotificationBell() {
+function normalizeNotificationCopy(title: string, message: string) {
+  const normalizedTitle = title.trim();
+  const normalizedMessage = message.trim();
+  const combinedCopy = `${normalizedTitle} ${normalizedMessage}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (
+    /chat no centro|chat livre|ferramentas quando fizer sentido|ferramentas da ia|ia em todo o app|abrir chat do nexo|abrir nexo ia/.test(
+      combinedCopy
+    )
+  ) {
+    return {
+      title: "Nexo IA atualizada",
+      message:
+        "O chat principal agora fica no centro, e as ferramentas aparecem quando você quiser aprofundar a análise.",
+    };
+  }
+
+  return {
+    title: normalizedTitle,
+    message: normalizedMessage,
+  };
+}
+
+interface NotificationBellProps {
+  align?: "left" | "right";
+}
+
+export function NotificationBell({ align = "left" }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const announcedUnreadRef = useRef<number | null>(null);
   const utils = trpc.useUtils();
 
   const { data: countData } = trpc.notifications.unreadCount.useQuery(undefined, {
-    refetchInterval: 30_000, // poll every 30s
+    refetchInterval: 30_000,
   });
+
   const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
     enabled: open,
   });
 
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: () => {
-      utils.notifications.unreadCount.invalidate();
-      utils.notifications.list.invalidate();
+      void utils.notifications.unreadCount.invalidate();
+      void utils.notifications.list.invalidate();
     },
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {
-      utils.notifications.unreadCount.invalidate();
-      utils.notifications.list.invalidate();
-      toast.success('Todas as notificações marcadas como lidas');
+      void utils.notifications.unreadCount.invalidate();
+      void utils.notifications.list.invalidate();
+      toast.success("Todas as notificações foram marcadas como lidas");
     },
   });
 
@@ -62,61 +100,79 @@ export function NotificationBell() {
     onSuccess: (data) => {
       const total = data.created.expiring.length + data.created.expired.length;
       if (total > 0) {
-        utils.notifications.unreadCount.invalidate();
-        utils.notifications.list.invalidate();
+        void utils.notifications.unreadCount.invalidate();
+        void utils.notifications.list.invalidate();
       }
     },
   });
 
-  // On mount, check metas for new notifications
   useEffect(() => {
     checkMetas.mutate();
   }, []);
 
-  // Show toast for unread notifications on mount
   useEffect(() => {
-    if (countData && countData.count > 0) {
-      toast.warning(`Você tem ${countData.count} notificação${countData.count > 1 ? 'ões' : ''} não lida${countData.count > 1 ? 's' : ''}`, {
-        description: 'Clique no sino para ver os detalhes.',
-        duration: 5000,
-      });
+    const unread = countData?.count ?? 0;
+
+    if (unread > 0 && announcedUnreadRef.current !== unread) {
+      announcedUnreadRef.current = unread;
+      toast.warning(
+        `${unread} notificação${unread > 1 ? "ões" : ""} pendente${unread > 1 ? "s" : ""}`,
+        {
+          description: "Abra o sino para ver os detalhes.",
+          duration: 5000,
+        }
+      );
+    }
+
+    if (unread === 0) {
+      announcedUnreadRef.current = 0;
     }
   }, [countData?.count]);
 
-  // Close panel when clicking outside
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
-    if (open) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
   const unread = countData?.count ?? 0;
 
+  const normalizedNotifications = useMemo(
+    () =>
+      notifications.map((notification) => ({
+        ...notification,
+        ...normalizeNotificationCopy(notification.title, notification.message),
+      })),
+    [notifications]
+  );
+
   return (
     <div className="relative" ref={panelRef}>
-      {/* Bell Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative flex items-center justify-center w-8 h-8 rounded-lg text-[#BFBFBF] hover:text-white hover:bg-[#2E2E2E] transition-all"
+        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-[#BFBFBF] transition-all hover:bg-[#2E2E2E] hover:text-white"
         title="Notificações"
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="h-4 w-4" />
         {unread > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
           >
-            {unread > 9 ? '9+' : unread}
+            {unread > 9 ? "9+" : unread}
           </motion.span>
         )}
       </button>
 
-      {/* Notifications Panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -124,16 +180,20 @@ export function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-10 w-80 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl shadow-2xl z-50 overflow-hidden"
+            style={{ width: "min(22rem, calc(100vw - 1rem))" }}
+            className={`absolute top-10 z-50 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] shadow-2xl ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#2E2E2E]">
+            <div className="flex items-center justify-between border-b border-[#2E2E2E] px-4 py-3">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-[#BFBFBF]" />
-                <span className="text-sm font-semibold text-[#F5F5F5]">Notificações</span>
+                <Bell className="h-4 w-4 text-[#BFBFBF]" />
+                <span className="text-sm font-semibold text-[#F5F5F5]">
+                  Notificações
+                </span>
                 {unread > 0 && (
-                  <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full font-medium">
-                    {unread} nova{unread > 1 ? 's' : ''}
+                  <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-xs font-medium text-red-400">
+                    {unread} nova{unread > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
@@ -141,60 +201,73 @@ export function NotificationBell() {
                 {unread > 0 && (
                   <button
                     onClick={() => markAllRead.mutate()}
-                    className="text-[#BFBFBF] hover:text-white text-xs px-2 py-1 rounded-md hover:bg-[#2E2E2E] transition-colors"
+                    className="rounded-md px-2 py-1 text-[#BFBFBF] transition-colors hover:bg-[#2E2E2E] hover:text-white"
                     title="Marcar todas como lidas"
                   >
-                    <CheckCheck className="w-3.5 h-3.5" />
+                    <CheckCheck className="h-3.5 w-3.5" />
                   </button>
                 )}
                 <button
                   onClick={() => setOpen(false)}
-                  className="text-[#BFBFBF] hover:text-white p-1 rounded-md hover:bg-[#2E2E2E] transition-colors"
+                  className="rounded-md p-1 text-[#BFBFBF] transition-colors hover:bg-[#2E2E2E] hover:text-white"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Notifications List */}
             <div className="max-h-80 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center" style={{paddingTop: '32px', width: '1000px'}}>
-                  <Bell className="w-8 h-8 text-[#2E2E2E] mb-3" />
-                  <p className="text-[#BFBFBF] text-sm">Nenhuma notificação</p>
-                  <p className="text-[#BFBFBF]/50 text-xs mt-1">Você está em dia com suas metas!</p>
+              {normalizedNotifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                  <Bell className="mb-3 h-8 w-8 text-[#2E2E2E]" />
+                  <p className="text-sm text-[#BFBFBF]">Nenhuma notificação</p>
+                  <p className="mt-1 text-xs text-[#BFBFBF]/50">
+                    Você está em dia com suas metas.
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#2E2E2E]">
-                  {notifications.map((notif) => (
+                  {normalizedNotifications.map((notification) => (
                     <motion.div
-                      key={notif.id}
+                      key={notification.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors border-l-2 ${
-                        NOTIF_COLORS[notif.type as NotifType]
-                      } ${notif.isRead ? 'opacity-50 hover:opacity-70' : 'hover:bg-[#2E2E2E]/50'}`}
+                      className={`flex cursor-pointer gap-3 border-l-2 px-4 py-3 transition-colors ${
+                        NOTIF_COLORS[notification.type as NotifType]
+                      } ${
+                        notification.isRead
+                          ? "opacity-50 hover:opacity-70"
+                          : "hover:bg-[#2E2E2E]/50"
+                      }`}
                       onClick={() => {
-                        if (!notif.isRead) markRead.mutate({ id: notif.id });
+                        if (!notification.isRead) {
+                          markRead.mutate({ id: notification.id });
+                        }
                       }}
                     >
                       <div className="mt-0.5 shrink-0">
-                        {NOTIF_ICONS[notif.type as NotifType]}
+                        {NOTIF_ICONS[notification.type as NotifType]}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1 pr-1">
                         <div className="flex items-start justify-between gap-2">
-                          <p className={`text-xs font-semibold leading-tight ${notif.isRead ? 'text-[#BFBFBF]' : 'text-[#F5F5F5]'}`}>
-                            {notif.title}
+                          <p
+                            className={`break-words text-xs font-semibold leading-tight whitespace-normal ${
+                              notification.isRead
+                                ? "text-[#BFBFBF]"
+                                : "text-[#F5F5F5]"
+                            }`}
+                          >
+                            {notification.title}
                           </p>
-                          {!notif.isRead && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-1" />
+                          {!notification.isRead && (
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
                           )}
                         </div>
-                        <p className="text-[#BFBFBF]/70 text-xs mt-0.5 leading-relaxed line-clamp-2">
-                          {notif.message}
+                        <p className="mt-0.5 break-words text-xs leading-relaxed whitespace-normal text-[#BFBFBF]/70">
+                          {notification.message}
                         </p>
-                        <p className="text-[#BFBFBF]/40 text-[10px] mt-1">
-                          {timeAgo(notif.createdAt)}
+                        <p className="mt-1 text-[10px] text-[#BFBFBF]/40">
+                          {timeAgo(notification.createdAt)}
                         </p>
                       </div>
                     </motion.div>
@@ -203,12 +276,11 @@ export function NotificationBell() {
               )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="px-4 py-2 border-t border-[#2E2E2E]">
+            {normalizedNotifications.length > 0 && (
+              <div className="border-t border-[#2E2E2E] px-4 py-2">
                 <button
                   onClick={() => checkMetas.mutate()}
-                  className="text-[#BFBFBF]/60 hover:text-[#BFBFBF] text-xs transition-colors"
+                  className="text-xs text-[#BFBFBF]/60 transition-colors hover:text-[#BFBFBF]"
                 >
                   Verificar metas agora
                 </button>

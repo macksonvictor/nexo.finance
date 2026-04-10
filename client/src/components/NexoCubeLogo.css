@@ -1,0 +1,58 @@
+.nexo-cube-logo,
+.nexo-cube-logo * {
+  box-sizing: border-box;
+}
+
+.nexo-cube-logo {
+  --cube-size: 32px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  perspective: calc(var(--cube-size) * 4.4);
+  filter: drop-shadow(0 0 calc(var(--cube-size) * 0.14) rgba(255, 255, 255, 0.15));
+}
+
+.nexo-cube-logo__cube {
+  position: relative;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.nexo-cube-logo__face {
+  position: absolute;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  background: rgba(10, 12, 16, 0.48);
+  border: max(1px, calc(var(--cube-size) * 0.04)) solid rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 0 calc(var(--cube-size) * 0.1) rgba(255, 255, 255, 0.08);
+}
+
+.nexo-cube-logo__face--front {
+  transform: translateZ(calc(var(--cube-size) / 2));
+}
+
+.nexo-cube-logo__face--back {
+  transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.nexo-cube-logo__face--left {
+  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.nexo-cube-logo__face--right {
+  transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.nexo-cube-logo__face--top {
+  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.nexo-cube-logo__face--bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2));
+}

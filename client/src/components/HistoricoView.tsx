@@ -1,9 +1,14 @@
-// NEXO – Vault Architecture: Historical data view
-import { motion } from 'framer-motion';
-import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
-import { useFinanceStore } from '@/stores/useFinanceStore';
-import { formatCurrency, formatMonthYear, getMonthOptions } from '@/lib/formatters';
-import { AnimatedNumber } from './AnimatedNumber';
+import { motion } from "framer-motion";
+import { Calendar, TrendingDown, TrendingUp } from "lucide-react";
+import { useFinanceStore } from "@/stores/useFinanceStore";
+import {
+  compareMonthIds,
+  formatCurrency,
+  formatDate,
+  formatMonthYear,
+  getCurrentCalendarMonthId,
+} from "@/lib/formatters";
+import { AnimatedNumber } from "./AnimatedNumber";
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -20,16 +25,29 @@ const fadeUp = {
 
 export function HistoricoView() {
   const store = useFinanceStore();
-  const months = getMonthOptions();
-  const allMonths = months.map((opt) => opt.value);
+  const currentCalendarMonthId = getCurrentCalendarMonthId();
 
-  // Get data for all months
-  const monthsData = allMonths
+  const monthsData = Object.keys(store.months)
+    .filter((monthId) => compareMonthIds(monthId, currentCalendarMonthId) <= 0)
+    .sort((a, b) => compareMonthIds(b, a))
     .map((monthId) => {
       const month = store.months[monthId];
       if (!month) return null;
-      const totalAllocated = month.caixas.reduce((s, c) => s + c.allocated, 0);
-      const totalSpent = month.caixas.reduce((s, c) => s + c.spent, 0);
+
+      const totalAllocated = month.caixas.reduce((sum, caixa) => sum + caixa.allocated, 0);
+      const totalSpent = month.caixas.reduce((sum, caixa) => sum + caixa.spent, 0);
+      const totalTransactions = month.caixas.reduce(
+        (sum, caixa) => sum + caixa.transactions.length,
+        0
+      );
+      const hasMeaningfulData =
+        month.income > 0 ||
+        month.caixas.length > 0 ||
+        month.metas.length > 0 ||
+        totalTransactions > 0;
+
+      if (!hasMeaningfulData) return null;
+
       return {
         id: monthId,
         label: formatMonthYear(monthId),
@@ -38,91 +56,125 @@ export function HistoricoView() {
         spent: totalSpent,
         caixasCount: month.caixas.length,
         metasCount: month.metas.length,
+        transactionsCount: totalTransactions,
+        createdAt: month.createdAt,
       };
     })
-    .filter((m): m is NonNullable<typeof m> => m !== null && m.income > 0);
+    .filter((month): month is NonNullable<typeof month> => month !== null);
 
-  const currentMonth = store.getCurrentMonth();
+  const currentMonth = store.months[currentCalendarMonthId] ?? store.getCurrentMonth();
+  const firstRecordedMonth = monthsData[monthsData.length - 1];
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      {/* Header */}
-      <motion.div variants={fadeUp} className="flex items-end justify-between">
+      <motion.div variants={fadeUp} className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="nexo-label mb-1">Análise</p>
           <h2 className="text-2xl font-semibold tracking-tight">Histórico</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            O histórico acompanha o calendário real. O mês atual registra o que
+            acontece daqui para frente, e os meses anteriores ficam preservados
+            para mostrar com clareza o que aconteceu em cada etapa.
+          </p>
         </div>
-        <div className="text-right">
-          <p className="nexo-label mb-1">Meses Registrados</p>
-          <p className="text-xl font-mono font-medium nexo-value">{monthsData.length}</p>
+        <div className="text-left lg:text-right">
+          <p className="nexo-label mb-1">Linha do tempo</p>
+          <p className="text-sm text-muted-foreground">
+            {firstRecordedMonth
+              ? `${firstRecordedMonth.label} até ${formatMonthYear(currentCalendarMonthId)}`
+              : formatMonthYear(currentCalendarMonthId)}
+          </p>
         </div>
       </motion.div>
 
-      {/* Summary Stats */}
-      <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {monthsData.length > 0 && (
           <>
             <StatCard
-              label="Receita Total"
-              value={monthsData.reduce((s, m) => s + (m?.income ?? 0), 0)}
-              icon={<TrendingUp className="w-4 h-4 text-[#2D5016]" />}
+              label="Receita total"
+              value={monthsData.reduce((sum, month) => sum + month.income, 0)}
+              icon={<TrendingUp className="h-4 w-4 text-[#2D5016]" />}
             />
             <StatCard
-              label="Total Alocado"
-              value={monthsData.reduce((s, m) => s + (m?.allocated ?? 0), 0)}
-              icon={<Calendar className="w-4 h-4" />}
+              label="Total alocado"
+              value={monthsData.reduce((sum, month) => sum + month.allocated, 0)}
+              icon={<Calendar className="h-4 w-4" />}
             />
             <StatCard
-              label="Total Gasto"
-              value={monthsData.reduce((s, m) => s + (m?.spent ?? 0), 0)}
-              icon={<TrendingDown className="w-4 h-4 text-[#8B2500]" />}
+              label="Total gasto"
+              value={monthsData.reduce((sum, month) => sum + month.spent, 0)}
+              icon={<TrendingDown className="h-4 w-4 text-[#8B2500]" />}
             />
             <StatCard
-              label="Média Mensal"
-              value={monthsData.reduce((s, m) => s + (m?.income ?? 0), 0) / monthsData.length}
-              icon={<Calendar className="w-4 h-4" />}
+              label="Média mensal"
+              value={monthsData.reduce((sum, month) => sum + month.income, 0) / monthsData.length}
+              icon={<Calendar className="h-4 w-4" />}
             />
           </>
         )}
       </motion.div>
 
-      {/* Monthly Breakdown */}
       <motion.div variants={fadeUp} className="space-y-2">
-        <p className="nexo-label mb-3">Evolução Mensal</p>
+        <div className="flex items-center justify-between">
+          <p className="nexo-label">Evolução mensal</p>
+          <p className="text-xs text-muted-foreground">
+            {monthsData.length} mês{monthsData.length === 1 ? "" : "es"} registrado
+            {monthsData.length === 1 ? "" : "s"}
+          </p>
+        </div>
+
         {monthsData.length === 0 ? (
-          <div className="nexo-depth-2 rounded-xl p-5 flex items-center justify-center py-8 text-muted-foreground">
-            <p className="text-sm">Nenhum histórico disponível ainda.</p>
+          <div className="nexo-depth-2 flex items-center justify-center rounded-xl px-5 py-10 text-center text-muted-foreground">
+            <p className="text-sm">
+              O histórico vai aparecer conforme você usar o app ao longo dos meses.
+            </p>
           </div>
         ) : (
           monthsData.map((month, index) => (
-            <MonthRow key={month.id} month={month} index={index} />
+            <MonthRow
+              key={month.id}
+              month={month}
+              index={index}
+              isCurrentMonth={month.id === currentCalendarMonthId}
+            />
           ))
         )}
       </motion.div>
 
-      {/* Current Month Detail */}
-      {currentMonth?.income && currentMonth.income > 0 && (
+      {currentMonth && (
         <motion.div variants={fadeUp} className="nexo-depth-2 rounded-xl p-5">
-          <p className="nexo-label mb-4">Detalhes do Mês Atual</p>
+          <p className="nexo-label mb-4">Mês atual até hoje</p>
           <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b border-border/50">
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              <span className="text-sm text-muted-foreground">Período</span>
+              <span className="text-sm text-foreground">
+                {formatMonthYear(currentCalendarMonthId)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              <span className="text-sm text-muted-foreground">Criado em</span>
+              <span className="text-sm text-foreground">
+                {formatDate(currentMonth.createdAt)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <span className="text-sm text-muted-foreground">Receita</span>
               <span className="font-mono font-medium nexo-value">
                 <AnimatedNumber value={currentMonth.income} formatter={formatCurrency} />
               </span>
             </div>
-            <div className="flex items-center justify-between pb-3 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">Caixas Criadas</span>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              <span className="text-sm text-muted-foreground">Caixas criadas</span>
               <span className="font-mono font-medium">{currentMonth.caixas.length}</span>
             </div>
-            <div className="flex items-center justify-between pb-3 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">Metas Criadas</span>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              <span className="text-sm text-muted-foreground">Metas criadas</span>
               <span className="font-mono font-medium">{currentMonth.metas.length}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Total de Transações</span>
+              <span className="text-sm text-muted-foreground">Transações</span>
               <span className="font-mono font-medium">
-                {currentMonth.caixas.reduce((s, c) => s + c.transactions.length, 0)}
+                {currentMonth.caixas.reduce((sum, caixa) => sum + caixa.transactions.length, 0)}
               </span>
             </div>
           </div>
@@ -143,7 +195,7 @@ function StatCard({
 }) {
   return (
     <div className="nexo-depth-2 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <span className="nexo-label">{label}</span>
         {icon}
       </div>
@@ -154,9 +206,26 @@ function StatCard({
   );
 }
 
-function MonthRow({ month, index }: { month: any; index: number }) {
+function MonthRow({
+  month,
+  index,
+  isCurrentMonth,
+}: {
+  month: {
+    id: string;
+    label: string;
+    income: number;
+    allocated: number;
+    spent: number;
+    caixasCount: number;
+    metasCount: number;
+    transactionsCount: number;
+    createdAt: string;
+  };
+  index: number;
+  isCurrentMonth: boolean;
+}) {
   const savings = month.allocated - month.spent;
-  const savingsPercentage = month.allocated > 0 ? (savings / month.allocated) * 100 : 0;
 
   return (
     <motion.div
@@ -165,11 +234,21 @@ function MonthRow({ month, index }: { month: any; index: number }) {
       transition={{ delay: index * 0.03 }}
       className="nexo-depth-2 rounded-xl p-5"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between gap-4">
         <div>
-          <h3 className="font-medium text-foreground">{month.label}</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            {month.caixasCount} caixa{month.caixasCount !== 1 ? 's' : ''} • {month.metasCount} meta{month.metasCount !== 1 ? 's' : ''}
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-foreground">{month.label}</h3>
+            {isCurrentMonth && (
+              <span className="rounded-full border border-[#2B2B2B] bg-[#161616] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#909090]">
+                Atual
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {month.caixasCount} caixa{month.caixasCount !== 1 ? "s" : ""} •{" "}
+            {month.metasCount} meta{month.metasCount !== 1 ? "s" : ""} •{" "}
+            {month.transactionsCount} transação
+            {month.transactionsCount !== 1 ? "ões" : ""}
           </p>
         </div>
         <div className="text-right">
@@ -180,30 +259,37 @@ function MonthRow({ month, index }: { month: any; index: number }) {
         </div>
       </div>
 
-      {/* Breakdown */}
-      <div className="grid grid-cols-3 gap-2 text-xs pt-3 border-t border-border/50">
+      <div className="grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-xs">
         <div>
-          <p className="text-muted-foreground mb-1">Alocado</p>
+          <p className="mb-1 text-muted-foreground">Alocado</p>
           <p className="font-mono font-medium">{formatCurrency(month.allocated)}</p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-1">Gasto</p>
+          <p className="mb-1 text-muted-foreground">Gasto</p>
           <p className="font-mono font-medium">{formatCurrency(month.spent)}</p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-1">Poupança</p>
-          <p className={`font-mono font-medium ${savings >= 0 ? 'text-[#2D5016]' : 'text-[#8B2500]'}`}>
+          <p className="mb-1 text-muted-foreground">Saldo</p>
+          <p
+            className={`font-mono font-medium ${
+              savings >= 0 ? "text-[#2D5016]" : "text-[#8B2500]"
+            }`}
+          >
             {formatCurrency(savings)}
           </p>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-3 h-1.5 bg-secondary rounded-full overflow-hidden">
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
         <motion.div
           className="h-full rounded-full bg-foreground"
           initial={{ width: 0 }}
-          animate={{ width: `${Math.min((month.spent / month.allocated) * 100, 100)}%` }}
+          animate={{
+            width: `${Math.min(
+              month.allocated > 0 ? (month.spent / month.allocated) * 100 : 0,
+              100
+            )}%`,
+          }}
           transition={{ duration: 0.5 }}
         />
       </div>

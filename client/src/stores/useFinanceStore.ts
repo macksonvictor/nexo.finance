@@ -4,10 +4,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import { format } from 'date-fns';
+import { compareMonthIds, getCurrentCalendarMonthId } from '@/lib/formatters';
 import type { FinanceState, MonthData, Caixa } from '@/types/finance';
 
-const getCurrentMonthId = () => format(new Date(), 'yyyy-MM');
+const getCurrentMonthId = () => getCurrentCalendarMonthId();
 
 const createEmptyMonth = (monthId: string, income = 0): MonthData => ({
   id: monthId,
@@ -16,6 +16,12 @@ const createEmptyMonth = (monthId: string, income = 0): MonthData => ({
   metas: [],
   createdAt: new Date().toISOString(),
 });
+
+const getMostRecentIncome = (months: Record<string, MonthData>, fallbackMonthId: string) => {
+  const orderedMonthIds = Object.keys(months).sort(compareMonthIds);
+  const latestMonthId = orderedMonthIds[orderedMonthIds.length - 1] ?? fallbackMonthId;
+  return months[latestMonthId]?.income ?? 0;
+};
 
 // Extend FinanceState with transfer action
 type FinanceStateExtended = FinanceState & {
@@ -117,13 +123,45 @@ export const useFinanceStore = create<FinanceStateExtended>()(
 
       setCurrentMonth: (monthId) => set({ currentMonthId: monthId }),
 
+      syncCurrentMonth: () =>
+        set((state) => {
+          const calendarMonthId = getCurrentMonthId();
+
+          if (
+            state.currentMonthId === calendarMonthId &&
+            state.months[calendarMonthId]
+          ) {
+            return state;
+          }
+
+          if (state.months[calendarMonthId]) {
+            return {
+              currentMonthId: calendarMonthId,
+            };
+          }
+
+          const carriedIncome = getMostRecentIncome(
+            state.months,
+            state.currentMonthId
+          );
+
+          return {
+            currentMonthId: calendarMonthId,
+            months: {
+              ...state.months,
+              [calendarMonthId]: createEmptyMonth(calendarMonthId, carriedIncome),
+            },
+          };
+        }),
+
       initMonth: (monthId) =>
         set((state) => {
           if (state.months[monthId]) return state;
+          const carriedIncome = getMostRecentIncome(state.months, state.currentMonthId);
           return {
             months: {
               ...state.months,
-              [monthId]: createEmptyMonth(monthId),
+              [monthId]: createEmptyMonth(monthId, carriedIncome),
             },
             currentMonthId: monthId,
           };

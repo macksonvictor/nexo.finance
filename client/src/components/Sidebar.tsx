@@ -1,5 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { formatMonthYear, getMonthOptions } from "@/lib/formatters";
+import {
+  compareMonthIds,
+  formatMonthYear,
+  getCurrentCalendarMonthId,
+} from "@/lib/formatters";
+import { BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/branding";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import type { ViewType } from "@/types/finance";
 import { motion } from "framer-motion";
@@ -10,7 +15,6 @@ import {
   Building2,
   ChevronDown,
   Clock,
-  Crown,
   Download,
   Edit2,
   LayoutDashboard,
@@ -19,9 +23,8 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { NotificationBell } from "./NotificationBell";
 
 interface SidebarProps {
   currentView: ViewType;
@@ -31,6 +34,8 @@ interface SidebarProps {
   user?: { name?: string | null; email?: string | null } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const NAV_ITEMS: {
@@ -45,7 +50,7 @@ const NAV_ITEMS: {
   { id: "metas", label: "Metas", icon: Target },
   { id: "historico", label: "Histórico", icon: Clock },
   { id: "relatorios", label: "Relatórios", icon: BarChart3 },
-  { id: "ia", label: "Nexo", icon: Sparkles, highlight: true },
+  { id: "ia", label: "Nexo IA", icon: Sparkles, highlight: true },
   {
     id: "indicadores",
     label: "Indicadores",
@@ -58,7 +63,6 @@ const NAV_ITEMS: {
     icon: Building2,
     premiumOnly: true,
   },
-  { id: "planos", label: "Planos", icon: Crown },
 ];
 
 export function Sidebar({
@@ -69,11 +73,27 @@ export function Sidebar({
   user,
   isPremium,
   isAdmin,
+  collapsed = false,
+  onToggleCollapse,
 }: SidebarProps) {
   const { logout } = useAuth();
-  const { currentMonthId, setCurrentMonth, initMonth } = useFinanceStore();
+  const { currentMonthId, months, setCurrentMonth, initMonth } = useFinanceStore();
   const [monthOpen, setMonthOpen] = useState(false);
-  const monthOptions = getMonthOptions();
+  const monthOptions = useMemo(() => {
+    const currentCalendarMonthId = getCurrentCalendarMonthId();
+    const visibleMonthIds = Array.from(
+      new Set(
+        Object.keys(months)
+          .filter((monthId) => compareMonthIds(monthId, currentCalendarMonthId) <= 0)
+          .concat(currentMonthId)
+      )
+    ).sort((a, b) => compareMonthIds(b, a));
+
+    return visibleMonthIds.map((value) => ({
+      value,
+      label: formatMonthYear(value),
+    }));
+  }, [currentMonthId, months]);
 
   const handleMonthChange = (monthId: string) => {
     initMonth(monthId);
@@ -81,61 +101,110 @@ export function Sidebar({
     setMonthOpen(false);
   };
 
+  const initials =
+    user?.name?.trim()?.charAt(0)?.toUpperCase() ??
+    user?.email?.trim()?.charAt(0)?.toUpperCase() ??
+    "U";
+
+  const monthLabel = collapsed
+    ? formatMonthYear(currentMonthId).slice(0, 3).toUpperCase()
+    : formatMonthYear(currentMonthId);
+
   return (
     <aside
-      className="w-[220px] h-screen flex flex-col fixed left-0 top-0 z-40"
+      className="flex h-full flex-col"
       style={{
-        background: "oklch(0.09 0 0)",
-        borderRight: "1px solid oklch(0.16 0 0)",
+        background: "oklch(0.08 0 0)",
+        borderRight: "1px solid oklch(0.15 0 0)",
         boxShadow:
-          "4px 0 24px oklch(0 0 0 / 0.5), 1px 0 0 oklch(0.18 0 0 / 0.3)",
+          "4px 0 24px oklch(0 0 0 / 0.5), 1px 0 0 oklch(0.18 0 0 / 0.24)",
       }}
     >
-      <div className="p-5 pb-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310419663029060724/aggEn83aN4BBeDW87zXfDe/nexo-logo_e6d80dd3.png"
-            alt="NEXO"
-            className="w-8 h-8"
-          />
-          <div className="flex-1">
-            <h1 className="text-[15px] font-semibold text-foreground tracking-tight">
-              NEXO
-            </h1>
-            <p className="text-[10px] nexo-label mt-0.5">
-              Gestão Financeira
-            </p>
+      <div
+        className={`border-b border-sidebar-border ${
+          collapsed ? "px-3 py-5" : "px-5 py-4"
+        }`}
+      >
+        {collapsed ? (
+          <div className="flex items-center justify-center">
+            <img
+              src={BRAND_LOGO_SRC}
+              alt={BRAND_NAME}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
           </div>
-          <NotificationBell />
-        </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <img
+              src={BRAND_LOGO_SRC}
+              alt={BRAND_NAME}
+              className="mt-0.5 h-12 w-12 shrink-0 object-contain"
+            />
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[18px] font-semibold tracking-tight text-foreground">
+                {BRAND_NAME}
+              </h1>
+            </div>
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[15px] font-semibold tracking-tight text-[#8A8A8A] transition-colors hover:bg-[#191919] hover:text-[#F5F5F5]"
+                title="Recolher barra lateral"
+                aria-label="Recolher barra lateral"
+              >
+                &lt;&lt;
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="px-3 py-3 border-b border-sidebar-border">
+      <div
+        className={`border-b border-sidebar-border ${
+          collapsed ? "px-2 py-3" : "px-3 py-3"
+        }`}
+      >
         <div className="relative">
           <button
-            onClick={() => setMonthOpen(!monthOpen)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-sidebar-foreground transition-all duration-200"
+            onClick={() => setMonthOpen((value) => !value)}
+            className={`flex w-full items-center rounded-xl text-sidebar-foreground transition-all duration-200 ${
+              collapsed
+                ? "justify-center px-2 py-2.5"
+                : "justify-between px-3 py-2.5"
+            }`}
             style={{
               background: "oklch(0.13 0 0)",
               boxShadow:
                 "0 1px 0 0 oklch(0.2 0 0) inset, 0 -1px 0 0 oklch(0.06 0 0) inset, 0 3px 8px oklch(0 0 0 / 0.4)",
             }}
+            title={formatMonthYear(currentMonthId)}
           >
-            <span className="capitalize text-[13px] font-medium">
-              {formatMonthYear(currentMonthId)}
-            </span>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                monthOpen ? "rotate-180" : ""
+            <span
+              className={`font-medium ${
+                collapsed
+                  ? "text-[10px] tracking-[0.22em]"
+                  : "text-[13px]"
               }`}
-            />
+            >
+              {monthLabel}
+            </span>
+            {!collapsed && (
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  monthOpen ? "rotate-180" : ""
+                }`}
+              />
+            )}
           </button>
+
           {monthOpen && (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="absolute top-full left-0 right-0 mt-1 rounded-xl z-50 max-h-[240px] overflow-y-auto"
+              className={`absolute top-full z-50 mt-1 max-h-[240px] overflow-y-auto rounded-xl ${
+                collapsed ? "left-[calc(100%+8px)] w-[180px]" : "left-0 right-0"
+              }`}
               style={{
                 background: "oklch(0.15 0 0)",
                 border: "1px solid oklch(0.22 0 0)",
@@ -147,9 +216,9 @@ export function Sidebar({
                 <button
                   key={opt.value}
                   onClick={() => handleMonthChange(opt.value)}
-                  className={`w-full text-left px-3 py-2 text-[13px] capitalize transition-colors ${
+                  className={`w-full px-3 py-2 text-left text-[13px] transition-colors ${
                     opt.value === currentMonthId
-                      ? "bg-accent text-accent-foreground font-medium"
+                      ? "bg-accent font-medium text-accent-foreground"
                       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                   }`}
                 >
@@ -161,21 +230,23 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav
+        className={`flex-1 space-y-1 overflow-y-auto ${
+          collapsed ? "px-2 py-4" : "px-3 py-4"
+        }`}
+      >
         {NAV_ITEMS.map((item) => {
           const isActive = currentView === item.id;
           const Icon = item.icon;
-          const showLock = item.premiumOnly && !isPremium && !isAdmin;
+          const locked = item.premiumOnly && !isPremium && !isAdmin;
 
           return (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
-                isActive
-                  ? "text-foreground"
-                  : "text-sidebar-foreground hover:text-foreground"
-              }`}
+              className={`group relative flex w-full items-center rounded-xl text-sm font-medium transition-all duration-200 ${
+                collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-3"
+              } ${isActive ? "text-foreground" : "text-sidebar-foreground hover:text-foreground"}`}
               style={
                 isActive
                   ? {
@@ -183,95 +254,140 @@ export function Sidebar({
                       boxShadow:
                         "0 1px 0 0 oklch(0.22 0 0) inset, 0 -1px 0 0 oklch(0.06 0 0) inset, 0 4px 12px oklch(0 0 0 / 0.45)",
                     }
-                  : {}
+                  : undefined
               }
+              title={item.label}
             >
               {isActive && (
                 <motion.div
                   layoutId="activeNav"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-foreground rounded-r-full"
+                  className={`absolute top-1/2 h-5 -translate-y-1/2 bg-foreground ${
+                    collapsed
+                      ? "left-1 rounded-full w-1.5"
+                      : "left-0 w-[3px] rounded-r-full"
+                  }`}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
               <Icon
-                className={`w-4 h-4 ${
+                className={`h-4 w-4 shrink-0 ${
                   item.highlight && !isActive ? "text-[#BFBFBF]" : ""
                 }`}
               />
-              <span
-                className={`flex-1 text-left ${
-                  item.highlight && !isActive ? "text-[#BFBFBF]" : ""
-                }`}
-              >
-                {item.label}
-              </span>
-              {item.highlight && (
-                <span className="text-[9px] font-bold bg-[#2E2E2E] text-[#BFBFBF] px-1.5 py-0.5 rounded-full border border-[#3E3E3E]">
-                  IA
-                </span>
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {item.highlight && (
+                    <span className="rounded-full border border-[#3E3E3E] bg-[#2E2E2E] px-1.5 py-0.5 text-[9px] font-bold text-[#BFBFBF]">
+                      IA
+                    </span>
+                  )}
+                </>
               )}
-              {showLock && <Crown className="w-3 h-3 text-yellow-500/60" />}
-              {item.id === "planos" && (isPremium || isAdmin) && (
-                <Crown className="w-3 h-3 text-yellow-400" />
+              {collapsed && locked && (
+                <Shield className="absolute bottom-1 right-1 h-3 w-3 text-[#8F8F8F]" />
               )}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-sidebar-border space-y-2">
-        {user && (
-          <div className="flex items-center gap-2 px-3 py-2 mb-1">
+      <div
+        className={`space-y-2 border-t border-sidebar-border ${
+          collapsed ? "px-2 py-3" : "p-3"
+        }`}
+      >
+        {onEditIncome && (
+          <button
+            onClick={onEditIncome}
+            className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground ${
+              collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+            }`}
+            title="Editar receita"
+          >
+            <Edit2 className="h-4 w-4" />
+            {!collapsed && <span className="nexo-label">Editar receita</span>}
+          </button>
+        )}
+
+        <button
+          onClick={onExport}
+          className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground ${
+            collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+          }`}
+          title="Exportar dados"
+        >
+          <Download className="h-4 w-4" />
+          {!collapsed && <span className="nexo-label">Exportar dados</span>}
+        </button>
+
+        {!collapsed && user && (
+          <div className="flex items-center gap-3 rounded-xl bg-[#121212] px-3 py-3">
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                 isAdmin
                   ? "bg-[#F5F5F5] text-[#0D0D0D]"
                   : "bg-[#2E2E2E] text-[#F5F5F5]"
               }`}
+              title={user.name || user.email || "Usuário"}
             >
-              {user.name?.charAt(0).toUpperCase() || "?"}
+              {initials}
             </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs text-muted-foreground truncate block font-medium">
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-medium text-muted-foreground">
                 {user.name || user.email || "Usuário"}
               </span>
               {isAdmin ? (
-                <span className="text-xs text-[#F5F5F5] flex items-center gap-0.5 font-semibold">
-                  <Shield className="w-2 h-2" /> Criador
+                <span className="flex items-center gap-1 text-xs font-semibold text-[#F5F5F5]">
+                  <Shield className="h-3 w-3" /> Criador
                 </span>
               ) : isPremium ? (
-                <span className="text-xs text-yellow-400 flex items-center gap-0.5">
-                  <Crown className="w-2 h-2" /> Premium
-                </span>
-              ) : null}
+                <span className="text-xs text-[#DABF74]">Plano ativo</span>
+              ) : (
+                <span className="text-xs text-[#6F6F6F]">Conta Free</span>
+              )}
             </div>
           </div>
         )}
-        {onEditIncome && (
+
+        {collapsed && onToggleCollapse && (
           <button
-            onClick={onEditIncome}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors nexo-label"
+            onClick={onToggleCollapse}
+            className="flex w-full items-center justify-center rounded-xl px-2 py-2 text-[15px] font-semibold tracking-tight text-[#A0A0A0] transition-colors hover:bg-[#141414] hover:text-[#F5F5F5]"
+            title="Expandir barra lateral"
+            aria-label="Expandir barra lateral"
           >
-            <Edit2 className="w-3.5 h-3.5" />
-            <span>Editar Receita</span>
+            &gt;&gt;
           </button>
         )}
-        <button
-          onClick={onExport}
-          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors nexo-label"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Exportar Dados</span>
-        </button>
+
+        {collapsed && user && (
+          <div className="flex items-center justify-center rounded-xl bg-[#121212] px-2 py-3">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
+                isAdmin
+                  ? "bg-[#F5F5F5] text-[#0D0D0D]"
+                  : "bg-[#2E2E2E] text-[#F5F5F5]"
+              }`}
+              title={user.name || user.email || "Usuário"}
+            >
+              {initials}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => {
             toast.success("Sessão encerrada com sucesso");
             void logout();
           }}
-          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-[#8B2500] hover:bg-sidebar-accent/50 transition-colors nexo-label"
+          className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-[#8B2500] ${
+            collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+          }`}
+          title="Sair"
         >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>Sair</span>
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="nexo-label">Sair</span>}
         </button>
       </div>
     </aside>
