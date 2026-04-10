@@ -5,6 +5,7 @@ import {
 } from "@clerk/react";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { isRailwayPreviewWithoutClerk } from "@/lib/runtime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type UseAuthOptions = {
@@ -15,6 +16,26 @@ type UseAuthOptions = {
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
+  const previewWithoutClerk = isRailwayPreviewWithoutClerk();
+
+  if (previewWithoutClerk) {
+    const previewUser = { name: "Modo preview", email: null };
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nexo-runtime-user-info", JSON.stringify(previewUser));
+    }
+
+    return {
+      user: previewUser,
+      loading: false,
+      error: null,
+      isAuthenticated: false,
+      isGuestPreview: true,
+      refresh: async () => null,
+      logout: async () => null,
+    };
+  }
+
   const { isLoaded, isSignedIn } = useClerkAuthState();
   const { signOut } = useClerk();
   const { user: clerkUser } = useClerkUser();
