@@ -15,6 +15,7 @@ interface MobileHeaderProps {
   user?: { name?: string | null; email?: string | null; avatar?: string | null } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  isPreviewMode?: boolean;
 }
 
 export function MobileHeader({
@@ -25,6 +26,7 @@ export function MobileHeader({
   user,
   isPremium,
   isAdmin,
+  isPreviewMode = false,
 }: MobileHeaderProps) {
   const [showProfile, setShowProfile] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -93,18 +95,20 @@ export function MobileHeader({
             </button>
           )}
 
-          <NotificationBell align="right" />
+          {!isPreviewMode && <NotificationBell align="right" />}
 
-          <button
-            onClick={handleAIClick}
-            className={`rounded-lg p-2 transition-colors hover:bg-[#1A1A1A] ${
-              currentView === "ia" ? "text-[#F5F5F5]" : "text-[#BFBFBF]"
-            }`}
-            aria-label={BRAND_AI_NAME}
-            title={BRAND_AI_NAME}
-          >
-            <Brain size={18} />
-          </button>
+          {!isPreviewMode && (
+            <button
+              onClick={handleAIClick}
+              className={`rounded-lg p-2 transition-colors hover:bg-[#1A1A1A] ${
+                currentView === "ia" ? "text-[#F5F5F5]" : "text-[#BFBFBF]"
+              }`}
+              aria-label={BRAND_AI_NAME}
+              title={BRAND_AI_NAME}
+            >
+              <Brain size={18} />
+            </button>
+          )}
 
           <div className="relative">
             <button
@@ -165,13 +169,15 @@ export function MobileHeader({
                       Ver planos
                     </button>
 
-                    <button
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-3 rounded-lg bg-[#2E2E2E] px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#3E3E3E]"
-                    >
-                      <LogOut size={18} />
-                      Sair
-                    </button>
+                    {!isPreviewMode && (
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 rounded-lg bg-[#2E2E2E] px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#3E3E3E]"
+                      >
+                        <LogOut size={18} />
+                        Sair
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}

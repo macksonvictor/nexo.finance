@@ -5,7 +5,7 @@ import {
 } from "@clerk/react";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -19,9 +19,14 @@ export function useAuth(options?: UseAuthOptions) {
   const { signOut } = useClerk();
   const { user: clerkUser } = useClerkUser();
   const utils = trpc.useUtils();
+  const [guestPreviewEnabled, setGuestPreviewEnabled] = useState(false);
+
+  const isRailwayPreviewHost =
+    typeof window !== "undefined" &&
+    /\.up\.railway\.app$/i.test(window.location.hostname);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: isLoaded && isSignedIn,
+    enabled: isLoaded && isSignedIn && !guestPreviewEnabled,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -49,31 +54,69 @@ export function useAuth(options?: UseAuthOptions) {
     };
   }, [clerkUser]);
 
+  useEffect(() => {
+    if (!isRailwayPreviewHost) return;
+    if (isLoaded) {
+      setGuestPreviewEnabled(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setGuestPreviewEnabled(true);
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoaded, isRailwayPreviewHost]);
+
   const state = useMemo(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         "nexo-runtime-user-info",
-        JSON.stringify(meQuery.data ?? fallbackUser)
+        JSON.stringify(
+          guestPreviewEnabled
+            ? { name: "Modo preview", email: null }
+            : meQuery.data ?? fallbackUser
+        )
       );
     }
 
     return {
-      user: meQuery.data ?? fallbackUser,
-      loading: !isLoaded || (Boolean(isSignedIn) && meQuery.isLoading),
+      user: guestPreviewEnabled
+        ? { name: "Modo preview", email: null }
+        : meQuery.data ?? fallbackUser,
+      loading: guestPreviewEnabled
+        ? false
+        : !isLoaded || (Boolean(isSignedIn) && meQuery.isLoading),
       error: meQuery.error ?? null,
-      isAuthenticated: Boolean(isSignedIn),
+      isAuthenticated: guestPreviewEnabled ? false : Boolean(isSignedIn),
+      isGuestPreview: guestPreviewEnabled,
     };
-  }, [fallbackUser, isLoaded, isSignedIn, meQuery.data, meQuery.error, meQuery.isLoading]);
+  }, [
+    fallbackUser,
+    guestPreviewEnabled,
+    isLoaded,
+    isSignedIn,
+    meQuery.data,
+    meQuery.error,
+    meQuery.isLoading,
+  ]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
+    if (guestPreviewEnabled) return;
     if (!isLoaded) return;
     if (isSignedIn) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
     window.location.href = redirectPath;
-  }, [redirectOnUnauthenticated, redirectPath, isLoaded, isSignedIn]);
+  }, [
+    guestPreviewEnabled,
+    redirectOnUnauthenticated,
+    redirectPath,
+    isLoaded,
+    isSignedIn,
+  ]);
 
   return {
     ...state,

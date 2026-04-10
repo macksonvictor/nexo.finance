@@ -359,8 +359,8 @@ export function NexoAIView({
                     }`}
                   >
                     {msg.role === "ai" && (
-                      <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
-                        <NexoCubeLogo size={26} />
+                      <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center">
+                        <NexoCubeLogo size={44} />
                       </div>
                     )}
 
@@ -399,8 +399,8 @@ export function NexoAIView({
 
                 {isLoading && (
                   <div className="flex justify-start gap-3 px-2 py-2 sm:px-4">
-                    <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
-                      <NexoAIResponseLoader size={30} visualScale={4.5} label="" />
+                    <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center">
+                      <NexoAIResponseLoader size={44} visualScale={1} label="" />
                     </div>
                   </div>
                 )}

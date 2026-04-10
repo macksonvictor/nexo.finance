@@ -34,6 +34,7 @@ interface SidebarProps {
   user?: { name?: string | null; email?: string | null } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  isPreviewMode?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -73,18 +74,23 @@ export function Sidebar({
   user,
   isPremium,
   isAdmin,
+  isPreviewMode = false,
   collapsed = false,
   onToggleCollapse,
 }: SidebarProps) {
   const { logout } = useAuth();
-  const { currentMonthId, months, setCurrentMonth, initMonth } = useFinanceStore();
+  const { currentMonthId, months, setCurrentMonth, initMonth } =
+    useFinanceStore();
   const [monthOpen, setMonthOpen] = useState(false);
+
   const monthOptions = useMemo(() => {
     const currentCalendarMonthId = getCurrentCalendarMonthId();
     const visibleMonthIds = Array.from(
       new Set(
         Object.keys(months)
-          .filter((monthId) => compareMonthIds(monthId, currentCalendarMonthId) <= 0)
+          .filter(
+            (monthId) => compareMonthIds(monthId, currentCalendarMonthId) <= 0
+          )
           .concat(currentMonthId)
       )
     ).sort((a, b) => compareMonthIds(b, a));
@@ -181,9 +187,7 @@ export function Sidebar({
           >
             <span
               className={`font-medium ${
-                collapsed
-                  ? "text-[10px] tracking-[0.22em]"
-                  : "text-[13px]"
+                collapsed ? "text-[10px] tracking-[0.22em]" : "text-[13px]"
               }`}
             >
               {monthLabel}
@@ -236,6 +240,10 @@ export function Sidebar({
         }`}
       >
         {NAV_ITEMS.map((item) => {
+          if (isPreviewMode && item.premiumOnly) {
+            return null;
+          }
+
           const isActive = currentView === item.id;
           const Icon = item.icon;
           const locked = item.premiumOnly && !isPremium && !isAdmin;
@@ -246,7 +254,11 @@ export function Sidebar({
               onClick={() => onViewChange(item.id)}
               className={`group relative flex w-full items-center rounded-xl text-sm font-medium transition-all duration-200 ${
                 collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-3"
-              } ${isActive ? "text-foreground" : "text-sidebar-foreground hover:text-foreground"}`}
+              } ${
+                isActive
+                  ? "text-foreground"
+                  : "text-sidebar-foreground hover:text-foreground"
+              }`}
               style={
                 isActive
                   ? {
@@ -263,7 +275,7 @@ export function Sidebar({
                   layoutId="activeNav"
                   className={`absolute top-1/2 h-5 -translate-y-1/2 bg-foreground ${
                     collapsed
-                      ? "left-1 rounded-full w-1.5"
+                      ? "left-1 w-1.5 rounded-full"
                       : "left-0 w-[3px] rounded-r-full"
                   }`}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -341,6 +353,8 @@ export function Sidebar({
                 <span className="flex items-center gap-1 text-xs font-semibold text-[#F5F5F5]">
                   <Shield className="h-3 w-3" /> Criador
                 </span>
+              ) : isPreviewMode ? (
+                <span className="text-xs text-[#8E8E8E]">Modo preview</span>
               ) : isPremium ? (
                 <span className="text-xs text-[#DABF74]">Plano ativo</span>
               ) : (
@@ -376,19 +390,21 @@ export function Sidebar({
           </div>
         )}
 
-        <button
-          onClick={() => {
-            toast.success("Sessão encerrada com sucesso");
-            void logout();
-          }}
-          className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-[#8B2500] ${
-            collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
-          }`}
-          title="Sair"
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span className="nexo-label">Sair</span>}
-        </button>
+        {!isPreviewMode && (
+          <button
+            onClick={() => {
+              toast.success("Sessão encerrada com sucesso");
+              void logout();
+            }}
+            className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-[#8B2500] ${
+              collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+            }`}
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span className="nexo-label">Sair</span>}
+          </button>
+        )}
       </div>
     </aside>
   );

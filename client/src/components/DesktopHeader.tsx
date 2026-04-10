@@ -16,6 +16,7 @@ interface DesktopHeaderProps {
   } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  isPreviewMode?: boolean;
 }
 
 const VIEW_META: Record<ViewType, { title: string; subtitle: string }> = {
@@ -63,6 +64,7 @@ export function DesktopHeader({
   user,
   isPremium,
   isAdmin,
+  isPreviewMode = false,
 }: DesktopHeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -102,17 +104,19 @@ export function DesktopHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => onViewChange("ia")}
-          className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
-            currentView === "ia"
-              ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
-              : "border-[#2A2A2A] bg-[#141414] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
-          }`}
-        >
-          <Brain size={16} />
-          <span>{BRAND_AI_NAME}</span>
-        </button>
+        {!isPreviewMode && (
+          <button
+            onClick={() => onViewChange("ia")}
+            className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+              currentView === "ia"
+                ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
+                : "border-[#2A2A2A] bg-[#141414] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
+            }`}
+          >
+            <Brain size={16} />
+            <span>{BRAND_AI_NAME}</span>
+          </button>
+        )}
 
         <button
           onClick={() => onViewChange("planos")}
@@ -126,7 +130,7 @@ export function DesktopHeader({
           <span>{isPremium || isAdmin ? "Plano ativo" : "Upgrade"}</span>
         </button>
 
-        <NotificationBell align="right" />
+        {!isPreviewMode && <NotificationBell align="right" />}
 
         <div className="relative" ref={profileRef}>
           <button

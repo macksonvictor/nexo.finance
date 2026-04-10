@@ -180,7 +180,7 @@ export function NotificationBell({ align = "left" }: NotificationBellProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            style={{ width: "min(22rem, calc(100vw - 1rem))" }}
+            style={{ width: "22rem", maxWidth: "calc(100vw - 1rem)" }}
             className={`absolute top-10 z-50 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] shadow-2xl ${
               align === "right" ? "right-0" : "left-0"
             }`}
