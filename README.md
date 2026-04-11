@@ -1,3 +1,5 @@
+![NEXO Finance](./docs/readme-hero.svg)
+
 # NEXO - Sistema de Gestao Financeira Pessoal
 
 [![CI](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml/badge.svg?branch=stable)](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml)
@@ -131,6 +133,16 @@ Direcao visual inspirada em `Vault Architecture`, Swiss Design e interfaces de a
 ---
 
 ## Como Comecar
+
+Guia rapido:
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+Depois, acesse `http://localhost:3000`.
 
 ### Instalacao
 
