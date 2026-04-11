@@ -198,6 +198,9 @@ export function NexoAIView({
 }: {
   onNavigate?: (view: string) => void;
 }) {
+  const AI_AVATAR_SIZE = 26;
+  const AI_LOADING_SIZE = 30;
+  const AI_LOADING_SCALE = 4.5;
   const { currentMonthId: selectedMonth } = useFinanceStore();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [activeMode, setActiveMode] = useState<AIMode>("chat");
@@ -359,8 +362,8 @@ export function NexoAIView({
                     }`}
                   >
                     {msg.role === "ai" && (
-                      <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center">
-                        <NexoCubeLogo size={44} />
+                      <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
+                        <NexoCubeLogo size={AI_AVATAR_SIZE} />
                       </div>
                     )}
 
@@ -399,8 +402,12 @@ export function NexoAIView({
 
                 {isLoading && (
                   <div className="flex justify-start gap-3 px-2 py-2 sm:px-4">
-                    <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center">
-                      <NexoAIResponseLoader size={44} visualScale={1} label="" />
+                    <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
+                      <NexoAIResponseLoader
+                        size={AI_LOADING_SIZE}
+                        visualScale={AI_LOADING_SCALE}
+                        label=""
+                      />
                     </div>
                   </div>
                 )}
