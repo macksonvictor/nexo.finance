@@ -425,7 +425,7 @@ NEXO Finance e um projeto autoral de **Mackson Gaspar**.
 Apresentacao recomendada da marca:
 
 ```txt
-Criado por Mackson Gaspar
+Criado por Mackson Gaspar e Bruno Souto
 Um projeto autoral Tesserakt
 ```
 
