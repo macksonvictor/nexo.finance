@@ -1,5 +1,9 @@
 ![NEXO Finance](./docs/readme-hero.svg)
 
+<p align="center">
+  <img src="./docs/nexofinance.png" alt="NEXO Logo" width="220" />
+</p>
+
 # NEXO - Sistema de Gestao Financeira Pessoal
 
 [![CI](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml/badge.svg?branch=stable)](https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml)
