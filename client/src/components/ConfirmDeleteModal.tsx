@@ -10,6 +10,8 @@ interface ConfirmDeleteModalProps {
   caixaName: string;
   caixaAllocated: number;
   isLoading?: boolean;
+  entityLabel?: string;
+  valueLabel?: string;
 }
 
 export function ConfirmDeleteModal({
@@ -19,6 +21,8 @@ export function ConfirmDeleteModal({
   caixaName,
   caixaAllocated,
   isLoading = false,
+  entityLabel = "Caixa",
+  valueLabel = "Valor planejado",
 }: ConfirmDeleteModalProps) {
   return (
     <AnimatePresence>
@@ -43,11 +47,11 @@ export function ConfirmDeleteModal({
             <div className="nexo-depth-4 rounded-2xl p-6">
               {/* Header with Icon */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-[#8B2500]/10">
                     <AlertTriangle className="w-5 h-5 text-[#8B2500]" />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground">Deletar Caixa?</h2>
+                  <h2 className="text-lg font-semibold text-foreground">Excluir {entityLabel}?</h2>
                 </div>
                 <button
                   onClick={onCancel}
@@ -63,13 +67,13 @@ export function ConfirmDeleteModal({
                 {/* Warning Message */}
                 <div className="bg-[#8B2500]/10 border border-[#8B2500]/30 rounded-lg p-4">
                   <p className="text-sm text-[#8B2500] font-medium">
-                    Esta ação não pode ser desfeita. Todos os dados da caixa serão perdidos permanentemente.
+                    Esta ação não pode ser desfeita. Os dados ligados a este item serão removidos permanentemente.
                   </p>
                 </div>
 
                 {/* Caixa Details */}
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Caixa a ser deletada:</p>
+                  <p className="text-xs text-muted-foreground">Item selecionado</p>
                   <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-foreground">{caixaName}</span>
@@ -77,6 +81,7 @@ export function ConfirmDeleteModal({
                         {formatCurrency(caixaAllocated)}
                       </span>
                     </div>
+                    <p className="text-[11px] text-muted-foreground">{valueLabel}</p>
                   </div>
                 </div>
 
@@ -97,10 +102,10 @@ export function ConfirmDeleteModal({
                     {isLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Deletando...</span>
+                        <span>Excluindo...</span>
                       </>
                     ) : (
-                      'Deletar Permanentemente'
+                      'Excluir permanentemente'
                     )}
                   </button>
                 </div>

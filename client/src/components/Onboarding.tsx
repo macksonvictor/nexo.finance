@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import { formatMonthYear } from "@/lib/formatters";
-import { BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/branding";
+import { BRAND_NAME } from "@/lib/branding";
+import { BrandLogo } from "./BrandLogo";
 
 export function Onboarding() {
   const { currentMonthId, setIncome, completeOnboarding, initMonth } =
@@ -44,14 +45,14 @@ export function Onboarding() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 flex max-w-md flex-col items-center px-6 text-center"
       >
-        <motion.img
-          src={BRAND_LOGO_SRC}
-          alt={BRAND_NAME}
-          className="mb-6 h-24 w-24 object-contain"
+        <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-        />
+          className="mb-6"
+        >
+          <BrandLogo alt={BRAND_NAME} className="h-24 w-24" />
+        </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}

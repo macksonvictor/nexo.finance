@@ -3,42 +3,64 @@
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { MonthData } from '@/types/finance';
+import { CATEGORY_LABELS, type MonthData, type Transaction } from '@/types/finance';
 import { formatCurrency, formatMonthYear, formatDate } from './formatters';
+
+function getTransactionTypeLabel(type: Transaction['type']) {
+  if (type === 'expense') return 'Despesa';
+  if (type === 'income') return 'Receita';
+  return 'Transferência';
+}
 
 export function exportToCSV(month: MonthData): void {
   const lines: string[] = [];
   const monthLabel = formatMonthYear(month.id);
+  const totalAllocated = month.caixas.reduce((sum, caixa) => sum + caixa.allocated, 0);
+  const totalSpent = month.caixas.reduce((sum, caixa) => sum + caixa.spent, 0);
+  const allTransactions = month.caixas.flatMap((c) =>
+    c.transactions.map((t) => ({
+      ...t,
+      caixaName: c.name,
+    }))
+  );
 
   // Header
-  lines.push('NEXO - Relatório Financeiro');
-  lines.push(`Mês: ${monthLabel}`);
-  lines.push(`Receita: ${formatCurrency(month.income)}`);
+  lines.push('Nexo Finance - Relatório do período selecionado');
+  lines.push(`Período: ${monthLabel}`);
+  lines.push(`Receita do período: ${formatCurrency(month.income)}`);
+  lines.push(`Planejado nas caixas: ${formatCurrency(totalAllocated)}`);
+  lines.push(`Registrado: ${formatCurrency(totalSpent)}`);
+  lines.push(`Saldo para distribuir: ${formatCurrency(month.income - totalAllocated)}`);
   lines.push('');
 
   // Caixas summary
-  lines.push('Caixa,Alocado,Gasto,Saldo,Categoria');
+  lines.push('Distribuição das caixas');
+  lines.push('Caixa,Planejado,Registrado,Disponível,Categoria');
   month.caixas.forEach((c) => {
     lines.push(
-      `"${c.name}",${c.allocated.toFixed(2)},${c.spent.toFixed(2)},${(c.allocated - c.spent).toFixed(2)},"${c.category}"`
+      `"${c.name}",${c.allocated.toFixed(2)},${c.spent.toFixed(2)},${(c.allocated - c.spent).toFixed(2)},"${CATEGORY_LABELS[c.category]}"`
     );
   });
   lines.push('');
 
   // Transactions
+  lines.push('Movimentações do período');
   lines.push('Data,Caixa,Descrição,Valor,Tipo');
-  month.caixas.forEach((c) => {
-    c.transactions.forEach((t) => {
+  if (allTransactions.length === 0) {
+    lines.push('"Sem movimentações registradas neste período.",,,,');
+  } else {
+    allTransactions.forEach((t) => {
       lines.push(
-        `${formatDate(t.date)},"${c.name}","${t.description}",${t.amount.toFixed(2)},"${t.type}"`
+        `${formatDate(t.date)},"${t.caixaName}","${t.description}",${t.amount.toFixed(2)},"${getTransactionTypeLabel(t.type)}"`
       );
     });
-  });
+  }
 
   // Metas
   if (month.metas.length > 0) {
     lines.push('');
-    lines.push('Meta,Valor Alvo,Valor Atual,Progresso');
+    lines.push('Metas do período');
+    lines.push('Meta,Valor-alvo,Acumulado,Progresso');
     month.metas.forEach((m) => {
       const progress = m.targetAmount > 0 ? ((m.currentAmount / m.targetAmount) * 100).toFixed(1) : '0';
       lines.push(
@@ -65,10 +87,10 @@ export function exportToPDF(month: MonthData): void {
   // Header
   doc.setFontSize(20);
   doc.setTextColor(13, 13, 13);
-  doc.text('NEXO', 20, 25);
+  doc.text('Nexo Finance', 20, 25);
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text('Sistema de Gestão Financeira Pessoal', 20, 32);
+  doc.text('Relatório do período selecionado', 20, 32);
 
   // Month info
   doc.setFontSize(14);
@@ -78,25 +100,25 @@ export function exportToPDF(month: MonthData): void {
   // Summary
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
-  doc.text(`Receita: ${formatCurrency(month.income)}`, 20, 55);
-  doc.text(`Total Alocado: ${formatCurrency(totalAllocated)}`, 20, 62);
-  doc.text(`Total Gasto: ${formatCurrency(totalSpent)}`, 20, 69);
-  doc.text(`Saldo Restante: ${formatCurrency(month.income - totalAllocated)}`, 20, 76);
+  doc.text(`Receita do período: ${formatCurrency(month.income)}`, 20, 55);
+  doc.text(`Planejado nas caixas: ${formatCurrency(totalAllocated)}`, 20, 62);
+  doc.text(`Registrado: ${formatCurrency(totalSpent)}`, 20, 69);
+  doc.text(`Saldo para distribuir: ${formatCurrency(month.income - totalAllocated)}`, 20, 76);
 
   // Caixas table
   doc.setFontSize(12);
   doc.setTextColor(13, 13, 13);
-  doc.text('Distribuição por Caixas', 20, 90);
+  doc.text('Distribuição das caixas', 20, 90);
 
   autoTable(doc, {
     startY: 95,
-    head: [['Caixa', 'Alocado', 'Gasto', 'Saldo', 'Categoria']],
+    head: [['Caixa', 'Planejado', 'Registrado', 'Disponível', 'Categoria']],
     body: month.caixas.map((c) => [
       c.name,
       formatCurrency(c.allocated),
       formatCurrency(c.spent),
       formatCurrency(c.allocated - c.spent),
-      c.category.charAt(0).toUpperCase() + c.category.slice(1),
+      CATEGORY_LABELS[c.category],
     ]),
     theme: 'grid',
     headStyles: { fillColor: [13, 13, 13], textColor: [245, 245, 245] },
@@ -114,7 +136,7 @@ export function exportToPDF(month: MonthData): void {
   if (allTransactions.length > 0) {
     const finalY = (doc as any).lastAutoTable?.finalY || 120;
     doc.setFontSize(12);
-    doc.text('Transações', 20, finalY + 15);
+    doc.text('Movimentações do período', 20, finalY + 15);
 
     autoTable(doc, {
       startY: finalY + 20,
@@ -124,23 +146,30 @@ export function exportToPDF(month: MonthData): void {
         t.caixaName,
         t.description,
         formatCurrency(t.amount),
-        t.type === 'expense' ? 'Despesa' : t.type === 'income' ? 'Receita' : 'Transferência',
+        getTransactionTypeLabel(t.type),
       ]),
       theme: 'grid',
       headStyles: { fillColor: [13, 13, 13], textColor: [245, 245, 245] },
       styles: { fontSize: 8 },
     });
+  } else {
+    const finalY = (doc as any).lastAutoTable?.finalY || 120;
+    doc.setFontSize(12);
+    doc.text('Movimentações do período', 20, finalY + 15);
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Sem movimentações registradas neste período.', 20, finalY + 23);
   }
 
   // Metas
   if (month.metas.length > 0) {
     doc.addPage();
     doc.setFontSize(12);
-    doc.text('Metas Financeiras', 20, 25);
+    doc.text('Metas do período', 20, 25);
 
     autoTable(doc, {
       startY: 30,
-      head: [['Meta', 'Valor Alvo', 'Valor Atual', 'Progresso', 'Prazo']],
+      head: [['Meta', 'Valor-alvo', 'Acumulado', 'Progresso', 'Prazo']],
       body: month.metas.map((m) => [
         m.name,
         formatCurrency(m.targetAmount),
@@ -160,7 +189,7 @@ export function exportToPDF(month: MonthData): void {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(`NEXO – Página ${i} de ${pageCount}`, 20, 285);
+    doc.text(`Nexo Finance – Página ${i} de ${pageCount}`, 20, 285);
     doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 150, 285);
   }
 

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Calendar, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import {
   compareMonthIds,
@@ -23,7 +23,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-export function HistoricoView() {
+export function HistoricoView({ onAskAI }: { onAskAI?: () => void }) {
   const store = useFinanceStore();
   const currentCalendarMonthId = getCurrentCalendarMonthId();
 
@@ -64,6 +64,9 @@ export function HistoricoView() {
 
   const currentMonth = store.months[currentCalendarMonthId] ?? store.getCurrentMonth();
   const firstRecordedMonth = monthsData[monthsData.length - 1];
+  const totalIncome = monthsData.reduce((sum, month) => sum + month.income, 0);
+  const totalAllocated = monthsData.reduce((sum, month) => sum + month.allocated, 0);
+  const totalSpent = monthsData.reduce((sum, month) => sum + month.spent, 0);
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -84,6 +87,20 @@ export function HistoricoView() {
               ? `${firstRecordedMonth.label} até ${formatMonthYear(currentCalendarMonthId)}`
               : formatMonthYear(currentCalendarMonthId)}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {monthsData.length > 0
+              ? "Meses anteriores permanecem fechados como histórico consolidado."
+              : "O histórico será preenchido conforme os meses forem registrados."}
+          </p>
+          {onAskAI && (
+            <button
+              onClick={onAskAI}
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Perguntar à IA
+            </button>
+          )}
         </div>
       </motion.div>
 
@@ -92,22 +109,22 @@ export function HistoricoView() {
           <>
             <StatCard
               label="Receita total"
-              value={monthsData.reduce((sum, month) => sum + month.income, 0)}
+              value={totalIncome}
               icon={<TrendingUp className="h-4 w-4 text-[#2D5016]" />}
             />
             <StatCard
-              label="Total alocado"
-              value={monthsData.reduce((sum, month) => sum + month.allocated, 0)}
+              label="Planejado"
+              value={totalAllocated}
               icon={<Calendar className="h-4 w-4" />}
             />
             <StatCard
-              label="Total gasto"
-              value={monthsData.reduce((sum, month) => sum + month.spent, 0)}
+              label="Registrado"
+              value={totalSpent}
               icon={<TrendingDown className="h-4 w-4 text-[#8B2500]" />}
             />
             <StatCard
               label="Média mensal"
-              value={monthsData.reduce((sum, month) => sum + month.income, 0) / monthsData.length}
+              value={totalIncome / monthsData.length}
               icon={<Calendar className="h-4 w-4" />}
             />
           </>
@@ -126,7 +143,8 @@ export function HistoricoView() {
         {monthsData.length === 0 ? (
           <div className="nexo-depth-2 flex items-center justify-center rounded-xl px-5 py-10 text-center text-muted-foreground">
             <p className="text-sm">
-              O histórico vai aparecer conforme você usar o app ao longo dos meses.
+              Os meses anteriores vão aparecer aqui conforme você fechar períodos com
+              receita, caixas, metas ou movimentações registradas.
             </p>
           </div>
         ) : (
@@ -143,7 +161,12 @@ export function HistoricoView() {
 
       {currentMonth && (
         <motion.div variants={fadeUp} className="nexo-depth-2 rounded-xl p-5">
-          <p className="nexo-label mb-4">Mês atual até hoje</p>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="nexo-label">Leitura do mês atual</p>
+            <span className="rounded-full border border-[#2B2B2B] bg-[#161616] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#909090]">
+              Em andamento
+            </span>
+          </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <span className="text-sm text-muted-foreground">Período</span>
@@ -177,6 +200,10 @@ export function HistoricoView() {
                 {currentMonth.caixas.reduce((sum, caixa) => sum + caixa.transactions.length, 0)}
               </span>
             </div>
+            <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+              Este bloco acompanha o calendário real do dispositivo. Quando o mês
+              virar, ele permanece aqui apenas como histórico consolidado.
+            </p>
           </div>
         </motion.div>
       )}
@@ -238,11 +265,9 @@ function MonthRow({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-foreground">{month.label}</h3>
-            {isCurrentMonth && (
-              <span className="rounded-full border border-[#2B2B2B] bg-[#161616] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#909090]">
-                Atual
-              </span>
-            )}
+            <span className="rounded-full border border-[#2B2B2B] bg-[#161616] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#909090]">
+              {isCurrentMonth ? "Em andamento" : "Histórico fechado"}
+            </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {month.caixasCount} caixa{month.caixasCount !== 1 ? "s" : ""} •{" "}
@@ -255,21 +280,23 @@ function MonthRow({
           <p className="font-mono font-medium nexo-value">
             <AnimatedNumber value={month.income} formatter={formatCurrency} />
           </p>
-          <p className="text-xs text-muted-foreground">Receita</p>
+          <p className="text-xs text-muted-foreground">
+            {isCurrentMonth ? "Receita em andamento" : "Receita consolidada"}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-xs">
         <div>
-          <p className="mb-1 text-muted-foreground">Alocado</p>
+          <p className="mb-1 text-muted-foreground">Planejado</p>
           <p className="font-mono font-medium">{formatCurrency(month.allocated)}</p>
         </div>
         <div>
-          <p className="mb-1 text-muted-foreground">Gasto</p>
+          <p className="mb-1 text-muted-foreground">Registrado</p>
           <p className="font-mono font-medium">{formatCurrency(month.spent)}</p>
         </div>
         <div>
-          <p className="mb-1 text-muted-foreground">Saldo</p>
+          <p className="mb-1 text-muted-foreground">Disponível</p>
           <p
             className={`font-mono font-medium ${
               savings >= 0 ? "text-[#2D5016]" : "text-[#8B2500]"

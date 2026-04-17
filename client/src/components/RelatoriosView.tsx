@@ -4,6 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveCo
 import { TrendingUp, TrendingDown, DollarSign, Target, Download } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { CategoryIcon } from "./CategoryIcon";
 
 interface RelatoriosViewProps {
   monthId: string;
@@ -57,7 +58,7 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
 
     // Top transactions
     const allTx = caixas.flatMap(c =>
-      (c.transactions || []).map(tx => ({ ...tx, caixaName: c.name, caixaIcon: c.icon }))
+      (c.transactions || []).map(tx => ({ ...tx, caixaName: c.name, caixaCategory: c.category }))
     ).sort((a, b) => b.amount - a.amount).slice(0, 10);
 
     // Score
@@ -196,7 +197,10 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
                   <span className="text-[#BFBFBF] text-xs font-mono w-5">{i + 1}.</span>
                   <div>
                     <div className="text-white text-sm">{tx.description}</div>
-                    <div className="text-[#BFBFBF] text-xs">{(tx as any).caixaIcon} {(tx as any).caixaName}</div>
+                    <div className="flex items-center gap-1.5 text-[#BFBFBF] text-xs">
+                      <CategoryIcon category={(tx as any).caixaCategory} className="h-3.5 w-3.5" />
+                      <span>{(tx as any).caixaName}</span>
+                    </div>
                   </div>
                 </div>
                 <div className={`font-mono font-semibold text-sm ${tx.type === "expense" ? "text-red-400" : "text-green-400"}`}>
@@ -220,7 +224,10 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
             return (
               <div key={c.id}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-white text-sm">{c.icon} {c.name}</span>
+                  <span className="flex items-center gap-2 text-white text-sm">
+                    <CategoryIcon category={c.category} className="h-4 w-4" />
+                    {c.name}
+                  </span>
                   <span className={`text-xs font-mono ${isOver ? "text-red-400" : "text-[#BFBFBF]"}`}>
                     {pct.toFixed(0)}% utilizado
                   </span>

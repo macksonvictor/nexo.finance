@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrpcContext } from "./_core/context";
+import { calculateCaixaSpent } from "./db";
 import { appRouter } from "./routers";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -82,5 +83,26 @@ describe("finance router structure", () => {
     expect(router["finance.addMeta"]).toBeDefined();
     expect(router["finance.updateMeta"]).toBeDefined();
     expect(router["finance.deleteMeta"]).toBeDefined();
+  });
+});
+
+describe("calculateCaixaSpent", () => {
+  it("counts expenses and transfers, but ignores income", () => {
+    const spent = calculateCaixaSpent([
+      { type: "expense", amount: 120 },
+      { type: "income", amount: 80 },
+      { type: "transfer", amount: 35 },
+    ]);
+
+    expect(spent).toBe(155);
+  });
+
+  it("returns zero when there are no outgoing transactions", () => {
+    const spent = calculateCaixaSpent([
+      { type: "income", amount: 50 },
+      { type: "income", amount: 75 },
+    ]);
+
+    expect(spent).toBe(0);
   });
 });
