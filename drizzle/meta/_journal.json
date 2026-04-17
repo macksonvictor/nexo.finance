@@ -43,6 +43,13 @@
       "when": 1772758631939,
       "tag": "0005_curly_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1773465600000,
+      "tag": "0006_atomic_aura",
+      "breakpoints": true
     }
   ]
 }
