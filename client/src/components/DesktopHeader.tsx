@@ -7,6 +7,8 @@ import type { ViewType } from "@/types/finance";
 interface DesktopHeaderProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onOpenAIWindow?: () => void;
+  isAIWindowOpen?: boolean;
   sidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   user?: {
@@ -61,6 +63,8 @@ const VIEW_META: Record<ViewType, { title: string; subtitle: string }> = {
 export function DesktopHeader({
   currentView,
   onViewChange,
+  onOpenAIWindow,
+  isAIWindowOpen = false,
   user,
   isPremium,
   isAdmin,
@@ -104,19 +108,17 @@ export function DesktopHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        {!isPreviewMode && (
-          <button
-            onClick={() => onViewChange("ia")}
-            className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
-              currentView === "ia"
-                ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
-                : "border-[#2A2A2A] bg-[#141414] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
-            }`}
-          >
-            <Brain size={16} />
-            <span>{BRAND_AI_NAME}</span>
-          </button>
-        )}
+        <button
+          onClick={() => onOpenAIWindow?.()}
+          className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+            isAIWindowOpen
+              ? "border-[#2F2F2F] bg-[#181818] text-[#F5F5F5]"
+              : "border-[#252525] bg-[#131313] text-[#D7D7D7] hover:border-[#353535] hover:bg-[#171717]"
+          }`}
+        >
+          <Brain size={16} className="text-[#BFBFBF]" />
+          <span>{BRAND_AI_NAME}</span>
+        </button>
 
         <button
           onClick={() => onViewChange("planos")}
@@ -164,7 +166,7 @@ export function DesktopHeader({
               <button
                 onClick={() => {
                   setProfileOpen(false);
-                  onViewChange("ia");
+                  onOpenAIWindow?.();
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-[#D7D7D7] transition-colors hover:bg-[#1E1E1E]"
               >

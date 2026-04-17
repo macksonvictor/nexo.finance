@@ -1,15 +1,17 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { BRAND_AI_NAME, BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/branding";
+import { BRAND_AI_NAME, BRAND_NAME } from "@/lib/branding";
 import type { ViewType } from "@/types/finance";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, Crown, LogOut, Menu, X } from "lucide-react";
+import { Crown, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { BrandLogo } from "./BrandLogo";
 import { NotificationBell } from "./NotificationBell";
 
 interface MobileHeaderProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onOpenAIWindow?: () => void;
   onMenuToggle: (open: boolean) => void;
   menuOpen: boolean;
   user?: { name?: string | null; email?: string | null; avatar?: string | null } | null;
@@ -21,6 +23,7 @@ interface MobileHeaderProps {
 export function MobileHeader({
   currentView,
   onViewChange,
+  onOpenAIWindow,
   onMenuToggle,
   menuOpen,
   user,
@@ -52,11 +55,6 @@ export function MobileHeader({
     setShowProfile(false);
   };
 
-  const handleAIClick = () => {
-    onViewChange("ia");
-    setShowProfile(false);
-  };
-
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-[#2E2E2E] bg-[#0D0D0D] px-4 md:hidden">
@@ -73,13 +71,9 @@ export function MobileHeader({
             )}
           </button>
 
-          <div className="flex items-center gap-2">
-            <img
-              src={BRAND_LOGO_SRC}
-              alt={BRAND_NAME}
-              className="h-7 w-7 object-contain"
-            />
-            <span className="text-[15px] font-semibold text-[#F5F5F5]">
+          <div className="flex items-center gap-2.5">
+            <BrandLogo alt={BRAND_NAME} className="h-7 w-7" />
+            <span className="text-[15px] font-semibold leading-none text-[#F5F5F5]">
               {BRAND_NAME}
             </span>
           </div>
@@ -96,19 +90,6 @@ export function MobileHeader({
           )}
 
           {!isPreviewMode && <NotificationBell align="right" />}
-
-          {!isPreviewMode && (
-            <button
-              onClick={handleAIClick}
-              className={`rounded-lg p-2 transition-colors hover:bg-[#1A1A1A] ${
-                currentView === "ia" ? "text-[#F5F5F5]" : "text-[#BFBFBF]"
-              }`}
-              aria-label={BRAND_AI_NAME}
-              title={BRAND_AI_NAME}
-            >
-              <Brain size={18} />
-            </button>
-          )}
 
           <div className="relative">
             <button
@@ -150,11 +131,11 @@ export function MobileHeader({
                     <button
                       onClick={() => {
                         setShowProfile(false);
-                        onViewChange("ia");
+                        onOpenAIWindow?.();
                       }}
                       className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#2A2A2A]"
                     >
-                      <Brain size={18} />
+                      <Sparkles size={18} />
                       {BRAND_AI_NAME}
                     </button>
 
