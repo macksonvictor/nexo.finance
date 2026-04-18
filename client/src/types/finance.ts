@@ -85,9 +85,9 @@ export const CATEGORY_LABELS: Record<Caixa['category'], string> = {
 };
 
 export const CATEGORY_ICONS: Record<Caixa['category'], string> = {
-  essencial: '🏠',
-  investimento: '📈',
-  lazer: '🎯',
-  reserva: '🛡️',
-  outro: '📦',
+  essencial: 'essencial',
+  investimento: 'investimento',
+  lazer: 'lazer',
+  reserva: 'reserva',
+  outro: 'outro',
 };

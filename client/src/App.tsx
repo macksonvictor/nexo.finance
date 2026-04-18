@@ -16,7 +16,9 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/sign-in"} component={SignInPage} />
+      <Route path={"/sign-in/*?"} component={SignInPage} />
       <Route path={"/sign-up"} component={SignUpPage} />
+      <Route path={"/sign-up/*?"} component={SignUpPage} />
       <Route path={"/planos"} component={PlanosView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

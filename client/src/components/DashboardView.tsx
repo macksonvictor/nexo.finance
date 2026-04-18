@@ -10,6 +10,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Edit2,
+  CalendarDays,
+  Sparkles,
+  Target,
 } from 'lucide-react';
 import {
   PieChart as RechartsPie,
@@ -23,7 +26,13 @@ import {
   Tooltip,
 } from 'recharts';
 import { useFinanceStore } from '@/stores/useFinanceStore';
-import { formatCurrency, formatPercentage } from '@/lib/formatters';
+import {
+  compareMonthIds,
+  formatCurrency,
+  formatMonthYear,
+  formatPercentage,
+  getCurrentCalendarMonthId,
+} from '@/lib/formatters';
 import { AnimatedNumber } from './AnimatedNumber';
 import { EditIncomeModal } from './EditIncomeModal';
 
@@ -42,7 +51,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
 };
 
-export function DashboardView() {
+export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
   const store = useFinanceStore();
   const month = store.getCurrentMonth();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -80,6 +89,20 @@ export function DashboardView() {
   const investPct = store.getInvestmentPercentage();
   const consumePct = store.getConsumptionPercentage();
   const score = store.getFinancialScore();
+  const allocationPct = month.income > 0 ? (totalAllocated / month.income) * 100 : 0;
+  const disciplinePct =
+    totalAllocated > 0
+      ? Math.max(0, (1 - Math.abs(totalSpent - totalAllocated) / totalAllocated) * 100)
+      : 0;
+  const isCurrentCalendarMonth = month.id === getCurrentCalendarMonthId();
+  const isHistoricalMonth = compareMonthIds(month.id, getCurrentCalendarMonthId()) < 0;
+  const monthLabel = formatMonthYear(month.id);
+
+  useEffect(() => {
+    if (isHistoricalMonth && showEditModal) {
+      setShowEditModal(false);
+    }
+  }, [isHistoricalMonth, showEditModal]);
 
   const pieData = month.caixas.map((c) => ({
     name: c.name,
@@ -109,32 +132,96 @@ export function DashboardView() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       {/* Header */}
-      <motion.div variants={fadeUp} className="flex items-end justify-between">
-        <div>
-          <p className="nexo-label mb-1">Visão Geral</p>
-          <h2 className="text-2xl font-semibold tracking-tight">Dashboard</h2>
-          <p className="text-[#BFBFBF] text-xs mt-1 capitalize">{formattedDate} · {formattedTime}</p>
+      <motion.div variants={fadeUp} className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="nexo-depth-3 rounded-2xl p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="nexo-label mb-2">
+                {isCurrentCalendarMonth ? 'Mês atual' : 'Período selecionado'}
+              </p>
+              <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-[2.1rem]">
+                {monthLabel}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {isCurrentCalendarMonth
+                  ? 'Este painel acompanha o mês em andamento e mostra o que já foi distribuído, protegido e consumido até agora.'
+                  : 'Você está vendo um histórico consolidado desse mês. Os valores abaixo ajudam a revisar o que foi planejado e o que realmente aconteceu no período.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                {isCurrentCalendarMonth ? 'Em andamento' : 'Histórico fechado'}
+              </div>
+              {onAskAI && (
+                <button
+                  onClick={onAskAI}
+                  className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Perguntar à IA
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <PeriodStat
+              icon={<CalendarDays className="h-4 w-4" />}
+              label="Leitura atualizada"
+              value={`às ${formattedTime}`}
+              hint={formattedDate}
+            />
+            <PeriodStat
+              icon={<PieChart className="h-4 w-4" />}
+              label="Caixas ativas"
+              value={month.caixas.length.toString()}
+              hint={month.caixas.length === 1 ? 'caixa neste período' : 'caixas neste período'}
+            />
+            <PeriodStat
+              icon={<Target className="h-4 w-4" />}
+              label="Metas do período"
+              value={month.metas.length.toString()}
+              hint={month.metas.length === 1 ? 'meta acompanhada' : 'metas acompanhadas'}
+            />
+          </div>
         </div>
-        <div className="text-right">
-          <p className="nexo-label mb-1">Receita do Mês</p>
-          <div className="flex items-center gap-2 justify-end">
-            <p className="text-xl font-mono font-medium nexo-value">
-              <AnimatedNumber value={month.income} formatter={formatCurrency} />
-            </p>
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              title="Editar receita"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
+
+        <div className="nexo-depth-2 rounded-2xl p-6">
+          <p className="nexo-label mb-2">Receita planejada</p>
+          <p className="text-3xl font-mono font-medium nexo-value">
+            <AnimatedNumber value={month.income} formatter={formatCurrency} />
+          </p>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Essa é a base usada para distribuir caixas, calcular o saldo do período e medir o score financeiro.
+          </p>
+          <div className="mt-5 flex items-center justify-between rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">Período</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{monthLabel}</p>
+            </div>
+            {isHistoricalMonth ? (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                Fechado para edição
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                title="Editar receita"
+              >
+                <Edit2 className="h-4 w-4" />
+                Editar
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
 
       {/* Edit Income Modal */}
       <EditIncomeModal
-        isOpen={showEditModal}
+        isOpen={showEditModal && !isHistoricalMonth}
         onClose={() => setShowEditModal(false)}
         currentIncome={month.income}
       />
@@ -145,29 +232,39 @@ export function DashboardView() {
           label="Distribuído"
           value={totalAllocated}
           icon={<Wallet className="w-4 h-4" />}
-          subtitle={month.income > 0 ? formatPercentage((totalAllocated / month.income) * 100) + ' da receita' : '—'}
+          subtitle={
+            month.income > 0
+              ? `${formatPercentage(allocationPct)} da receita já recebeu destino`
+              : 'Defina a receita para começar a distribuir'
+          }
         />
         <MetricCard
-          label="Restante"
+          label="Saldo para distribuir"
           value={remaining}
           icon={remaining >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-          subtitle={remaining === 0 ? 'Orçamento zerado' : remaining > 0 ? 'A distribuir' : 'Excedido'}
+          subtitle={
+            remaining === 0
+              ? 'Todo o valor do mês já recebeu missão'
+              : remaining > 0
+                ? 'Ainda existe valor livre para alocar'
+                : 'As caixas passaram da receita planejada'
+          }
           alert={remaining < 0}
         />
         <MetricCard
-          label="Investimento"
+          label="Investimento + reserva"
           value={investPct}
           icon={<ArrowUpRight className="w-4 h-4" />}
           formatter={formatPercentage}
-          subtitle="da receita"
+          subtitle="Proteção e crescimento dentro do mês"
           positive
         />
         <MetricCard
-          label="Consumo"
+          label="Consumo planejado"
           value={consumePct}
           icon={<ArrowDownRight className="w-4 h-4" />}
           formatter={formatPercentage}
-          subtitle="da receita"
+          subtitle="Uso previsto para o período"
         />
       </motion.div>
 
@@ -177,7 +274,7 @@ export function DashboardView() {
         <motion.div variants={fadeUp} className="nexo-depth-2 rounded-xl p-5 lg:col-span-1">
           <div className="flex items-center gap-2 mb-4">
             <PieChart className="w-4 h-4 text-muted-foreground" />
-            <span className="nexo-label">Distribuição</span>
+            <span className="nexo-label">Distribuição das caixas</span>
           </div>
           {pieData.length > 0 ? (
             <div className="h-[200px]">
@@ -214,7 +311,7 @@ export function DashboardView() {
             </div>
           ) : (
             <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-              Crie caixas para ver a distribuição
+              Crie caixas neste mês para ver a distribuição.
             </div>
           )}
           {/* Legend */}
@@ -238,16 +335,16 @@ export function DashboardView() {
         <motion.div variants={fadeUp} className="nexo-depth-2 rounded-xl p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="nexo-label">Alocado vs Gasto</span>
+              <span className="nexo-label">Planejado x realizado por caixa</span>
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-foreground/80" />
-                <span className="text-muted-foreground">Alocado</span>
+                <span className="text-muted-foreground">Planejado</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-foreground/30" />
-                <span className="text-muted-foreground">Gasto</span>
+                <span className="text-muted-foreground">Registrado</span>
               </div>
             </div>
           </div>
@@ -275,7 +372,7 @@ export function DashboardView() {
                           <p className="text-xs text-muted-foreground mb-1">{label}</p>
                           {payload.map((p, i) => (
                             <p key={i} className="text-xs font-mono">
-                              <span className="text-muted-foreground">{p.name === 'alocado' ? 'Alocado' : 'Gasto'}: </span>
+                              <span className="text-muted-foreground">{p.name === 'alocado' ? 'Planejado' : 'Registrado'}: </span>
                               {formatCurrency(p.value as number)}
                             </p>
                           ))}
@@ -290,7 +387,7 @@ export function DashboardView() {
             </div>
           ) : (
             <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
-              Crie caixas para ver o comparativo
+              Adicione caixas neste mês para comparar o planejado com o realizado.
             </div>
           )}
         </motion.div>
@@ -300,7 +397,7 @@ export function DashboardView() {
       <motion.div variants={fadeUp} className="nexo-depth-3 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-          <span className="nexo-label">Score Financeiro</span>
+          <span className="nexo-label">Saúde financeira do período</span>
         </div>
         <div className="flex items-center gap-8">
           <div>
@@ -310,6 +407,9 @@ export function DashboardView() {
             <p className="text-sm text-muted-foreground mt-1">{getScoreLabel(score)}</p>
           </div>
           <div className="flex-1">
+            <p className="mb-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+              O score combina quanto da receita foi distribuído, o espaço protegido para investimento e reserva e a aderência entre o planejado e o que já foi registrado neste mês.
+            </p>
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
@@ -330,26 +430,47 @@ export function DashboardView() {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
           <div>
-            <p className="nexo-label mb-1">Alocação</p>
+            <p className="nexo-label mb-1">Receita distribuída</p>
             <p className="text-sm font-mono">
-              {month.income > 0 ? formatPercentage((totalAllocated / month.income) * 100) : '0%'}
+              {month.income > 0 ? formatPercentage(allocationPct) : '0%'}
             </p>
           </div>
           <div>
-            <p className="nexo-label mb-1">Investimento</p>
+            <p className="nexo-label mb-1">Proteção do mês</p>
             <p className="text-sm font-mono">{formatPercentage(investPct)}</p>
           </div>
           <div>
-            <p className="nexo-label mb-1">Disciplina</p>
+            <p className="nexo-label mb-1">Aderência</p>
             <p className="text-sm font-mono">
-              {totalAllocated > 0
-                ? formatPercentage(Math.max(0, (1 - Math.abs(totalSpent - totalAllocated) / totalAllocated) * 100))
-                : '—'}
+              {totalAllocated > 0 ? formatPercentage(disciplinePct) : '—'}
             </p>
           </div>
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+function PeriodStat({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        {icon}
+        <span className="nexo-label">{label}</span>
+      </div>
+      <p className="mt-3 text-lg font-medium text-foreground">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    </div>
   );
 }
 

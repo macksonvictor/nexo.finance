@@ -1,4 +1,5 @@
 import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, double } from "drizzle-orm/mysql-core";
+import { AI_SOURCE_VIEWS, AI_VISIBLE_MODES } from "../shared/ai";
 
 /**
  * Core user table backing auth flow.
@@ -152,3 +153,21 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * AI usage events – tracks quota consumption by plan and window.
+ */
+export const aiUsageEvents = mysqlTable("aiUsageEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  monthId: varchar("monthId", { length: 7 }),
+  plan: mysqlEnum("plan", ["free", "premium", "pro", "elite"]).notNull(),
+  mode: mysqlEnum("mode", AI_VISIBLE_MODES).notNull(),
+  sourceView: mysqlEnum("sourceView", AI_SOURCE_VIEWS).notNull(),
+  windowType: mysqlEnum("windowType", ["day", "month"]).notNull(),
+  windowKey: varchar("windowKey", { length: 10 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AIUsageEvent = typeof aiUsageEvents.$inferSelect;
+export type InsertAIUsageEvent = typeof aiUsageEvents.$inferInsert;

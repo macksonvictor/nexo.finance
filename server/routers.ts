@@ -4,6 +4,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getPlanLimits, type PlanTier } from "@shared/plans";
 import {
+  AI_SOURCE_VIEWS,
+  AI_VISIBLE_MODES,
+  type AISourceView,
+} from "@shared/ai";
+import {
   getOrCreateMonth,
   updateMonthIncome,
   getUserMonths,
@@ -35,10 +40,24 @@ import {
   createNotification,
   checkAndCreateMetaNotifications,
   getUnreadNotificationCount,
+  countAIUsageEvents,
+  createAIUsageEvent,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
 import { createCheckoutSession, getOrCreateCustomer, createBillingPortalSession } from "./_core/stripe";
+import {
+  buildAISuggestions,
+  buildAISystemPrompt,
+  buildConversationMessages,
+  createAIUsageState,
+  deriveAIContextState,
+  getAvailableModesForPlan,
+  getLockedModesForPlan,
+  getRequiredPlanForMode,
+  isModeAvailableForPlan,
+  type AIContextSnapshot,
+} from "./ai";
 
 function getAppBaseUrl(req: Request) {
   if (process.env.APP_URL) {
@@ -57,6 +76,288 @@ function getAppBaseUrl(req: Request) {
   return `${protocol}://${host}`;
 }
 
+const aiConversationMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1),
+});
+
+const aiSessionInputSchema = z.object({
+  monthId: z.string(),
+  sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
+  sourceEntityId: z.string().optional(),
+  timeZone: z.string().optional(),
+});
+
+function resolveUserPlan(
+  ctxUser: { role: "user" | "admin" },
+  plan: PlanTier | null | undefined
+): PlanTier {
+  return ctxUser.role === "admin" ? "elite" : (plan ?? "free");
+}
+
+function compareMonthIds(a: string, b: string) {
+  return a.localeCompare(b);
+}
+
+function normalizeLLMContent(content: unknown) {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (
+          part &&
+          typeof part === "object" &&
+          "type" in part &&
+          part.type === "text" &&
+          "text" in part &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return "";
+}
+
+function isMissingAIUsageTableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as {
+    code?: string;
+    errno?: number;
+    message?: string;
+  };
+
+  return (
+    candidate.code === "ER_NO_SUCH_TABLE" ||
+    candidate.errno === 1146 ||
+    candidate.message?.includes("aiUsageEvents") === true
+  );
+}
+
+function getCaixaCriticidade(allocated: number, spent: number) {
+  if (allocated <= 0) return "alta" as const;
+
+  const ratio = spent / allocated;
+  if (ratio >= 1) return "alta" as const;
+  if (ratio >= 0.8) return "media" as const;
+  return "baixa" as const;
+}
+
+function getCurrentCalendarMonthId() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getAIReferenceDate(monthId: string) {
+  if (compareMonthIds(monthId, getCurrentCalendarMonthId()) >= 0) {
+    return new Date();
+  }
+
+  const [year, month] = monthId.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+}
+
+function getMetaRisk(
+  currentAmount: number,
+  targetAmount: number,
+  deadline: Date | string,
+  referenceDate: Date
+) {
+  if (targetAmount <= 0) return "baixo" as const;
+
+  const deadlineDate = new Date(deadline);
+  const progress = currentAmount / targetAmount;
+  const daysRemaining = Math.ceil(
+    (deadlineDate.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (daysRemaining < 0 && progress < 1) return "alto" as const;
+  if (progress >= 0.8) return "baixo" as const;
+  if (daysRemaining <= 7 || progress < 0.35) return "alto" as const;
+  return "medio" as const;
+}
+
+async function buildAISnapshot(params: {
+  userId: number;
+  monthId: string;
+  sourceView: AISourceView;
+  plan: PlanTier;
+}): Promise<AIContextSnapshot> {
+  const referenceDate = getAIReferenceDate(params.monthId);
+  const currentMonth = await getOrCreateMonth(params.userId, params.monthId);
+  if (!currentMonth) {
+    throw new Error("Failed to load AI month context");
+  }
+
+  const [caixasList, metasList, allTransactions, userMonths] = await Promise.all([
+    getCaixasByMonth(params.userId, currentMonth.id),
+    getMetasByMonth(params.userId, currentMonth.id),
+    getAllTransactionsByUser(params.userId, currentMonth.id),
+    getUserMonths(params.userId),
+  ]);
+
+  const totalIncome = currentMonth.income;
+  const totalAllocated = caixasList.reduce((sum, caixa) => sum + caixa.allocated, 0);
+  const totalSpent = caixasList.reduce((sum, caixa) => sum + caixa.spent, 0);
+  const currentBalance = totalAllocated - totalSpent;
+  const savingsRate = totalIncome > 0 ? (currentBalance / totalIncome) * 100 : 0;
+
+  const caixaNameById = new Map(caixasList.map((caixa) => [caixa.id, caixa.name]));
+
+  const caixasSummary = caixasList
+    .map((caixa) => ({
+      nome: caixa.name,
+      categoria: caixa.category,
+      alocado: caixa.allocated,
+      gasto: caixa.spent,
+      saldo: caixa.allocated - caixa.spent,
+      percentualGasto:
+        caixa.allocated > 0 ? Math.round((caixa.spent / caixa.allocated) * 100) : 0,
+      criticidade: getCaixaCriticidade(caixa.allocated, caixa.spent),
+    }))
+    .sort((left, right) => right.percentualGasto - left.percentualGasto);
+
+  const metasSummary = metasList
+    .map((meta) => ({
+      nome: meta.name,
+      valorAlvo: meta.targetAmount,
+      valorAtual: meta.currentAmount,
+      progresso:
+        meta.targetAmount > 0 ? Math.round((meta.currentAmount / meta.targetAmount) * 100) : 0,
+      prazo:
+        meta.deadline instanceof Date
+          ? meta.deadline.toISOString()
+          : new Date(meta.deadline).toISOString(),
+      risco: getMetaRisk(
+        meta.currentAmount,
+        meta.targetAmount,
+        meta.deadline,
+        referenceDate
+      ),
+    }))
+    .sort((left, right) => right.progresso - left.progresso);
+
+  const recentTransactions = allTransactions.slice(0, 8).map((transaction) => ({
+    description: transaction.description,
+    amount: transaction.amount,
+    type: transaction.type,
+    date:
+      transaction.date instanceof Date
+        ? transaction.date.toISOString()
+        : new Date(transaction.date).toISOString(),
+    caixaNome: caixaNameById.get(transaction.caixaId),
+  }));
+
+  const historicalCandidates = userMonths
+    .filter((month) => compareMonthIds(month.monthId, params.monthId) < 0)
+    .slice(0, 6);
+
+  const historicalMonths = (
+    await Promise.all(
+      historicalCandidates.map(async (month) => {
+        const [historicalCaixas, historicalMetas, historicalTransactions] = await Promise.all([
+          getCaixasByMonth(params.userId, month.id),
+          getMetasByMonth(params.userId, month.id),
+          getAllTransactionsByUser(params.userId, month.id),
+        ]);
+
+        const allocated = historicalCaixas.reduce((sum, caixa) => sum + caixa.allocated, 0);
+        const spent = historicalCaixas.reduce((sum, caixa) => sum + caixa.spent, 0);
+        const transactionsCount = historicalTransactions.length;
+        const hasMeaningfulData =
+          month.income > 0 ||
+          allocated > 0 ||
+          spent > 0 ||
+          historicalCaixas.length > 0 ||
+          historicalMetas.length > 0 ||
+          transactionsCount > 0;
+
+        if (!hasMeaningfulData) {
+          return null;
+        }
+
+        return {
+          monthId: month.monthId,
+          income: month.income,
+          allocated,
+          spent,
+          caixasCount: historicalCaixas.length,
+          metasCount: historicalMetas.length,
+          transactionsCount,
+        };
+      })
+    )
+  )
+    .filter((month): month is NonNullable<typeof month> => month !== null)
+    .slice(0, 3);
+
+  const counts = {
+    caixas: caixasList.length,
+    metas: metasList.length,
+    transactions: allTransactions.length,
+  };
+
+  return {
+    monthId: params.monthId,
+    sourceView: params.sourceView,
+    plan: params.plan,
+    planName: params.plan === "elite" ? "Elite" : params.plan.charAt(0).toUpperCase() + params.plan.slice(1),
+    contextState: deriveAIContextState({
+      income: totalIncome,
+      caixasCount: counts.caixas,
+      metasCount: counts.metas,
+      transactionsCount: counts.transactions,
+    }),
+    totalIncome,
+    totalAllocated,
+    totalSpent,
+    currentBalance,
+    savingsRate,
+    caixasSummary,
+    metasSummary,
+    recentTransactions,
+    historicalMonths,
+    counts,
+  };
+}
+
+async function getAIUsageForUser(params: {
+  userId: number;
+  plan: PlanTier;
+  timeZone?: string;
+}) {
+  const initialUsage = createAIUsageState(params.plan, 0, params.timeZone);
+  let used = 0;
+
+  try {
+    used = await countAIUsageEvents(
+      params.userId,
+      initialUsage.window,
+      initialUsage.windowKey
+    );
+  } catch (error) {
+    if (!isMissingAIUsageTableError(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "[AI Usage] aiUsageEvents table not available yet; using zeroed usage state."
+    );
+  }
+
+  return createAIUsageState(params.plan, used, params.timeZone);
+}
 
 
 export const appRouter = router({
@@ -442,173 +743,123 @@ export const appRouter = router({
 
   // ── IA NEXO ──────────────────────────────────────────────────────────────
   ai: router({
+    session: protectedProcedure
+      .input(aiSessionInputSchema)
+      .query(async ({ ctx, input }) => {
+        const planInfo = ctx.user.role === "admin" ? null : await getUserPlan(ctx.user.id);
+        const plan = resolveUserPlan(
+          ctx.user,
+          (planInfo?.plan ?? "free") as PlanTier
+        );
+        const [snapshot, usage] = await Promise.all([
+          buildAISnapshot({
+            userId: ctx.user.id,
+            monthId: input.monthId,
+            sourceView: input.sourceView,
+            plan,
+          }),
+          getAIUsageForUser({
+            userId: ctx.user.id,
+            plan,
+            timeZone: input.timeZone,
+          }),
+        ]);
+
+        return {
+          plan,
+          availableModes: getAvailableModesForPlan(plan),
+          lockedModes: getLockedModesForPlan(plan),
+          usage,
+          suggestions: buildAISuggestions(snapshot),
+          contextState: snapshot.contextState,
+        };
+      }),
+
     analyze: protectedProcedure
-      .input(z.object({
-        monthId: z.string(),
-        question: z.string().optional(),
-        mode: z.enum(['analysis', 'sabotage', 'risk', 'predict', 'simulate', 'impact', 'indicators', 'recommendations', 'chat']).default('analysis'),
-        simulateExtra: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          monthId: z.string(),
+          question: z.string().optional(),
+          mode: z.enum(AI_VISIBLE_MODES).default("chat"),
+          messages: z.array(aiConversationMessageSchema).optional(),
+          sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
+          sourceEntityId: z.string().optional(),
+          timeZone: z.string().optional(),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
-        const db_month = await getOrCreateMonth(ctx.user.id, input.monthId);
-        const caixasList = await getCaixasByMonth(ctx.user.id, db_month.id);
-        const metasList = await getMetasByMonth(ctx.user.id, db_month.id);
-        const allTx = await getAllTransactionsByUser(ctx.user.id, db_month.id);
+        const planInfo = ctx.user.role === "admin" ? null : await getUserPlan(ctx.user.id);
+        const plan = resolveUserPlan(
+          ctx.user,
+          (planInfo?.plan ?? "free") as PlanTier
+        );
 
-        const totalIncome = db_month.income;
-        const totalAllocated = caixasList.reduce((s, c) => s + c.allocated, 0);
-        const totalSpent = caixasList.reduce((s, c) => s + c.spent, 0);
-        const savingsRate = totalIncome > 0 ? ((totalAllocated - totalSpent) / totalIncome) * 100 : 0;
+        if (!isModeAvailableForPlan(plan, input.mode)) {
+          const requiredPlan = getRequiredPlanForMode(input.mode);
+          throw new Error(
+            `PLAN_LIMIT: O modo ${input.mode} está disponível a partir do plano ${requiredPlan}.`
+          );
+        }
 
-        const caixasSummary = caixasList.map(c => ({
-          nome: c.name,
-          categoria: c.category,
-          alocado: c.allocated,
-          saldo: c.allocated - c.spent,
-          gasto: c.spent,
-          percentualGasto: c.allocated > 0 ? Math.round((c.spent / c.allocated) * 100) : 0,
-        }));
+        const [snapshot, usage] = await Promise.all([
+          buildAISnapshot({
+            userId: ctx.user.id,
+            monthId: input.monthId,
+            sourceView: input.sourceView,
+            plan,
+          }),
+          getAIUsageForUser({
+            userId: ctx.user.id,
+            plan,
+            timeZone: input.timeZone,
+          }),
+        ]);
 
-        const metasSummary = metasList.map(m => ({
-          nome: m.name,
-          valorAlvo: m.targetAmount,
-          valorAtual: m.currentAmount,
-          progresso: Math.round((m.currentAmount / m.targetAmount) * 100),
-          prazo: m.deadline,
-        }));
-
-        let systemPrompt = '';
-        let userPrompt = '';
-
-        if (input.mode === 'analysis') {
-          systemPrompt = `Você é o NEXO IA, assistente financeiro pessoal premium. Analise os dados financeiros do usuário e forneça insights precisos, diretos e acionáveis em português do Brasil. Seja conciso mas profundo. Use linguagem profissional mas acessível. Formate com markdown.`;
-          userPrompt = `Analise minha situação financeira deste mês:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Total alocado: R$ ${totalAllocated.toFixed(2)}
-Total gasto: R$ ${totalSpent.toFixed(2)}
-Taxa de poupança: ${savingsRate.toFixed(1)}%
-
-Caixas:
-${caixasSummary.map(c => `- ${c.nome} (${c.categoria}): alocado R$${c.alocado.toFixed(2)}, gasto R$${c.gasto.toFixed(2)} (${c.percentualGasto}%)`).join('\n')}
-
-Metas:
-${metasSummary.length > 0 ? metasSummary.map(m => `- ${m.nome}: R$${m.valorAtual.toFixed(2)} / R$${m.valorAlvo.toFixed(2)} (${m.progresso}%)`).join('\n') : 'Nenhuma meta cadastrada'}
-
-Forneça: 1) Diagnóstico geral 2) Pontos fortes 3) Alertas críticos 4) Top 3 ações recomendadas`;
-        } else if (input.mode === 'sabotage') {
-          systemPrompt = `Você é o NEXO IA, especialista em psicologia financeira e comportamento de consumo. Identifique padrões de autossabotagem financeira nos dados. Seja direto e honesto, mas construtivo. Use português do Brasil. Formate com markdown.`;
-          userPrompt = `Detecte padrões de autossabotagem financeira:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Gasto total: R$ ${totalSpent.toFixed(2)} (${totalIncome > 0 ? ((totalSpent/totalIncome)*100).toFixed(1) : 0}% da receita)
-
-Distribuição por categoria:
-${caixasSummary.map(c => `- ${c.categoria}: ${c.percentualGasto}% consumido de R$${c.alocado.toFixed(2)}`).join('\n')}
-
-Identifique: 1) Padrões de gastos impulsivos 2) Categorias problemáticas 3) Comportamentos de autossabotagem 4) Gatilhos emocionais prováveis 5) Estratégias de correção`;
-        } else if (input.mode === 'simulate') {
-          const extra = input.simulateExtra ?? 500;
-          systemPrompt = `Você é o NEXO IA, especialista em planejamento financeiro. Simule cenários futuros com base nos dados atuais. Seja específico com números. Use português do Brasil. Formate com markdown.`;
-          userPrompt = `Simule o impacto de aumentar minha receita em R$ ${extra.toFixed(2)}/mês:
-
-Receita atual: R$ ${totalIncome.toFixed(2)}
-Receita simulada: R$ ${(totalIncome + extra).toFixed(2)}
-Distribuição atual:
-${caixasSummary.map(c => `- ${c.nome}: R$${c.alocado.toFixed(2)} (${totalIncome > 0 ? ((c.alocado/totalIncome)*100).toFixed(1) : 0}%)`).join('\n')}
-
-Metas atuais:
-${metasSummary.map(m => `- ${m.nome}: R$${m.valorAtual.toFixed(2)} / R$${m.valorAlvo.toFixed(2)}`).join('\n')}
-
-Simule: 1) Nova distribuição ideal (regra 50/30/20) 2) Aceleração das metas 3) Projeção patrimonial em 12 meses 4) Em quanto tempo atingiria independência financeira`;
-        } else if (input.mode === 'recommendations') {
-          systemPrompt = `Você é o NEXO IA, consultor financeiro pessoal. Crie um plano de ação personalizado e específico. Use português do Brasil. Formate com markdown com headers e listas.`;
-          userPrompt = `Crie recomendações personalizadas para otimizar meu orçamento:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Alocado: R$ ${totalAllocated.toFixed(2)} (${totalIncome > 0 ? ((totalAllocated/totalIncome)*100).toFixed(1) : 0}%)
-Gasto: R$ ${totalSpent.toFixed(2)}
-
-Caixas com maior gasto:
-${caixasSummary.sort((a,b) => b.percentualGasto - a.percentualGasto).slice(0,5).map(c => `- ${c.nome}: ${c.percentualGasto}% gasto`).join('\n')}
-
-Forneça: 1) Redistribuição ideal do orçamento 2) Cortes específicos recomendados 3) Onde investir o excedente 4) Metas financeiras sugeridas 5) Plano de 90 dias`;
-        } else if (input.mode === 'risk') {
-          systemPrompt = `Você é o Nexo, assistente financeiro pessoal premium especialista em gestão de risco. Calcule o Índice de Vulnerabilidade Financeira (IVF) do usuário numa escala de 0 a 100 (0=seguro, 100=crítico). Use português do Brasil. Formate com markdown.`;
-          const reservaEmergencia = caixasList.find(c => c.category === 'reserva');
-          const investimentos = caixasList.filter(c => c.category === 'investimento');
-          userPrompt = `Calcule meu Índice de Vulnerabilidade Financeira:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Gasto total: R$ ${totalSpent.toFixed(2)}
-Reserva de emergência: R$ ${reservaEmergencia ? (reservaEmergencia.allocated - reservaEmergencia.spent).toFixed(2) : '0,00'}
-Investimentos: ${investimentos.length} caixas, R$ ${investimentos.reduce((s,c) => s + c.allocated, 0).toFixed(2)} alocado
-
-Caixas:
-${caixasSummary.map(c => `- ${c.nome} (${c.categoria}): ${c.percentualGasto}% consumido`).join('\n')}
-
-Forneça: 1) IVF de 0-100 com justificativa 2) Principais fatores de risco 3) Riscos ocultos identificados 4) Plano de mitigação de riscos 5) Prazo para atingir zona segura`;
-        } else if (input.mode === 'predict') {
-          systemPrompt = `Você é o Nexo, assistente financeiro com modelo preditivo avançado. Calcule a probabilidade de o usuário ficar sem dinheiro antes do fim do mês com base nos padrões de gasto. Use português do Brasil. Formate com markdown.`;
-          const diasNoMes = 30;
-          const taxaGastoDiaria = totalSpent / (diasNoMes * 0.5);
-          userPrompt = `Faça uma previsão financeira para este mês:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Gasto atual: R$ ${totalSpent.toFixed(2)}
-Saldo restante nas caixas: R$ ${(totalAllocated - totalSpent).toFixed(2)}
-Taxa de gasto estimada: R$ ${taxaGastoDiaria.toFixed(2)}/dia
-
-Caixas com maior velocidade de gasto:
-${caixasSummary.sort((a,b) => b.percentualGasto - a.percentualGasto).slice(0,4).map(c => `- ${c.nome}: ${c.percentualGasto}% já consumido`).join('\n')}
-
-Forneça: 1) Probabilidade (%) de ficar sem dinheiro 2) Data estimada de esgotamento por caixa 3) Caixas em zona de risco 4) Ações imediatas para evitar o problema 5) Previsão de saldo no fim do mês`;
-        } else if (input.mode === 'impact') {
-          systemPrompt = `Você é o Nexo, assistente financeiro especialista em análise de impacto de gastos. Calcule o impacto real de cada gasto nas metas e reservas do usuário. Use português do Brasil. Formate com markdown.`;
-          userPrompt = `Calcule o impacto real dos meus gastos:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Gasto total: R$ ${totalSpent.toFixed(2)}
-
-Gastos por categoria:
-${caixasSummary.map(c => `- ${c.nome} (${c.categoria}): R$ ${c.gasto.toFixed(2)} gasto de R$ ${c.alocado.toFixed(2)} (${c.percentualGasto}%)`).join('\n')}
-
-Metas financeiras:
-${metasSummary.length > 0 ? metasSummary.map(m => `- ${m.nome}: R$${m.valorAtual.toFixed(2)} / R$${m.valorAlvo.toFixed(2)} (${m.progresso}%)`).join('\n') : 'Nenhuma meta'}
-
-Forneça: 1) Impacto de cada categoria nas metas 2) Custo de oportunidade dos gastos não essenciais 3) Quanto tempo cada gasto atrasa suas metas 4) Gastos que mais prejudicam o crescimento patrimonial 5) Recomendações de redução com impacto calculado`;
-        } else if (input.mode === 'indicators') {
-          systemPrompt = `Você é o Nexo, assistente financeiro especialista em indicadores de saúde financeira. Calcule índices precisos de desempenho financeiro. Use português do Brasil. Formate com markdown com tabelas e números claros.`;
-          const disciplinaScore = totalIncome > 0 ? Math.min(100, Math.round(((totalAllocated - totalSpent) / totalIncome) * 100 + 50)) : 0;
-          userPrompt = `Calcule meus indicadores financeiros:
-
-Receita: R$ ${totalIncome.toFixed(2)}
-Alocado: R$ ${totalAllocated.toFixed(2)} (${totalIncome > 0 ? ((totalAllocated/totalIncome)*100).toFixed(1) : 0}%)
-Gasto: R$ ${totalSpent.toFixed(2)} (${totalIncome > 0 ? ((totalSpent/totalIncome)*100).toFixed(1) : 0}%)
-Saldo: R$ ${(totalAllocated - totalSpent).toFixed(2)}
-Score de disciplina estimado: ${disciplinaScore}/100
-
-Caixas:
-${caixasSummary.map(c => `- ${c.nome}: ${c.percentualGasto}% consumido`).join('\n')}
-
-Metas: ${metasSummary.length} ativas, progresso médio: ${metasSummary.length > 0 ? Math.round(metasSummary.reduce((s,m) => s + m.progresso, 0) / metasSummary.length) : 0}%
-
-Calcule e explique: 1) Índice de Disciplina Financeira (0-100) 2) Índice de Risco Patrimonial (0-100) 3) Índice de Consistência (0-100) 4) Taxa de Crescimento Patrimonial 5) Score Geral NEXO (0-100) com interpretação detalhada`;
-        } else {
-          // chat mode
-          systemPrompt = `Você é o Nexo, assistente financeiro pessoal premium. Responda perguntas sobre finanças pessoais de forma clara e acionável. Contexto do usuário: receita R$${totalIncome.toFixed(2)}, ${caixasList.length} caixas, ${metasList.length} metas. Use português do Brasil.`;
-          userPrompt = input.question ?? 'Como posso melhorar minha situação financeira?';
+        if (usage.reached) {
+          throw new Error(
+            `AI_LIMIT: Você atingiu o limite de ${usage.limit} mensagens nesta janela.`
+          );
         }
 
         const response = await invokeLLM({
           messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
+            {
+              role: "system",
+              content: buildAISystemPrompt(snapshot, input.mode),
+            },
+            ...buildConversationMessages(input.mode, input.messages, input.question),
           ],
         });
 
-        const content = response.choices?.[0]?.message?.content ?? 'Não foi possível gerar análise.';
-        return { content, mode: input.mode };
+        const content =
+          normalizeLLMContent(response.choices?.[0]?.message?.content) ||
+          "Não foi possível gerar análise.";
+
+        try {
+          await createAIUsageEvent({
+            userId: ctx.user.id,
+            monthId: input.monthId,
+            plan,
+            mode: input.mode,
+            sourceView: input.sourceView,
+            windowType: usage.window,
+            windowKey: usage.windowKey,
+          });
+        } catch (error) {
+          if (!isMissingAIUsageTableError(error)) {
+            throw error;
+          }
+
+          console.warn(
+            "[AI Usage] aiUsageEvents table not available yet; skipping usage event insert."
+          );
+        }
+
+        return {
+          content,
+          mode: input.mode,
+          usage: createAIUsageState(plan, usage.used + 1, input.timeZone),
+        };
       }),
   }),
 

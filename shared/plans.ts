@@ -4,11 +4,15 @@
  */
 
 export type PlanTier = 'free' | 'premium' | 'pro' | 'elite';
+export type AIChatWindow = 'day' | 'month';
 
 export interface PlanLimits {
   maxCaixas: number;          // -1 = ilimitado
   hasAI: boolean;             // Acesso à IA Nexo
+  hasAIRecommendations: boolean; // Recomendações e plano de ação
   hasAIPredictive: boolean;   // Modos preditivos da IA (risco, previsão, impacto, indicadores)
+  aiChatWindow: AIChatWindow; // Janela de uso da IA
+  aiChatLimit: number;        // Limite de mensagens do usuário por janela
   hasExport: boolean;         // Exportação CSV/PDF
   hasOpenBanking: boolean;    // Conexão com bancos
   hasAdvancedReports: boolean;// Relatórios detalhados
@@ -20,8 +24,11 @@ export interface PlanLimits {
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   free: {
     maxCaixas: 5,
-    hasAI: false,
+    hasAI: true,
+    hasAIRecommendations: false,
     hasAIPredictive: false,
+    aiChatWindow: 'day',
+    aiChatLimit: 3,
     hasExport: false,
     hasOpenBanking: false,
     hasAdvancedReports: false,
@@ -32,7 +39,10 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   premium: {
     maxCaixas: -1,
     hasAI: true,
+    hasAIRecommendations: true,
     hasAIPredictive: false,
+    aiChatWindow: 'month',
+    aiChatLimit: 120,
     hasExport: true,
     hasOpenBanking: false,
     hasAdvancedReports: false,
@@ -43,7 +53,10 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   pro: {
     maxCaixas: -1,
     hasAI: true,
+    hasAIRecommendations: true,
     hasAIPredictive: true,
+    aiChatWindow: 'month',
+    aiChatLimit: 400,
     hasExport: true,
     hasOpenBanking: true,
     hasAdvancedReports: true,
@@ -54,7 +67,10 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   elite: {
     maxCaixas: -1,
     hasAI: true,
+    hasAIRecommendations: true,
     hasAIPredictive: true,
+    aiChatWindow: 'month',
+    aiChatLimit: 1200,
     hasExport: true,
     hasOpenBanking: true,
     hasAdvancedReports: true,

@@ -4,7 +4,7 @@ import {
   formatMonthYear,
   getCurrentCalendarMonthId,
 } from "@/lib/formatters";
-import { BRAND_LOGO_SRC, BRAND_NAME } from "@/lib/branding";
+import { BRAND_NAME } from "@/lib/branding";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import type { ViewType } from "@/types/finance";
 import { motion } from "framer-motion";
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BrandLogo } from "./BrandLogo";
 
 interface SidebarProps {
   currentView: ViewType;
@@ -91,7 +92,11 @@ export function Sidebar({
           .filter(
             (monthId) => compareMonthIds(monthId, currentCalendarMonthId) <= 0
           )
-          .concat(currentMonthId)
+          .concat(
+            compareMonthIds(currentMonthId, currentCalendarMonthId) <= 0
+              ? currentMonthId
+              : currentCalendarMonthId
+          )
       )
     ).sort((a, b) => compareMonthIds(b, a));
 
@@ -133,21 +138,13 @@ export function Sidebar({
       >
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <img
-              src={BRAND_LOGO_SRC}
-              alt={BRAND_NAME}
-              className="h-10 w-10 shrink-0 object-contain"
-            />
+            <BrandLogo alt={BRAND_NAME} className="h-10 w-10 shrink-0" />
           </div>
         ) : (
-          <div className="flex items-start gap-3">
-            <img
-              src={BRAND_LOGO_SRC}
-              alt={BRAND_NAME}
-              className="mt-0.5 h-12 w-12 shrink-0 object-contain"
-            />
+          <div className="flex items-center gap-3">
+            <BrandLogo alt={BRAND_NAME} className="h-12 w-12 shrink-0" />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-[18px] font-semibold tracking-tight text-foreground">
+              <h1 className="truncate text-[18px] font-semibold leading-none tracking-tight text-foreground">
                 {BRAND_NAME}
               </h1>
             </div>
@@ -286,16 +283,7 @@ export function Sidebar({
                   item.highlight && !isActive ? "text-[#BFBFBF]" : ""
                 }`}
               />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {item.highlight && (
-                    <span className="rounded-full border border-[#3E3E3E] bg-[#2E2E2E] px-1.5 py-0.5 text-[9px] font-bold text-[#BFBFBF]">
-                      IA
-                    </span>
-                  )}
-                </>
-              )}
+              {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
               {collapsed && locked && (
                 <Shield className="absolute bottom-1 right-1 h-3 w-3 text-[#8F8F8F]" />
               )}

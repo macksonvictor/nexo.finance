@@ -1,10 +1,22 @@
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, months, caixas, transactions, metas } from "../drizzle/schema";
-import type { InsertMonth, InsertCaixa, InsertTransaction, InsertMeta } from "../drizzle/schema";
+import { InsertUser, users, months, caixas, transactions, metas, aiUsageEvents } from "../drizzle/schema";
+import type { InsertMonth, InsertCaixa, InsertTransaction, InsertMeta, InsertAIUsageEvent } from "../drizzle/schema";
+import type { AIChatWindow, PlanTier } from "@shared/plans";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+
+type CaixaSpentTransaction = {
+  type: string;
+  amount: number;
+};
+
+export function calculateCaixaSpent(transactionsList: CaixaSpentTransaction[]) {
+  return transactionsList
+    .filter((transaction) => transaction.type === "expense" || transaction.type === "transfer")
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+}
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -163,7 +175,7 @@ export async function createTransaction(data: InsertTransaction) {
   if (!db) throw new Error("Database not available");
   await db.insert(transactions).values(data);
   const allTx = await db.select().from(transactions).where(eq(transactions.caixaId, data.caixaId!));
-  const spent = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const spent = calculateCaixaSpent(allTx);
   await db.update(caixas).set({ spent }).where(eq(caixas.id, data.caixaId!));
 }
 
@@ -174,7 +186,7 @@ export async function deleteTransaction(id: number, userId: number) {
   if (tx.length === 0) return;
   await db.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
   const allTx = await db.select().from(transactions).where(eq(transactions.caixaId, tx[0].caixaId));
-  const spent = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const spent = calculateCaixaSpent(allTx);
   await db.update(caixas).set({ spent }).where(eq(caixas.id, tx[0].caixaId));
 }
 
@@ -248,7 +260,7 @@ export async function transferBetweenCaixas(
 
   // Update spent for source (debit)
   const fromTx = await db.select().from(transactions).where(eq(transactions.caixaId, fromCaixaId));
-  const fromSpent = fromTx.filter(t => t.type === "expense" || t.type === "transfer").reduce((s, t) => s + t.amount, 0);
+  const fromSpent = calculateCaixaSpent(fromTx);
   await db.update(caixas).set({ spent: fromSpent }).where(eq(caixas.id, fromCaixaId));
 }
 
@@ -377,7 +389,7 @@ export async function getUserPlan(userId: number) {
 }
 
 export async function updateUserPlan(userId: number, data: {
-  plan: "free" | "premium";
+  plan: PlanTier;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   planExpiresAt?: Date;
@@ -392,6 +404,32 @@ export async function countUserCaixas(userId: number, monthDbId: number) {
   if (!db) throw new Error("Database not available");
   const result = await db.select().from(caixas)
     .where(and(eq(caixas.userId, userId), eq(caixas.monthId, monthDbId)));
+  return result.length;
+}
+
+// ─── AI Usage ────────────────────────────────────────────────────────────────
+
+export async function createAIUsageEvent(data: InsertAIUsageEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(aiUsageEvents).values(data);
+}
+
+export async function countAIUsageEvents(
+  userId: number,
+  windowType: AIChatWindow,
+  windowKey: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(aiUsageEvents)
+    .where(
+      and(
+        eq(aiUsageEvents.userId, userId),
+        eq(aiUsageEvents.windowType, windowType),
+        eq(aiUsageEvents.windowKey, windowKey)
+      )
+    );
   return result.length;
 }
 

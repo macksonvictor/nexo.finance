@@ -3,12 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowRight, AlertCircle } from "lucide-react";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import { toast } from "sonner";
+import { CATEGORY_LABELS, type Caixa as CaixaType } from "@/types/finance";
+import { CategoryIcon } from "./CategoryIcon";
 
 interface Caixa {
   id: string;
   name: string;
   allocated: number;
   spent: number;
+  category: CaixaType["category"];
   icon: string;
 }
 
@@ -107,7 +110,7 @@ export function TransferModal({ isOpen, onClose, caixas, monthId, onSuccess }: T
                   >
                     <option value="">Selecionar</option>
                     {caixas.map(c => (
-                      <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                      <option key={c.id} value={c.id}>{CATEGORY_LABELS[c.category]} • {c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -123,15 +126,23 @@ export function TransferModal({ isOpen, onClose, caixas, monthId, onSuccess }: T
                   >
                     <option value="">Selecionar</option>
                     {caixas.filter(c => c.id !== fromId).map(c => (
-                      <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                      <option key={c.id} value={c.id}>{CATEGORY_LABELS[c.category]} • {c.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               {fromCaixa && (
-                <div className="bg-[#2E2E2E] rounded-lg px-3 py-2 text-sm">
-                  <span className="text-[#BFBFBF]">Disponível em {fromCaixa.icon} {fromCaixa.name}: </span>
+                <div className="flex items-center justify-between gap-3 bg-[#2E2E2E] rounded-lg px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/20 text-[#D8D8D8]">
+                      <CategoryIcon category={fromCaixa.category} className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{fromCaixa.name}</p>
+                      <p className="text-[11px] text-[#BFBFBF]">{CATEGORY_LABELS[fromCaixa.category]}</p>
+                    </div>
+                  </div>
                   <span className="text-white font-mono font-semibold">
                     R$ {available.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>

@@ -5,9 +5,50 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import { compareMonthIds, getCurrentCalendarMonthId } from '@/lib/formatters';
-import type { FinanceState, MonthData, Caixa } from '@/types/finance';
+import type { FinanceState, MonthData, Caixa, Transaction } from '@/types/finance';
+
+const FINANCE_STORAGE_PREFIX = 'nexo:finance:v2';
+const LEGACY_FINANCE_STORAGE_KEY = 'nexo-finance-storage';
 
 const getCurrentMonthId = () => getCurrentCalendarMonthId();
+const normalizeMonthId = (monthId: string) => {
+  const currentMonthId = getCurrentMonthId();
+  return compareMonthIds(monthId, currentMonthId) > 0 ? currentMonthId : monthId;
+};
+
+const sanitizeStorageScopeId = (value: string) => {
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
+  return normalized || 'anonymous';
+};
+
+export const getFinanceStorageKey = (storageScopeId: string) =>
+  `${FINANCE_STORAGE_PREFIX}:${sanitizeStorageScopeId(storageScopeId)}`;
+
+export const getEmptyFinanceStoreState = () => ({
+  currentMonthId: getCurrentMonthId(),
+  months: {},
+  hasOnboarded: false,
+});
+
+export function prepareFinanceStorageForScope(
+  storageScopeId: string,
+  options?: { migrateLegacy?: boolean }
+) {
+  if (typeof window === 'undefined') return;
+  if (!options?.migrateLegacy) return;
+
+  const scopedKey = getFinanceStorageKey(storageScopeId);
+  const scopedData = window.localStorage.getItem(scopedKey);
+  const legacyData = window.localStorage.getItem(LEGACY_FINANCE_STORAGE_KEY);
+
+  if (!legacyData) return;
+
+  if (!scopedData) {
+    window.localStorage.setItem(scopedKey, legacyData);
+  }
+
+  window.localStorage.removeItem(LEGACY_FINANCE_STORAGE_KEY);
+}
 
 const createEmptyMonth = (monthId: string, income = 0): MonthData => ({
   id: monthId,
@@ -18,10 +59,18 @@ const createEmptyMonth = (monthId: string, income = 0): MonthData => ({
 });
 
 const getMostRecentIncome = (months: Record<string, MonthData>, fallbackMonthId: string) => {
-  const orderedMonthIds = Object.keys(months).sort(compareMonthIds);
-  const latestMonthId = orderedMonthIds[orderedMonthIds.length - 1] ?? fallbackMonthId;
+  const safeFallbackMonthId = normalizeMonthId(fallbackMonthId);
+  const orderedMonthIds = Object.keys(months)
+    .filter((monthId) => compareMonthIds(monthId, getCurrentMonthId()) <= 0)
+    .sort(compareMonthIds);
+  const latestMonthId = orderedMonthIds[orderedMonthIds.length - 1] ?? safeFallbackMonthId;
   return months[latestMonthId]?.income ?? 0;
 };
+
+const calculateSpent = (transactions: Transaction[]) =>
+  transactions
+    .filter((transaction) => transaction.type === 'expense' || transaction.type === 'transfer')
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
 
 // Extend FinanceState with transfer action
 type FinanceStateExtended = FinanceState & {
@@ -31,13 +80,12 @@ type FinanceStateExtended = FinanceState & {
 export const useFinanceStore = create<FinanceStateExtended>()(
   persist(
     (set, get) => ({
-      currentMonthId: getCurrentMonthId(),
-      months: {},
-      hasOnboarded: false,
+      ...getEmptyFinanceStoreState(),
 
       getCurrentMonth: () => {
         const state = get();
-        return state.months[state.currentMonthId];
+        const currentMonthId = normalizeMonthId(state.currentMonthId);
+        return state.months[currentMonthId];
       },
 
       getTotalAllocated: () => {
@@ -121,7 +169,7 @@ export const useFinanceStore = create<FinanceStateExtended>()(
           };
         }),
 
-      setCurrentMonth: (monthId) => set({ currentMonthId: monthId }),
+      setCurrentMonth: (monthId) => set({ currentMonthId: normalizeMonthId(monthId) }),
 
       syncCurrentMonth: () =>
         set((state) => {
@@ -156,14 +204,19 @@ export const useFinanceStore = create<FinanceStateExtended>()(
 
       initMonth: (monthId) =>
         set((state) => {
-          if (state.months[monthId]) return state;
+          const safeMonthId = normalizeMonthId(monthId);
+          if (state.months[safeMonthId]) {
+            return {
+              currentMonthId: safeMonthId,
+            };
+          }
           const carriedIncome = getMostRecentIncome(state.months, state.currentMonthId);
           return {
             months: {
               ...state.months,
-              [monthId]: createEmptyMonth(monthId, carriedIncome),
+              [safeMonthId]: createEmptyMonth(safeMonthId, carriedIncome),
             },
-            currentMonthId: monthId,
+            currentMonthId: safeMonthId,
           };
         }),
 
@@ -236,9 +289,7 @@ export const useFinanceStore = create<FinanceStateExtended>()(
                 caixas: month.caixas.map((c) => {
                   if (c.id !== caixaId) return c;
                   const newTransactions = [...c.transactions, transaction];
-                  const newSpent = newTransactions
-                    .filter((t) => t.type === 'expense')
-                    .reduce((sum, t) => sum + t.amount, 0);
+                  const newSpent = calculateSpent(newTransactions);
                   return { ...c, transactions: newTransactions, spent: newSpent };
                 }),
               },
@@ -258,9 +309,7 @@ export const useFinanceStore = create<FinanceStateExtended>()(
                 caixas: month.caixas.map((c) => {
                   if (c.id !== caixaId) return c;
                   const newTransactions = c.transactions.filter((t) => t.id !== transactionId);
-                  const newSpent = newTransactions
-                    .filter((t) => t.type === 'expense')
-                    .reduce((sum, t) => sum + t.amount, 0);
+                  const newSpent = calculateSpent(newTransactions);
                   return { ...c, transactions: newTransactions, spent: newSpent };
                 }),
               },
@@ -304,18 +353,12 @@ export const useFinanceStore = create<FinanceStateExtended>()(
           const updatedCaixas = month.caixas.map((c) => {
             if (c.id === fromId) {
               const newTransactions = [...c.transactions, outTx];
-              // Transferências contam como gasto para calcular saldo disponível
-              const newSpent = newTransactions
-                .filter((t) => t.type === 'expense' || t.type === 'transfer')
-                .reduce((sum, t) => sum + t.amount, 0);
+              const newSpent = calculateSpent(newTransactions);
               return { ...c, transactions: newTransactions, spent: newSpent };
             }
             if (c.id === toId) {
               const newTransactions = [...c.transactions, inTx];
-              // Receitas não alteram o spent
-              const newSpent = newTransactions
-                .filter((t) => t.type === 'expense' || t.type === 'transfer')
-                .reduce((sum, t) => sum + t.amount, 0);
+              const newSpent = calculateSpent(newTransactions);
               return { ...c, transactions: newTransactions, spent: newSpent };
             }
             return c;
@@ -400,7 +443,8 @@ export const useFinanceStore = create<FinanceStateExtended>()(
       completeOnboarding: () => set({ hasOnboarded: true }),
     }),
     {
-      name: 'nexo-finance-storage',
+      name: getFinanceStorageKey('anonymous'),
+      skipHydration: true,
     }
   )
 );
