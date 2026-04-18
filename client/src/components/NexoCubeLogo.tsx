@@ -8,8 +8,6 @@ interface NexoCubeLogoProps {
   ariaLabel?: string;
 }
 
-const NEXO_AI_CUBE_SRC = "/nexo-ai-cube.svg";
-
 export function NexoCubeLogo({
   size = 32,
   className,
@@ -23,14 +21,6 @@ export function NexoCubeLogo({
     flexShrink: 0,
   } satisfies CSSProperties;
 
-  const imageStyle = {
-    width: "100%",
-    height: "100%",
-    display: "block",
-    objectFit: "contain",
-    pointerEvents: "none",
-  } satisfies CSSProperties;
-
   return (
     <span
       className={cn("inline-flex items-center justify-center", className)}
@@ -39,14 +29,35 @@ export function NexoCubeLogo({
       aria-label={decorative ? undefined : ariaLabel}
       role={decorative ? undefined : "img"}
     >
-      <img
-        src={NEXO_AI_CUBE_SRC}
-        alt={decorative ? "" : ariaLabel}
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
         aria-hidden={decorative || undefined}
-        draggable={false}
-        className="select-none"
-        style={imageStyle}
-      />
+        focusable="false"
+        className="block h-full w-full select-none"
+      >
+        <path
+          d="M50 10 80 27.5 50 45 20 27.5 50 10Z"
+          stroke="#F7F7F7"
+          strokeWidth="7.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M20 27.5V66L50 84V45"
+          stroke="#F7F7F7"
+          strokeWidth="7.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M80 27.5V66L50 84"
+          stroke="#F7F7F7"
+          strokeWidth="7.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </span>
   );
 }

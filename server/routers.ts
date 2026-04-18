@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Request } from "express";
+import { randomUUID } from "crypto";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getPlanLimits, type PlanTier } from "@shared/plans";
@@ -58,6 +59,7 @@ import {
   isModeAvailableForPlan,
   type AIContextSnapshot,
 } from "./ai";
+import { collectPythonInsights } from "./_core/pythonAi";
 
 function getAppBaseUrl(req: Request) {
   if (process.env.APP_URL) {
@@ -248,7 +250,7 @@ async function buildAISnapshot(params: {
     }))
     .sort((left, right) => right.progresso - left.progresso);
 
-  const recentTransactions = allTransactions.slice(0, 8).map((transaction) => ({
+  const recentTransactions = allTransactions.map((transaction) => ({
     description: transaction.description,
     amount: transaction.amount,
     type: transaction.type,
@@ -821,11 +823,24 @@ export const appRouter = router({
           );
         }
 
+        const pythonInsights = await collectPythonInsights({
+          requestId: randomUUID(),
+          mode: input.mode,
+          snapshot,
+        });
+
+        const systemPrompt = [
+          buildAISystemPrompt(snapshot, input.mode),
+          pythonInsights.promptBlock,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
         const response = await invokeLLM({
           messages: [
             {
               role: "system",
-              content: buildAISystemPrompt(snapshot, input.mode),
+              content: systemPrompt,
             },
             ...buildConversationMessages(input.mode, input.messages, input.question),
           ],
@@ -859,6 +874,7 @@ export const appRouter = router({
           content,
           mode: input.mode,
           usage: createAIUsageState(plan, usage.used + 1, input.timeZone),
+          python: pythonInsights.analyses,
         };
       }),
   }),

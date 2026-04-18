@@ -5,11 +5,14 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
+    "dev:py": "python -m uvicorn app.main:app --reload --port 8001 --app-dir services/nexo-ai-python",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "node dist/index.js",
     "check": "tsc --noEmit",
+    "check:py": "python -m compileall services/nexo-ai-python/app services/nexo-ai-python/tests",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:py": "python -m pytest services/nexo-ai-python/tests",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
