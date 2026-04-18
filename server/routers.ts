@@ -154,13 +154,32 @@ function getCaixaCriticidade(allocated: number, spent: number) {
   return "baixa" as const;
 }
 
-function getMetaRisk(currentAmount: number, targetAmount: number, deadline: Date | string) {
+function getCurrentCalendarMonthId() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getAIReferenceDate(monthId: string) {
+  if (compareMonthIds(monthId, getCurrentCalendarMonthId()) >= 0) {
+    return new Date();
+  }
+
+  const [year, month] = monthId.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+}
+
+function getMetaRisk(
+  currentAmount: number,
+  targetAmount: number,
+  deadline: Date | string,
+  referenceDate: Date
+) {
   if (targetAmount <= 0) return "baixo" as const;
 
   const deadlineDate = new Date(deadline);
   const progress = currentAmount / targetAmount;
   const daysRemaining = Math.ceil(
-    (deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    (deadlineDate.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24)
   );
 
   if (daysRemaining < 0 && progress < 1) return "alto" as const;
@@ -175,6 +194,7 @@ async function buildAISnapshot(params: {
   sourceView: AISourceView;
   plan: PlanTier;
 }): Promise<AIContextSnapshot> {
+  const referenceDate = getAIReferenceDate(params.monthId);
   const currentMonth = await getOrCreateMonth(params.userId, params.monthId);
   if (!currentMonth) {
     throw new Error("Failed to load AI month context");
@@ -219,7 +239,12 @@ async function buildAISnapshot(params: {
         meta.deadline instanceof Date
           ? meta.deadline.toISOString()
           : new Date(meta.deadline).toISOString(),
-      risco: getMetaRisk(meta.currentAmount, meta.targetAmount, meta.deadline),
+      risco: getMetaRisk(
+        meta.currentAmount,
+        meta.targetAmount,
+        meta.deadline,
+        referenceDate
+      ),
     }))
     .sort((left, right) => right.progresso - left.progresso);
 

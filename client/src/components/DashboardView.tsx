@@ -26,7 +26,13 @@ import {
   Tooltip,
 } from 'recharts';
 import { useFinanceStore } from '@/stores/useFinanceStore';
-import { formatCurrency, formatMonthYear, formatPercentage, getCurrentCalendarMonthId } from '@/lib/formatters';
+import {
+  compareMonthIds,
+  formatCurrency,
+  formatMonthYear,
+  formatPercentage,
+  getCurrentCalendarMonthId,
+} from '@/lib/formatters';
 import { AnimatedNumber } from './AnimatedNumber';
 import { EditIncomeModal } from './EditIncomeModal';
 
@@ -89,7 +95,14 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
       ? Math.max(0, (1 - Math.abs(totalSpent - totalAllocated) / totalAllocated) * 100)
       : 0;
   const isCurrentCalendarMonth = month.id === getCurrentCalendarMonthId();
+  const isHistoricalMonth = compareMonthIds(month.id, getCurrentCalendarMonthId()) < 0;
   const monthLabel = formatMonthYear(month.id);
+
+  useEffect(() => {
+    if (isHistoricalMonth && showEditModal) {
+      setShowEditModal(false);
+    }
+  }, [isHistoricalMonth, showEditModal]);
 
   const pieData = month.caixas.map((c) => ({
     name: c.name,
@@ -187,21 +200,28 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">Período</p>
               <p className="mt-1 text-sm font-medium text-foreground">{monthLabel}</p>
             </div>
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-              title="Editar receita"
-            >
-              <Edit2 className="h-4 w-4" />
-              Editar
-            </button>
+            {isHistoricalMonth ? (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                Fechado para edição
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                title="Editar receita"
+              >
+                <Edit2 className="h-4 w-4" />
+                Editar
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
 
       {/* Edit Income Modal */}
       <EditIncomeModal
-        isOpen={showEditModal}
+        isOpen={showEditModal && !isHistoricalMonth}
         onClose={() => setShowEditModal(false)}
         currentIncome={month.income}
       />

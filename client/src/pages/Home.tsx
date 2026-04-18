@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Brain,
@@ -61,6 +61,27 @@ function mapViewToAISource(view: ViewType): AISourceView {
   }
 }
 
+function resolveAIStorageScope(user: unknown) {
+  if (!user || typeof user !== "object") {
+    return "anonymous";
+  }
+
+  const candidate = user as {
+    id?: number | string | null;
+    openId?: string | null;
+    email?: string | null;
+    name?: string | null;
+  };
+
+  const stableId =
+    candidate.openId ??
+    candidate.id?.toString() ??
+    candidate.email ??
+    candidate.name;
+
+  return stableId || "anonymous";
+}
+
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
   const {
@@ -91,6 +112,7 @@ export default function Home() {
     planData?.plan === "pro" ||
     planData?.plan === "elite";
   const isAdmin = planData?.isAdmin ?? false;
+  const aiStorageScopeId = useMemo(() => resolveAIStorageScope(user), [user]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -373,6 +395,7 @@ export default function Home() {
             onNavigate={(view) => handleViewChange(view as ViewType)}
             sourceView={aiEntry.sourceView}
             sourceEntityId={aiEntry.sourceEntityId}
+            storageScopeId={aiStorageScopeId}
             initialPrompt={aiEntry.initialPrompt}
             initialMode={aiEntry.initialMode}
             entryKey={aiEntry.nonce}
@@ -509,6 +532,7 @@ export default function Home() {
                   onNavigate={(view) => handleViewChange(view as ViewType)}
                   sourceView={aiEntry.sourceView}
                   sourceEntityId={aiEntry.sourceEntityId}
+                  storageScopeId={aiStorageScopeId}
                   initialPrompt={aiEntry.initialPrompt}
                   initialMode={aiEntry.initialMode}
                   entryKey={aiEntry.nonce}

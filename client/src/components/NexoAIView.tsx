@@ -181,6 +181,7 @@ export function NexoAIView({
   onNavigate,
   sourceView = "ia",
   sourceEntityId,
+  storageScopeId = "anonymous",
   initialPrompt,
   initialMode = "chat",
   entryKey,
@@ -190,6 +191,7 @@ export function NexoAIView({
   onNavigate?: (view: string) => void;
   sourceView?: AISourceView;
   sourceEntityId?: string;
+  storageScopeId?: string;
   initialPrompt?: string;
   initialMode?: AIVisibleMode;
   entryKey?: number;
@@ -224,6 +226,10 @@ export function NexoAIView({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const modeMenuRef = useRef<HTMLFormElement>(null);
   const timeZone = useMemo(() => getBrowserTimeZone(), []);
+  const resolvedStorageScopeId = useMemo(
+    () => sanitizeStorageScopeId(storageScopeId),
+    [storageScopeId]
+  );
   const utils = trpc.useUtils();
 
   const sessionInput = useMemo(
@@ -295,7 +301,10 @@ export function NexoAIView({
       return;
     }
 
-    const storedState = readStoredConversationState(selectedMonth);
+    const storedState = readStoredConversationState(
+      selectedMonth,
+      resolvedStorageScopeId
+    );
     const resolvedActiveConversationId =
       storedState.activeConversationId &&
       storedState.conversations.some(
@@ -317,15 +326,15 @@ export function NexoAIView({
     setInput("");
     setIsLoading(false);
     setModeMenuOpen(false);
-  }, [selectedMonth]);
+  }, [resolvedStorageScopeId, selectedMonth]);
 
   useEffect(() => {
     if (!selectedMonth) return;
-    writeStoredConversationState(selectedMonth, {
+    writeStoredConversationState(selectedMonth, resolvedStorageScopeId, {
       activeConversationId,
       conversations,
     });
-  }, [activeConversationId, conversations, selectedMonth]);
+  }, [activeConversationId, conversations, resolvedStorageScopeId, selectedMonth]);
 
   useEffect(() => {
     setUsageOverride(sessionData?.usage ?? null);
@@ -1356,13 +1365,18 @@ function canUseMode(mode: AIVisibleMode, availableModes: AIVisibleMode[]) {
   return availableModes.includes(mode);
 }
 
-function readStoredConversationState(monthId: string): AIConversationState {
+function readStoredConversationState(
+  monthId: string,
+  storageScopeId: string
+): AIConversationState {
   if (typeof window === "undefined") {
     return { activeConversationId: null, conversations: [] };
   }
 
   try {
-    const raw = window.localStorage.getItem(getConversationStorageKey(monthId));
+    const raw = window.localStorage.getItem(
+      getConversationStorageKey(monthId, storageScopeId)
+    );
     if (raw) {
       const parsed = JSON.parse(raw);
       if (isStoredConversationState(parsed)) {
@@ -1373,7 +1387,7 @@ function readStoredConversationState(monthId: string): AIConversationState {
     // Fall through to migration / empty state.
   }
 
-  const legacyMessages = readLegacyStoredMessages(monthId);
+  const legacyMessages = readLegacyStoredMessages(monthId, storageScopeId);
   if (legacyMessages.length === 0) {
     return { activeConversationId: null, conversations: [] };
   }
@@ -1398,29 +1412,38 @@ function readStoredConversationState(monthId: string): AIConversationState {
     conversations: [migratedConversation],
   } satisfies AIConversationState;
 
-  writeStoredConversationState(monthId, migratedState);
-  clearLegacyStoredMessages(monthId);
+  writeStoredConversationState(monthId, storageScopeId, migratedState);
+  clearLegacyStoredMessages(monthId, storageScopeId);
   return migratedState;
 }
 
 function writeStoredConversationState(
   monthId: string,
+  storageScopeId: string,
   value: AIConversationState
 ) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(getConversationStorageKey(monthId), JSON.stringify(value));
+    window.localStorage.setItem(
+      getConversationStorageKey(monthId, storageScopeId),
+      JSON.stringify(value)
+    );
   } catch {
     // Ignore storage failures quietly.
   }
 }
 
-function readLegacyStoredMessages(monthId: string): AIMessage[] {
+function readLegacyStoredMessages(
+  monthId: string,
+  storageScopeId: string
+): AIMessage[] {
   if (typeof window === "undefined") return [];
 
   try {
-    const raw = window.sessionStorage.getItem(getLegacySessionStorageKey(monthId));
+    const raw = window.sessionStorage.getItem(
+      getLegacySessionStorageKey(monthId, storageScopeId)
+    );
     if (!raw) return [];
 
     const parsed = JSON.parse(raw);
@@ -1432,22 +1455,29 @@ function readLegacyStoredMessages(monthId: string): AIMessage[] {
   }
 }
 
-function clearLegacyStoredMessages(monthId: string) {
+function clearLegacyStoredMessages(monthId: string, storageScopeId: string) {
   if (typeof window === "undefined") return;
 
   try {
-    window.sessionStorage.removeItem(getLegacySessionStorageKey(monthId));
+    window.sessionStorage.removeItem(
+      getLegacySessionStorageKey(monthId, storageScopeId)
+    );
   } catch {
     // Ignore storage cleanup failures quietly.
   }
 }
 
-function getConversationStorageKey(monthId: string) {
-  return `${AI_CONVERSATION_STORAGE_PREFIX}:${monthId}`;
+function getConversationStorageKey(monthId: string, storageScopeId: string) {
+  return `${AI_CONVERSATION_STORAGE_PREFIX}:${storageScopeId}:${monthId}`;
 }
 
-function getLegacySessionStorageKey(monthId: string) {
-  return `${AI_LEGACY_SESSION_STORAGE_PREFIX}:${monthId}`;
+function getLegacySessionStorageKey(monthId: string, storageScopeId: string) {
+  return `${AI_LEGACY_SESSION_STORAGE_PREFIX}:${storageScopeId}:${monthId}`;
+}
+
+function sanitizeStorageScopeId(value: string) {
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9:_-]/g, "_");
+  return normalized || "anonymous";
 }
 
 function isStoredMessage(value: unknown): value is AIMessage {

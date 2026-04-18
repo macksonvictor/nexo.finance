@@ -335,6 +335,57 @@ describe("NEXO IA - Fase 3", () => {
     );
   });
 
+  it("usa a referencia temporal do mes analisado ao calcular risco historico de metas", async () => {
+    vi.useFakeTimers();
+
+    try {
+      vi.setSystemTime(new Date("2026-04-18T12:00:00.000Z"));
+
+      dbMocks.getUserPlan.mockResolvedValue({
+        plan: "pro",
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        planExpiresAt: null,
+      });
+      dbMocks.countAIUsageEvents.mockResolvedValue(0);
+      dbMocks.getOrCreateMonth.mockResolvedValueOnce({
+        id: 2,
+        monthId: "2026-03",
+        income: 9500,
+      });
+      dbMocks.getMetasByMonth.mockImplementationOnce(async () => [
+        {
+          id: 61,
+          name: "Reserva de emergencia",
+          targetAmount: 2000,
+          currentAmount: 1000,
+          deadline: new Date("2026-04-10T00:00:00.000Z"),
+        },
+      ]);
+
+      const { ctx } = createAuthContext(91);
+      const caller = appRouter.createCaller(ctx);
+
+      await caller.ai.analyze({
+        monthId: "2026-03",
+        sourceView: "historico",
+        mode: "chat",
+        question: "Como estava meu risco naquele mes?",
+        timeZone: "America/Sao_Paulo",
+      });
+
+      const systemPrompt = llmMocks.invokeLLM.mock.calls.at(-1)?.[0]?.messages?.[0]
+        ?.content as string;
+
+      expect(systemPrompt).toContain("Contexto financeiro do mês 2026-03");
+      expect(systemPrompt).toContain("Reserva de emergencia");
+      expect(systemPrompt).toContain("risco medio");
+      expect(systemPrompt).not.toContain("risco alto");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("mantem o analyze funcionando se a tabela de uso ainda nao existir", async () => {
     dbMocks.getUserPlan.mockResolvedValue({
       plan: "pro",
