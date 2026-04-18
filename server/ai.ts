@@ -485,6 +485,7 @@ function buildContextBlock(snapshot: AIContextSnapshot) {
   const transactionsBlock =
     snapshot.recentTransactions.length > 0
       ? snapshot.recentTransactions
+          .slice(0, 8)
           .map(
             (transaction) =>
               `- ${formatDate(transaction.date)} | ${transaction.description} | ${transaction.type} | ${formatCurrency(transaction.amount)}${transaction.caixaNome ? ` | caixa ${transaction.caixaNome}` : ""}`
