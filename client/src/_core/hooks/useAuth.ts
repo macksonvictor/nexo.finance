@@ -28,6 +28,9 @@ export function useAuth(options?: UseAuthOptions) {
 
   const logout = useCallback(async () => {
     try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("nexo-runtime-user-info");
+      }
       utils.auth.me.setData(undefined, null);
       await signOut({ redirectUrl: "/" });
     } finally {
@@ -44,26 +47,41 @@ export function useAuth(options?: UseAuthOptions) {
       null;
 
     return {
+      openId: clerkUser.id,
       name: clerkUser.fullName ?? clerkUser.username ?? primaryEmail,
       email: primaryEmail,
     };
   }, [clerkUser]);
 
+  const resolvedUser = useMemo(() => {
+    const queryUser = meQuery.data;
+
+    if (!queryUser) {
+      return fallbackUser;
+    }
+
+    if (clerkUser?.id && queryUser.openId !== clerkUser.id) {
+      return fallbackUser;
+    }
+
+    return queryUser;
+  }, [clerkUser?.id, fallbackUser, meQuery.data]);
+
   const state = useMemo(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         "nexo-runtime-user-info",
-        JSON.stringify(meQuery.data ?? fallbackUser)
+        JSON.stringify(resolvedUser)
       );
     }
 
     return {
-      user: meQuery.data ?? fallbackUser,
+      user: resolvedUser,
       loading: !isLoaded || (Boolean(isSignedIn) && meQuery.isLoading),
       error: meQuery.error ?? null,
       isAuthenticated: Boolean(isSignedIn),
     };
-  }, [fallbackUser, isLoaded, isSignedIn, meQuery.data, meQuery.error, meQuery.isLoading]);
+  }, [isLoaded, isSignedIn, meQuery.error, meQuery.isLoading, resolvedUser]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;

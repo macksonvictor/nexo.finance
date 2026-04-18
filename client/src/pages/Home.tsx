@@ -7,7 +7,12 @@ import {
   Target,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useFinanceStore } from "@/stores/useFinanceStore";
+import {
+  getEmptyFinanceStoreState,
+  getFinanceStorageKey,
+  prepareFinanceStorageForScope,
+  useFinanceStore,
+} from "@/stores/useFinanceStore";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -61,7 +66,7 @@ function mapViewToAISource(view: ViewType): AISourceView {
   }
 }
 
-function resolveAIStorageScope(user: unknown) {
+function resolveUserStorageScope(user: unknown) {
   if (!user || typeof user !== "object") {
     return "anonymous";
   }
@@ -96,6 +101,7 @@ export default function Home() {
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(
     getInitialSidebarState()
   );
+  const [isFinanceStoreReady, setIsFinanceStoreReady] = useState(false);
   const [isAIOverlayOpen, setIsAIOverlayOpen] = useState(false);
   const [aiEntry, setAIEntry] = useState<AIEntryState>({
     sourceView: "ia",
@@ -112,7 +118,57 @@ export default function Home() {
     planData?.plan === "pro" ||
     planData?.plan === "elite";
   const isAdmin = planData?.isAdmin ?? false;
-  const aiStorageScopeId = useMemo(() => resolveAIStorageScope(user), [user]);
+  const userStorageScopeId = useMemo(() => resolveUserStorageScope(user), [user]);
+  const aiStorageScopeId = userStorageScopeId;
+  const aiViewIdentityKey = useMemo(
+    () => `${aiStorageScopeId}:${currentMonthId ?? "no-month"}`,
+    [aiStorageScopeId, currentMonthId]
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      useFinanceStore.persist.setOptions({
+        name: getFinanceStorageKey("anonymous"),
+      });
+      useFinanceStore.setState(getEmptyFinanceStoreState());
+      setIsFinanceStoreReady(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydrateFinanceStore = async () => {
+      setIsFinanceStoreReady(false);
+      prepareFinanceStorageForScope(userStorageScopeId, {
+        migrateLegacy: isAdmin,
+      });
+      const scopedStorageKey = getFinanceStorageKey(userStorageScopeId);
+      const hasScopedStorage =
+        typeof window !== "undefined" &&
+        window.localStorage.getItem(scopedStorageKey) !== null;
+
+      useFinanceStore.persist.setOptions({
+        name: scopedStorageKey,
+      });
+
+      if (hasScopedStorage) {
+        await useFinanceStore.persist.rehydrate();
+      } else {
+        useFinanceStore.persist.clearStorage();
+        useFinanceStore.setState(getEmptyFinanceStoreState());
+      }
+
+      if (!cancelled) {
+        setIsFinanceStoreReady(true);
+      }
+    };
+
+    void hydrateFinanceStore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, isAuthenticated, userStorageScopeId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -124,10 +180,10 @@ export default function Home() {
   }, [desktopSidebarCollapsed]);
 
   useEffect(() => {
-    if (isAuthenticated && hasOnboarded) {
+    if (isAuthenticated && isFinanceStoreReady && hasOnboarded) {
       syncCurrentMonth();
     }
-  }, [hasOnboarded, isAuthenticated, syncCurrentMonth]);
+  }, [hasOnboarded, isAuthenticated, isFinanceStoreReady, syncCurrentMonth]);
 
   useEffect(() => {
     if (!isAIOverlayOpen) return;
@@ -221,6 +277,10 @@ export default function Home() {
   };
 
   if (loading) {
+    return <AuthLoadingScreen />;
+  }
+
+  if (isAuthenticated && !isFinanceStoreReady) {
     return <AuthLoadingScreen />;
   }
 
@@ -392,6 +452,7 @@ export default function Home() {
       case "ia":
         return (
           <NexoAIView
+            key={`ai-tab:${aiViewIdentityKey}`}
             onNavigate={(view) => handleViewChange(view as ViewType)}
             sourceView={aiEntry.sourceView}
             sourceEntityId={aiEntry.sourceEntityId}
@@ -529,6 +590,7 @@ export default function Home() {
             >
               <div className="flex h-full flex-col overflow-hidden border border-[#222222] bg-[#0D0D0D] shadow-[0_24px_80px_rgba(0,0,0,0.55)] md:rounded-[28px]">
                 <NexoAIView
+                  key={`ai-overlay:${aiViewIdentityKey}`}
                   onNavigate={(view) => handleViewChange(view as ViewType)}
                   sourceView={aiEntry.sourceView}
                   sourceEntityId={aiEntry.sourceEntityId}

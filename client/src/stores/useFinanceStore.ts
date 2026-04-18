@@ -7,11 +7,48 @@ import { nanoid } from 'nanoid';
 import { compareMonthIds, getCurrentCalendarMonthId } from '@/lib/formatters';
 import type { FinanceState, MonthData, Caixa, Transaction } from '@/types/finance';
 
+const FINANCE_STORAGE_PREFIX = 'nexo:finance:v2';
+const LEGACY_FINANCE_STORAGE_KEY = 'nexo-finance-storage';
+
 const getCurrentMonthId = () => getCurrentCalendarMonthId();
 const normalizeMonthId = (monthId: string) => {
   const currentMonthId = getCurrentMonthId();
   return compareMonthIds(monthId, currentMonthId) > 0 ? currentMonthId : monthId;
 };
+
+const sanitizeStorageScopeId = (value: string) => {
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
+  return normalized || 'anonymous';
+};
+
+export const getFinanceStorageKey = (storageScopeId: string) =>
+  `${FINANCE_STORAGE_PREFIX}:${sanitizeStorageScopeId(storageScopeId)}`;
+
+export const getEmptyFinanceStoreState = () => ({
+  currentMonthId: getCurrentMonthId(),
+  months: {},
+  hasOnboarded: false,
+});
+
+export function prepareFinanceStorageForScope(
+  storageScopeId: string,
+  options?: { migrateLegacy?: boolean }
+) {
+  if (typeof window === 'undefined') return;
+  if (!options?.migrateLegacy) return;
+
+  const scopedKey = getFinanceStorageKey(storageScopeId);
+  const scopedData = window.localStorage.getItem(scopedKey);
+  const legacyData = window.localStorage.getItem(LEGACY_FINANCE_STORAGE_KEY);
+
+  if (!legacyData) return;
+
+  if (!scopedData) {
+    window.localStorage.setItem(scopedKey, legacyData);
+  }
+
+  window.localStorage.removeItem(LEGACY_FINANCE_STORAGE_KEY);
+}
 
 const createEmptyMonth = (monthId: string, income = 0): MonthData => ({
   id: monthId,
@@ -43,9 +80,7 @@ type FinanceStateExtended = FinanceState & {
 export const useFinanceStore = create<FinanceStateExtended>()(
   persist(
     (set, get) => ({
-      currentMonthId: getCurrentMonthId(),
-      months: {},
-      hasOnboarded: false,
+      ...getEmptyFinanceStoreState(),
 
       getCurrentMonth: () => {
         const state = get();
@@ -408,7 +443,8 @@ export const useFinanceStore = create<FinanceStateExtended>()(
       completeOnboarding: () => set({ hasOnboarded: true }),
     }),
     {
-      name: 'nexo-finance-storage',
+      name: getFinanceStorageKey('anonymous'),
+      skipHydration: true,
     }
   )
 );

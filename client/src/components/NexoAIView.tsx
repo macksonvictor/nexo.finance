@@ -87,8 +87,8 @@ interface ModeMeta {
   requiredPlan: PlanTier;
 }
 
-const AI_CONVERSATION_STORAGE_PREFIX = "nexo:ai:conversations";
-const AI_LEGACY_SESSION_STORAGE_PREFIX = "nexo:ai:session";
+const AI_CONVERSATION_STORAGE_PREFIX = "nexo:ai:v2:conversations";
+const AI_LEGACY_SESSION_STORAGE_PREFIX = "nexo:ai:v2:session";
 const AI_HISTORY_VISIBILITY_STORAGE_KEY = "nexo:ai:history-visible";
 
 const MODE_META: Record<AIVisibleMode, ModeMeta> = {
