@@ -347,7 +347,7 @@ Detalhes:
 
 ## Autoria
 
-NEXO Finance e um projeto autoral de **Mackson Gaspar**.
+NEXO Finance e um projeto autoral de **Tesserakt**.
 
 Apresentacao recomendada da marca:
 
