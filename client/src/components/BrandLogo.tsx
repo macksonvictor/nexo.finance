@@ -11,7 +11,7 @@ export function BrandLogo({ className, alt = BRAND_NAME }: BrandLogoProps) {
     <img
       src={BRAND_LOGO_SRC}
       alt={alt}
-      className={cn("object-contain select-none", className)}
+      className={cn("nexo-brand-logo object-contain select-none", className)}
       draggable={false}
     />
   );

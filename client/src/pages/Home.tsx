@@ -29,7 +29,7 @@ import { OpenBankingView } from "@/components/OpenBankingView";
 import { PlanosView } from "@/components/PlanosView";
 import { NexoAIView } from "@/components/NexoAIView";
 import { IndicadoresView } from "@/components/IndicadoresView";
-import { EditIncomeModal } from "@/components/EditIncomeModal";
+import { SettingsModal, type SettingsSection } from "@/components/SettingsModal";
 import { exportToCSV } from "@/lib/exportService";
 import { BRAND_AI_NAME } from "@/lib/branding";
 import type { ViewType } from "@/types/finance";
@@ -53,6 +53,8 @@ type AIEntryState = {
   initialMode: AIVisibleMode;
   nonce: number;
 };
+
+type AIWindowMode = "official" | "contextual";
 
 function mapViewToAISource(view: ViewType): AISourceView {
   switch (view) {
@@ -96,13 +98,15 @@ export default function Home() {
     syncCurrentMonth,
   } = useFinanceStore();
   const [currentView, setCurrentView] = useState<ViewType>("dashboard");
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsInitialSection, setSettingsInitialSection] =
+    useState<SettingsSection>("geral");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(
     getInitialSidebarState()
   );
   const [isFinanceStoreReady, setIsFinanceStoreReady] = useState(false);
-  const [isAIOverlayOpen, setIsAIOverlayOpen] = useState(false);
+  const [aiWindowMode, setAIWindowMode] = useState<AIWindowMode | null>(null);
   const [aiEntry, setAIEntry] = useState<AIEntryState>({
     sourceView: "ia",
     initialMode: "chat",
@@ -186,14 +190,14 @@ export default function Home() {
   }, [hasOnboarded, isAuthenticated, isFinanceStoreReady, syncCurrentMonth]);
 
   useEffect(() => {
-    if (!isAIOverlayOpen) return;
+    if (!aiWindowMode) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsAIOverlayOpen(false);
+        setAIWindowMode(null);
       }
     };
 
@@ -203,7 +207,7 @@ export default function Home() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isAIOverlayOpen]);
+  }, [aiWindowMode]);
 
   const updateAIEntry = (entry?: {
     sourceView?: AISourceView;
@@ -227,34 +231,66 @@ export default function Home() {
     initialMode?: AIVisibleMode;
   }) => {
     updateAIEntry(entry);
-    setIsAIOverlayOpen(true);
+    setAIWindowMode("contextual");
+    setSettingsOpen(false);
     setSidebarOpen(false);
   };
 
-  const openAITab = (entry?: {
+  const openOfficialAIWindow = (entry?: {
     sourceView?: AISourceView;
     sourceEntityId?: string;
     initialPrompt?: string;
     initialMode?: AIVisibleMode;
   }) => {
-    updateAIEntry(entry);
-    setIsAIOverlayOpen(false);
-    setCurrentView("ia");
+    updateAIEntry({
+      sourceView: entry?.sourceView ?? "ia",
+      sourceEntityId: entry?.sourceEntityId,
+      initialPrompt: entry?.initialPrompt,
+      initialMode: entry?.initialMode ?? "chat",
+    });
+    setAIWindowMode("official");
+    setSettingsOpen(false);
     setSidebarOpen(false);
   };
 
-  const closeAIOverlay = () => {
-    setIsAIOverlayOpen(false);
-    setSidebarOpen(false);
-  };
-
-  const handleViewChange = (view: ViewType) => {
-    if (view === "ia") {
-      openAITab({ sourceView: mapViewToAISource(currentView) });
+  const toggleOfficialAIWindow = () => {
+    if (aiWindowMode) {
+      setAIWindowMode(null);
+      setSidebarOpen(false);
       return;
     }
 
-    setIsAIOverlayOpen(false);
+    openOfficialAIWindow({ sourceView: "ia" });
+  };
+
+  const closeAIWindow = () => {
+    setAIWindowMode(null);
+    setSidebarOpen(false);
+  };
+
+  const openSettings = (section: SettingsSection = "geral") => {
+    setSettingsInitialSection(section);
+    setSettingsOpen(true);
+    setAIWindowMode(null);
+    setSidebarOpen(false);
+  };
+
+  const closeSettings = () => {
+    setSettingsOpen(false);
+  };
+
+  const handleViewChange = (view: ViewType) => {
+    if (view === "configuracoes") {
+      openSettings();
+      return;
+    }
+
+    if (view === "ia") {
+      openOfficialAIWindow({ sourceView: "ia" });
+      return;
+    }
+
+    setAIWindowMode(null);
     setCurrentView(view);
     setSidebarOpen(false);
   };
@@ -387,6 +423,7 @@ export default function Home() {
       case "dashboard":
         return (
           <DashboardView
+            onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
@@ -423,6 +460,7 @@ export default function Home() {
       case "historico":
         return (
           <HistoricoView
+            onExport={handleExport}
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "historico",
@@ -449,22 +487,36 @@ export default function Home() {
         );
       case "planos":
         return <PlanosView />;
+      case "configuracoes":
+        return (
+          <DashboardView
+            onOpenSettings={() => openSettings("receita")}
+            onAskAI={() =>
+              openAIOverlay({
+                sourceView: "dashboard",
+                initialPrompt:
+                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+              })
+            }
+          />
+        );
       case "ia":
         return (
-          <NexoAIView
-            key={`ai-tab:${aiViewIdentityKey}`}
-            onNavigate={(view) => handleViewChange(view as ViewType)}
-            sourceView={aiEntry.sourceView}
-            sourceEntityId={aiEntry.sourceEntityId}
-            storageScopeId={aiStorageScopeId}
-            initialPrompt={aiEntry.initialPrompt}
-            initialMode={aiEntry.initialMode}
-            entryKey={aiEntry.nonce}
+          <DashboardView
+            onOpenSettings={() => openSettings("receita")}
+            onAskAI={() =>
+              openAIOverlay({
+                sourceView: "dashboard",
+                initialPrompt:
+                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+              })
+            }
           />
         );
       default:
         return (
           <DashboardView
+            onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
@@ -482,13 +534,12 @@ export default function Home() {
     : DESKTOP_SIDEBAR_EXPANDED;
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="nexo-app-shell flex h-[100dvh] min-h-0 overflow-hidden bg-background text-foreground">
       <MobileHeader
         currentView={currentView}
         onViewChange={handleViewChange}
-        onOpenAIWindow={() =>
-          openAIOverlay({ sourceView: mapViewToAISource(currentView) })
-        }
+        onOpenAIWindow={toggleOfficialAIWindow}
+        onOpenSettings={openSettings}
         onMenuToggle={setSidebarOpen}
         menuOpen={sidebarOpen}
         user={user}
@@ -505,21 +556,22 @@ export default function Home() {
       )}
 
       <div
-        className={`fixed left-0 top-14 z-40 h-[calc(100vh-56px)] w-[220px] bg-[#1A1A1A] transition-transform duration-300 md:hidden ${
+        className={`fixed left-0 top-14 z-40 h-[calc(100vh-56px)] w-[220px] transition-transform duration-300 md:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar
-          currentView={currentView}
-          onViewChange={(view) => {
-            handleViewChange(view);
-          }}
-          onExport={handleExport}
-          onEditIncome={() => setShowEditModal(true)}
-          user={user}
-          isPremium={isPremium}
-          isAdmin={isAdmin}
-        />
+        <div className="nexo-shell-float h-full overflow-hidden rounded-r-[26px] border-l-0">
+          <Sidebar
+            currentView={currentView}
+            onViewChange={(view) => {
+              handleViewChange(view);
+            }}
+            onOpenSettings={openSettings}
+            isPremium={isPremium}
+            isAdmin={isAdmin}
+            settingsOpen={settingsOpen}
+          />
+        </div>
       </div>
 
       <div
@@ -529,12 +581,11 @@ export default function Home() {
         <Sidebar
           currentView={currentView}
           onViewChange={handleViewChange}
-          onExport={handleExport}
-          onEditIncome={() => setShowEditModal(true)}
-          user={user}
+          onOpenSettings={openSettings}
           isPremium={isPremium}
           isAdmin={isAdmin}
           collapsed={desktopSidebarCollapsed}
+          settingsOpen={settingsOpen}
           onToggleCollapse={() =>
             setDesktopSidebarCollapsed((collapsed) => !collapsed)
           }
@@ -546,51 +597,69 @@ export default function Home() {
         style={{ width: `${desktopSidebarWidth}px` }}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DesktopHeader
           currentView={currentView}
           onViewChange={handleViewChange}
-          onOpenAIWindow={() =>
-            openAIOverlay({ sourceView: mapViewToAISource(currentView) })
-          }
-          isAIWindowOpen={isAIOverlayOpen}
+          onOpenAIWindow={toggleOfficialAIWindow}
+          onOpenSettings={openSettings}
+          isAIWindowOpen={aiWindowMode !== null}
           user={user}
           isPremium={isPremium}
           isAdmin={isAdmin}
         />
 
         <main
-          className={`flex-1 min-h-0 ${
-            currentView === "ia" ? "overflow-hidden" : "overflow-auto"
-          }`}
+          className="flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-y-contain touch-pan-y"
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {currentView === "ia" ? (
-            <div className="h-full min-h-0">{renderView()}</div>
-          ) : (
-            <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
-              {renderView()}
-            </div>
-          )}
+          <div className="mx-auto w-full max-w-7xl p-4 pb-10 md:p-6 md:pb-12 lg:p-8 lg:pb-14">
+            {renderView()}
+          </div>
         </main>
       </div>
 
-      {isAIOverlayOpen && (
+      {aiWindowMode && (
         <div className="fixed inset-0 z-[80]">
           <button
             type="button"
             aria-label="Fechar janela da Nexo IA"
             className="absolute inset-0 bg-black/68 backdrop-blur-[2px]"
-            onClick={closeAIOverlay}
+            onClick={closeAIWindow}
           />
 
-          <div className="pointer-events-none absolute inset-0 flex justify-end md:p-4">
+          <div
+            className={`pointer-events-none absolute inset-0 flex ${
+              aiWindowMode === "contextual"
+                ? "justify-end md:p-4"
+                : "items-center justify-center p-2 sm:p-4"
+            }`}
+          >
             <div
-              className="pointer-events-auto relative h-full w-full md:w-[50vw]"
+              className={`pointer-events-auto relative ${
+                aiWindowMode === "contextual"
+                  ? "h-full w-full md:w-[50vw]"
+                  : ""
+              }`}
+              style={
+                aiWindowMode === "contextual"
+                  ? undefined
+                  : {
+                      width: "min(1320px, calc(100vw - 32px))",
+                      height: "min(860px, calc(100dvh - 32px))",
+                    }
+              }
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex h-full flex-col overflow-hidden border border-[#222222] bg-[#0D0D0D] shadow-[0_24px_80px_rgba(0,0,0,0.55)] md:rounded-[28px]">
+              <div
+                className={`flex h-full min-h-0 flex-col overflow-hidden ${
+                  aiWindowMode === "contextual"
+                    ? "border border-[#222222] bg-[#0D0D0D] shadow-[0_24px_80px_rgba(0,0,0,0.55)] md:rounded-[28px]"
+                    : "nexo-shell-float rounded-[28px]"
+                }`}
+              >
                 <NexoAIView
-                  key={`ai-overlay:${aiViewIdentityKey}`}
+                  key={`ai-window:${aiViewIdentityKey}:${aiEntry.nonce}`}
                   onNavigate={(view) => handleViewChange(view as ViewType)}
                   sourceView={aiEntry.sourceView}
                   sourceEntityId={aiEntry.sourceEntityId}
@@ -598,8 +667,9 @@ export default function Home() {
                   initialPrompt={aiEntry.initialPrompt}
                   initialMode={aiEntry.initialMode}
                   entryKey={aiEntry.nonce}
-                  overlayMode
-                  onClose={closeAIOverlay}
+                  overlayMode={aiWindowMode === "contextual"}
+                  resetOnEntry={aiWindowMode === "official"}
+                  onClose={closeAIWindow}
                 />
               </div>
             </div>
@@ -607,10 +677,17 @@ export default function Home() {
         </div>
       )}
 
-      <EditIncomeModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={closeSettings}
+        user={user}
+        isPremium={isPremium}
+        isAdmin={isAdmin}
+        monthId={currentMonthId}
         currentIncome={month?.income ?? 0}
+        onExport={handleExport}
+        onNavigate={handleViewChange}
+        initialSection={settingsInitialSection}
       />
     </div>
   );

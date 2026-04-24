@@ -1,9 +1,10 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import {
   compareMonthIds,
   formatMonthYear,
   getCurrentCalendarMonthId,
 } from "@/lib/formatters";
+import { useTheme } from "@/contexts/ThemeContext";
+import { lottieAnimations, type NexoLottieAnimation } from "@/lib/lottieAnimations";
 import { BRAND_NAME } from "@/lib/branding";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import type { ViewType } from "@/types/finance";
@@ -12,77 +13,144 @@ import {
   Activity,
   BarChart3,
   Box,
-  Building2,
   ChevronDown,
   Clock,
-  Download,
-  Edit2,
   LayoutDashboard,
-  LogOut,
+  Settings,
   Shield,
-  Sparkles,
   Target,
+  type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatedLottieIcon } from "./AnimatedLottieIcon";
 import { BrandLogo } from "./BrandLogo";
 
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
-  onExport: () => void;
-  onEditIncome?: () => void;
-  user?: { name?: string | null; email?: string | null } | null;
+  onOpenSettings: () => void;
   isPremium?: boolean;
   isAdmin?: boolean;
   isPreviewMode?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  settingsOpen?: boolean;
+}
+
+const NAV_ICON_SIZE = 18;
+
+function PulseHeartRestIcon() {
+  return (
+    <svg
+      viewBox="0 0 56 48"
+      fill="none"
+      className="h-full w-full"
+      aria-hidden="true"
+    >
+      <path
+        d="M10 26.46h7.19l5.2-9.24 5.25 17.28L35.07 10l4.64 16.46H46"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 const NAV_ITEMS: {
   id: ViewType;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon?: LucideIcon;
+  animation?: NexoLottieAnimation;
+  animationVisualSize?: number;
+  animationScale?: number;
+  animationRestFrame?: number;
+  animationTintVariant?: "solid" | "outlined";
+  fallback?: ReactNode;
+  useStaticFallback?: boolean;
   premiumOnly?: boolean;
-  highlight?: boolean;
 }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "caixas", label: "Caixas", icon: Box },
-  { id: "metas", label: "Metas", icon: Target },
-  { id: "historico", label: "Histórico", icon: Clock },
-  { id: "relatorios", label: "Relatórios", icon: BarChart3 },
-  { id: "ia", label: "Nexo IA", icon: Sparkles, highlight: true },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    animation: lottieAnimations.dashboard,
+    animationVisualSize: 36,
+    animationScale: 4.25,
+    animationRestFrame: 272,
+    useStaticFallback: false,
+  },
+  {
+    id: "caixas",
+    label: "Caixas",
+    icon: Box,
+    animation: lottieAnimations.boxOpen,
+    animationVisualSize: 48,
+    animationScale: 4.35,
+    animationRestFrame: 179,
+    useStaticFallback: false,
+  },
+  {
+    id: "metas",
+    label: "Metas",
+    icon: Target,
+    animation: lottieAnimations.targetGoal,
+    animationVisualSize: 48,
+    animationScale: 3.15,
+    animationRestFrame: 68,
+    useStaticFallback: false,
+  },
+  {
+    id: "relatorios",
+    label: "Relatórios",
+    icon: BarChart3,
+    animation: lottieAnimations.barChartClean,
+    animationVisualSize: 58,
+    animationScale: 1.4,
+    animationRestFrame: 96,
+    useStaticFallback: false,
+  },
   {
     id: "indicadores",
     label: "Indicadores",
     icon: Activity,
-    premiumOnly: true,
-  },
-  {
-    id: "openbanking",
-    label: "Open Banking",
-    icon: Building2,
+    animation: lottieAnimations.pulseHeart,
+    animationVisualSize: 24,
+    animationScale: 1.75,
+    fallback: <PulseHeartRestIcon />,
     premiumOnly: true,
   },
 ];
 
+const HISTORY_ITEM = {
+  id: "historico" as const,
+  label: "Histórico",
+  icon: Clock,
+  animation: lottieAnimations.clock,
+};
+
 export function Sidebar({
   currentView,
   onViewChange,
-  onExport,
-  onEditIncome,
-  user,
+  onOpenSettings,
   isPremium,
   isAdmin,
   isPreviewMode = false,
   collapsed = false,
   onToggleCollapse,
+  settingsOpen = false,
 }: SidebarProps) {
-  const { logout } = useAuth();
+  const { theme } = useTheme();
   const { currentMonthId, months, setCurrentMonth, initMonth } =
     useFinanceStore();
   const [monthOpen, setMonthOpen] = useState(false);
+  const monthMenuRef = useRef<HTMLDivElement>(null);
+  const [hoveredNavId, setHoveredNavId] = useState<ViewType | null>(null);
+  const [hoveredFooterAction, setHoveredFooterAction] = useState<
+    "historico" | "settings" | null
+  >(null);
+  const [iconPlayKeys, setIconPlayKeys] = useState<Record<string, number>>({});
 
   const monthOptions = useMemo(() => {
     const currentCalendarMonthId = getCurrentCalendarMonthId();
@@ -112,46 +180,100 @@ export function Sidebar({
     setMonthOpen(false);
   };
 
-  const initials =
-    user?.name?.trim()?.charAt(0)?.toUpperCase() ??
-    user?.email?.trim()?.charAt(0)?.toUpperCase() ??
-    "U";
-
   const monthLabel = collapsed
     ? formatMonthYear(currentMonthId).slice(0, 3).toUpperCase()
     : formatMonthYear(currentMonthId);
+  const animatedNavIconClass =
+    theme === "light" ? "text-foreground" : "text-[#F5F5F5]";
+
+  const triggerIconAnimation = (key: string) => {
+    setIconPlayKeys((previous) => ({
+      ...previous,
+      [key]: (previous[key] ?? 0) + 1,
+    }));
+  };
+
+  useEffect(() => {
+    if (!monthOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        monthMenuRef.current &&
+        !monthMenuRef.current.contains(event.target as Node)
+      ) {
+        setMonthOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMonthOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [monthOpen]);
 
   return (
     <aside
       className="flex h-full flex-col"
       style={{
-        background: "oklch(0.08 0 0)",
-        borderRight: "1px solid oklch(0.15 0 0)",
-        boxShadow:
-          "4px 0 24px oklch(0 0 0 / 0.5), 1px 0 0 oklch(0.18 0 0 / 0.24)",
+        background: "var(--sidebar)",
+        borderRight: "1px solid var(--sidebar-border)",
+        boxShadow: "var(--sidebar-shadow)",
       }}
     >
       <div
         className={`border-b border-sidebar-border ${
-          collapsed ? "px-3 py-5" : "px-5 py-4"
+          collapsed ? "px-3 py-4" : "px-5 py-5"
         }`}
       >
         {collapsed ? (
-          <div className="flex items-center justify-center">
-            <BrandLogo alt={BRAND_NAME} className="h-10 w-10 shrink-0" />
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <BrandLogo alt={BRAND_NAME} className="h-12 w-12 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-[18px] font-semibold leading-none tracking-tight text-foreground">
-                {BRAND_NAME}
-              </h1>
-            </div>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <button
+              onClick={() => onViewChange("dashboard")}
+              className="flex items-center justify-center rounded-2xl bg-transparent p-0 transition-transform duration-200 hover:scale-[1.02]"
+              aria-label="Voltar para o Dashboard"
+              title="Voltar para o Dashboard"
+            >
+              <BrandLogo alt={BRAND_NAME} className="h-10 w-10 shrink-0" />
+            </button>
             {onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
-                className="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[15px] font-semibold tracking-tight text-[#8A8A8A] transition-colors hover:bg-[#191919] hover:text-[#F5F5F5]"
+                className="nexo-shell-control flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[13px] font-semibold tracking-tight text-muted-foreground hover:text-foreground"
+                title="Expandir barra lateral"
+                aria-label="Expandir barra lateral"
+              >
+                &gt;&gt;
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => onViewChange("dashboard")}
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl bg-transparent p-0 text-left transition-transform duration-200 hover:scale-[1.01]"
+              aria-label="Voltar para o Dashboard"
+              title="Voltar para o Dashboard"
+            >
+              <BrandLogo alt={BRAND_NAME} className="h-11 w-11 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-[18px] font-semibold leading-none tracking-tight text-foreground">
+                  {BRAND_NAME}
+                </h1>
+              </div>
+            </button>
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="nexo-shell-control flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[15px] font-semibold tracking-tight text-muted-foreground hover:text-foreground"
                 title="Recolher barra lateral"
                 aria-label="Recolher barra lateral"
               >
@@ -167,19 +289,18 @@ export function Sidebar({
           collapsed ? "px-2 py-3" : "px-3 py-3"
         }`}
       >
-        <div className="relative">
+        <div
+          ref={monthMenuRef}
+          className="relative overflow-visible"
+          onMouseLeave={() => setMonthOpen(false)}
+        >
           <button
             onClick={() => setMonthOpen((value) => !value)}
-            className={`flex w-full items-center rounded-xl text-sidebar-foreground transition-all duration-200 ${
+            className={`nexo-shell-control flex w-full items-center rounded-xl text-sidebar-foreground ${
               collapsed
                 ? "justify-center px-2 py-2.5"
                 : "justify-between px-3 py-2.5"
             }`}
-            style={{
-              background: "oklch(0.13 0 0)",
-              boxShadow:
-                "0 1px 0 0 oklch(0.2 0 0) inset, 0 -1px 0 0 oklch(0.06 0 0) inset, 0 3px 8px oklch(0 0 0 / 0.4)",
-            }}
             title={formatMonthYear(currentMonthId)}
           >
             <span
@@ -203,14 +324,13 @@ export function Sidebar({
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className={`absolute top-full z-50 mt-1 max-h-[240px] overflow-y-auto rounded-xl ${
+              className={`absolute top-full z-[90] mt-1 max-h-[240px] overflow-y-auto rounded-xl ${
                 collapsed ? "left-[calc(100%+8px)] w-[180px]" : "left-0 right-0"
               }`}
               style={{
-                background: "oklch(0.15 0 0)",
-                border: "1px solid oklch(0.22 0 0)",
-                boxShadow:
-                  "0 16px 40px -8px oklch(0 0 0 / 0.8), 0 6px 16px oklch(0 0 0 / 0.5)",
+                background: "var(--popover)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--popover-shadow)",
               }}
             >
               {monthOptions.map((opt) => (
@@ -248,23 +368,23 @@ export function Sidebar({
           return (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={`group relative flex w-full items-center rounded-xl text-sm font-medium transition-all duration-200 ${
-                collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-3"
+              onClick={() => {
+                triggerIconAnimation(item.id);
+                onViewChange(item.id);
+              }}
+              onPointerEnter={() => setHoveredNavId(item.id)}
+              onPointerLeave={() => setHoveredNavId(null)}
+              onFocus={() => setHoveredNavId(item.id)}
+              onBlur={() => setHoveredNavId(null)}
+              className={`group relative flex w-full items-center rounded-xl text-sm font-medium ${
+                collapsed
+                  ? "justify-center px-2 py-3"
+                  : "gap-3 px-3 py-3"
               } ${
                 isActive
-                  ? "text-foreground"
-                  : "text-sidebar-foreground hover:text-foreground"
+                  ? "nexo-shell-control-active text-foreground"
+                  : "nexo-shell-ghost-control text-sidebar-foreground hover:text-foreground"
               }`}
-              style={
-                isActive
-                  ? {
-                      background: "oklch(0.15 0 0)",
-                      boxShadow:
-                        "0 1px 0 0 oklch(0.22 0 0) inset, 0 -1px 0 0 oklch(0.06 0 0) inset, 0 4px 12px oklch(0 0 0 / 0.45)",
-                    }
-                  : undefined
-              }
               title={item.label}
             >
               {isActive && (
@@ -278,12 +398,43 @@ export function Sidebar({
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
-              <Icon
-                className={`h-4 w-4 shrink-0 ${
-                  item.highlight && !isActive ? "text-[#BFBFBF]" : ""
-                }`}
-              />
-              {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
+              {item.animation ? (
+                <AnimatedLottieIcon
+                  animationData={item.animation}
+                  size={NAV_ICON_SIZE}
+                  visualSize={item.animationVisualSize}
+                  contentScale={item.animationScale ?? 1}
+                  restFrame={item.animationRestFrame ?? 0}
+                  active={isActive || hoveredNavId === item.id}
+                  playKey={iconPlayKeys[item.id]}
+                  className={`${animatedNavIconClass} overflow-visible`}
+                  tintVariant={item.animationTintVariant}
+                  fallback={
+                    item.fallback ?? (
+                      item.useStaticFallback === false || !Icon ? undefined : (
+                        <Icon
+                          className="h-[18px] w-[18px] shrink-0"
+                          style={
+                            item.animationVisualSize
+                              ? {
+                                  height: item.animationVisualSize,
+                                  width: item.animationVisualSize,
+                                }
+                              : undefined
+                          }
+                        />
+                      )
+                    )
+                  }
+                />
+              ) : Icon ? (
+                <Icon className="h-[18px] w-[18px] shrink-0" />
+              ) : (
+                null
+              )}
+              {!collapsed && (
+                <span className="flex-1 text-left">{item.label}</span>
+              )}
               {collapsed && locked && (
                 <Shield className="absolute bottom-1 right-1 h-3 w-3 text-[#8F8F8F]" />
               )}
@@ -297,102 +448,83 @@ export function Sidebar({
           collapsed ? "px-2 py-3" : "p-3"
         }`}
       >
-        {onEditIncome && (
-          <button
-            onClick={onEditIncome}
-            className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground ${
-              collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
-            }`}
-            title="Editar receita"
-          >
-            <Edit2 className="h-4 w-4" />
-            {!collapsed && <span className="nexo-label">Editar receita</span>}
-          </button>
-        )}
-
         <button
-          onClick={onExport}
-          className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground ${
-            collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+          onClick={() => {
+            triggerIconAnimation(HISTORY_ITEM.id);
+            onViewChange(HISTORY_ITEM.id);
+          }}
+          onPointerEnter={() => setHoveredFooterAction("historico")}
+          onPointerLeave={() => setHoveredFooterAction(null)}
+          onFocus={() => setHoveredFooterAction("historico")}
+          onBlur={() => setHoveredFooterAction(null)}
+          className={`group relative flex w-full items-center rounded-xl text-sm font-medium ${
+            collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-3"
+          } ${
+            currentView === HISTORY_ITEM.id
+              ? "nexo-shell-control-active text-foreground"
+              : "nexo-shell-ghost-control text-sidebar-foreground hover:text-foreground"
           }`}
-          title="Exportar dados"
+          title={HISTORY_ITEM.label}
         >
-          <Download className="h-4 w-4" />
-          {!collapsed && <span className="nexo-label">Exportar dados</span>}
+          {currentView === HISTORY_ITEM.id && (
+            <motion.div
+              layoutId="activeNav"
+              className={`absolute top-1/2 h-5 -translate-y-1/2 bg-foreground ${
+                collapsed
+                  ? "left-1 w-1.5 rounded-full"
+                  : "left-0 w-[3px] rounded-r-full"
+              }`}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          )}
+          <AnimatedLottieIcon
+            animationData={HISTORY_ITEM.animation}
+            size={NAV_ICON_SIZE}
+            visualSize={NAV_ICON_SIZE}
+            contentScale={1.34}
+            active={
+              currentView === HISTORY_ITEM.id ||
+              hoveredFooterAction === "historico"
+            }
+            playKey={iconPlayKeys[HISTORY_ITEM.id]}
+            className={`${animatedNavIconClass} overflow-visible`}
+            fallback={<Clock className="h-[16.5px] w-[16.5px] shrink-0" />}
+          />
+          {!collapsed && <span className="flex-1 text-left">{HISTORY_ITEM.label}</span>}
         </button>
 
-        {!collapsed && user && (
-          <div className="flex items-center gap-3 rounded-xl bg-[#121212] px-3 py-3">
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                isAdmin
-                  ? "bg-[#F5F5F5] text-[#0D0D0D]"
-                  : "bg-[#2E2E2E] text-[#F5F5F5]"
-              }`}
-              title={user.name || user.email || "Usuário"}
-            >
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-medium text-muted-foreground">
-                {user.name || user.email || "Usuário"}
-              </span>
-              {isAdmin ? (
-                <span className="flex items-center gap-1 text-xs font-semibold text-[#F5F5F5]">
-                  <Shield className="h-3 w-3" /> Criador
-                </span>
-              ) : isPreviewMode ? (
-                <span className="text-xs text-[#8E8E8E]">Modo preview</span>
-              ) : isPremium ? (
-                <span className="text-xs text-[#DABF74]">Plano ativo</span>
-              ) : (
-                <span className="text-xs text-[#6F6F6F]">Conta Free</span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {collapsed && onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            className="flex w-full items-center justify-center rounded-xl px-2 py-2 text-[15px] font-semibold tracking-tight text-[#A0A0A0] transition-colors hover:bg-[#141414] hover:text-[#F5F5F5]"
-            title="Expandir barra lateral"
-            aria-label="Expandir barra lateral"
-          >
-            &gt;&gt;
-          </button>
-        )}
-
-        {collapsed && user && (
-          <div className="flex items-center justify-center rounded-xl bg-[#121212] px-2 py-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
-                isAdmin
-                  ? "bg-[#F5F5F5] text-[#0D0D0D]"
-                  : "bg-[#2E2E2E] text-[#F5F5F5]"
-              }`}
-              title={user.name || user.email || "Usuário"}
-            >
-              {initials}
-            </div>
-          </div>
-        )}
-
-        {!isPreviewMode && (
-          <button
-            onClick={() => {
-              toast.success("Sessão encerrada com sucesso");
-              void logout();
-            }}
-            className={`flex w-full items-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-[#8B2500] ${
-              collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
-            }`}
-            title="Sair"
-          >
-            <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="nexo-label">Sair</span>}
-          </button>
-        )}
+        <button
+          onClick={() => {
+            triggerIconAnimation("settings");
+            onOpenSettings();
+          }}
+          onPointerEnter={() => setHoveredFooterAction("settings")}
+          onPointerLeave={() => setHoveredFooterAction(null)}
+          onFocus={() => setHoveredFooterAction("settings")}
+          onBlur={() => setHoveredFooterAction(null)}
+          className={`flex w-full items-center rounded-xl text-muted-foreground hover:text-foreground ${
+            collapsed ? "justify-center px-2 py-3" : "gap-2 px-3 py-2.5 text-sm"
+          } ${
+            settingsOpen
+              ? "nexo-shell-control-active text-foreground"
+              : "nexo-shell-ghost-control"
+          }`}
+          title="Configurações"
+        >
+          <AnimatedLottieIcon
+            animationData={lottieAnimations.settings}
+            size={16}
+            visualSize={16}
+            contentScale={1}
+            active={
+              settingsOpen || hoveredFooterAction === "settings"
+            }
+            playKey={iconPlayKeys.settings}
+            className="text-current overflow-visible"
+            fallback={<Settings className="h-4 w-4 shrink-0" />}
+          />
+          {!collapsed && <span className="nexo-label">Configurações</span>}
+        </button>
       </div>
     </aside>
   );

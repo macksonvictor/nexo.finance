@@ -61,7 +61,7 @@ function IndicatorCard({ indicator }: { indicator: Indicator }) {
   const statusLabel = STATUS_LABELS[indicator.status];
 
   return (
-    <div className="nexo-depth-2 border border-[#2E2E2E] rounded-2xl p-5 space-y-4">
+    <div className="nexo-depth-2 border border-border rounded-2xl p-5 space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ function IndicatorCard({ indicator }: { indicator: Indicator }) {
             {indicator.icon}
           </div>
           <div>
-            <div className="text-[#F5F5F5] font-semibold text-sm">{indicator.label}</div>
+            <div className="text-foreground font-semibold text-sm">{indicator.label}</div>
             <div className="text-xs font-medium" style={{ color: statusColor }}>{statusLabel}</div>
           </div>
         </div>
@@ -83,13 +83,13 @@ function IndicatorCard({ indicator }: { indicator: Indicator }) {
           >
             {indicator.value}
           </div>
-          <div className="text-[#4a4a4a] text-xs">/100</div>
+          <div className="text-muted-foreground text-xs">/100</div>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="space-y-1">
-        <div className="w-full h-2 bg-[#2E2E2E] rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
@@ -101,12 +101,12 @@ function IndicatorCard({ indicator }: { indicator: Indicator }) {
       </div>
 
       {/* Description */}
-      <p className="text-[#BFBFBF] text-xs leading-relaxed">{indicator.description}</p>
+      <p className="text-muted-foreground text-xs leading-relaxed">{indicator.description}</p>
 
       {/* Tip */}
-      <div className="flex items-start gap-2 bg-[#0D0D0D] rounded-lg px-3 py-2">
-        <Info size={12} className="text-[#4a4a4a] flex-none mt-0.5" />
-        <p className="text-[#4a4a4a] text-xs leading-relaxed">{indicator.tip}</p>
+      <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/70 px-3 py-2">
+        <Info size={12} className="text-muted-foreground flex-none mt-0.5" />
+        <p className="text-muted-foreground text-xs leading-relaxed">{indicator.tip}</p>
       </div>
     </div>
   );
@@ -250,10 +250,10 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-[#F5F5F5] text-2xl font-semibold tracking-tight font-['Space_Grotesk']">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight font-['Space_Grotesk']">
             Indicadores
           </h1>
-          <p className="text-[#BFBFBF] text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Análise quantitativa da sua saúde financeira
           </p>
         </div>
@@ -265,7 +265,7 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
           >
             {overallScore}
           </div>
-          <div className="text-[#4a4a4a] text-xs">Score Geral</div>
+          <div className="text-muted-foreground text-xs">Score Geral</div>
         </div>
       </div>
 
@@ -278,22 +278,22 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
 
       {/* Gráfico Radar */}
       {indicators.length > 0 && (
-        <div className="nexo-depth-2 border border-[#2E2E2E] rounded-2xl p-5">
-          <h3 className="text-[#F5F5F5] font-semibold mb-4 font-['Space_Grotesk']">
+        <div className="nexo-depth-2 border border-border rounded-2xl p-5">
+          <h3 className="text-foreground font-semibold mb-4 font-['Space_Grotesk']">
             Perfil Financeiro
           </h3>
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={radarData}>
-              <PolarGrid stroke="#2E2E2E" />
+              <PolarGrid stroke="var(--border)" />
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fill: '#BFBFBF', fontSize: 12 }}
+                tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
               />
               <Radar
                 name="Score"
                 dataKey="value"
-                stroke="#F5F5F5"
-                fill="#F5F5F5"
+                stroke="var(--foreground)"
+                fill="var(--foreground)"
                 fillOpacity={0.1}
                 strokeWidth={1.5}
               />
@@ -303,11 +303,11 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
       )}
 
       {/* Gráfico de Evolução Histórica */}
-      <div className="nexo-depth-2 border border-[#2E2E2E] rounded-2xl p-5">
-        <h3 className="text-[#F5F5F5] font-semibold mb-1 font-['Space_Grotesk']">
+      <div className="nexo-depth-2 border border-border rounded-2xl p-5">
+        <h3 className="text-foreground font-semibold mb-1 font-['Space_Grotesk']">
           Evolução dos Indicadores
         </h3>
-        <p className="text-[#4a4a4a] text-xs mb-4">Últimos 6 meses (projeção)</p>
+        <p className="text-muted-foreground text-xs mb-4">Últimos 6 meses (projeção)</p>
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={historicalData}>
             <defs>
@@ -316,46 +316,46 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
                 <stop offset="95%" stopColor="#4a9a6a" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorCrescimento" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#BFBFBF" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#BFBFBF" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--muted-foreground)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--muted-foreground)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" />
-            <XAxis dataKey="month" tick={{ fill: '#4a4a4a', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} tick={{ fill: '#4a4a4a', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1A1A1A', border: '1px solid #2E2E2E', borderRadius: '8px' }}
-              labelStyle={{ color: '#F5F5F5' }}
-              itemStyle={{ color: '#BFBFBF' }}
+              contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--popover-foreground)' }}
+              labelStyle={{ color: 'var(--popover-foreground)' }}
+              itemStyle={{ color: 'var(--muted-foreground)' }}
             />
             <Area type="monotone" dataKey="disciplina" stroke="#4a9a6a" fill="url(#colorDisciplina)" strokeWidth={2} name="Disciplina" />
-            <Area type="monotone" dataKey="crescimento" stroke="#BFBFBF" fill="url(#colorCrescimento)" strokeWidth={2} name="Crescimento" />
+            <Area type="monotone" dataKey="crescimento" stroke="var(--muted-foreground)" fill="url(#colorCrescimento)" strokeWidth={2} name="Crescimento" />
             <Line type="monotone" dataKey="risco" stroke="#9a4a4a" strokeWidth={1.5} dot={false} name="Risco" strokeDasharray="4 2" />
           </AreaChart>
         </ResponsiveContainer>
         <div className="flex gap-4 mt-3">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-0.5 bg-[#4a9a6a]" />
-            <span className="text-[#4a4a4a] text-xs">Disciplina</span>
+            <span className="text-muted-foreground text-xs">Disciplina</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 bg-[#BFBFBF]" />
-            <span className="text-[#4a4a4a] text-xs">Crescimento</span>
+            <div className="w-3 h-0.5 bg-muted-foreground" />
+            <span className="text-muted-foreground text-xs">Crescimento</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-0.5 bg-[#9a4a4a] border-dashed" style={{ borderTop: '1px dashed #9a4a4a', height: 0 }} />
-            <span className="text-[#4a4a4a] text-xs">Risco</span>
+            <span className="text-muted-foreground text-xs">Risco</span>
           </div>
         </div>
       </div>
 
       {/* Alerta se score baixo */}
       {overallScore < 50 && (
-        <div className="bg-[#9a4a4a]/10 border border-[#9a4a4a]/30 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle size={16} className="text-[#9a4a4a] flex-none mt-0.5" />
+        <div className="bg-destructive/10 border border-destructive/25 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle size={16} className="text-destructive flex-none mt-0.5" />
           <div>
-            <div className="text-[#F5F5F5] text-sm font-medium mb-1">Atenção necessária</div>
-            <p className="text-[#BFBFBF] text-xs leading-relaxed">
+            <div className="text-destructive text-sm font-medium mb-1">Atenção necessária</div>
+            <p className="text-foreground text-xs leading-relaxed">
               Seu score geral está abaixo de 50. Consulte a IA Nexo para um diagnóstico completo e plano de ação personalizado.
             </p>
           </div>

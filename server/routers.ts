@@ -5,8 +5,10 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getPlanLimits, type PlanTier } from "@shared/plans";
 import {
+  AI_CONTEXT_STATES,
   AI_SOURCE_VIEWS,
   AI_VISIBLE_MODES,
+  type AIExplicitContextInput,
   type AISourceView,
 } from "@shared/ai";
 import {
@@ -53,13 +55,14 @@ import {
   buildConversationMessages,
   createAIUsageState,
   deriveAIContextState,
+  enforceAIContextIntegrity,
   getAvailableModesForPlan,
   getLockedModesForPlan,
   getRequiredPlanForMode,
   isModeAvailableForPlan,
   type AIContextSnapshot,
 } from "./ai";
-import { collectPythonInsights } from "./_core/pythonAi";
+import { collectPythonInsights, getPythonAiHealth } from "./_core/pythonAi";
 
 function getAppBaseUrl(req: Request) {
   if (process.env.APP_URL) {
@@ -83,11 +86,67 @@ const aiConversationMessageSchema = z.object({
   content: z.string().min(1),
 });
 
+const aiExplicitContextSchema = z.object({
+  contextState: z.enum(AI_CONTEXT_STATES),
+  totalIncome: z.number().min(0),
+  totalAllocated: z.number().min(0),
+  totalSpent: z.number().min(0),
+  currentBalance: z.number(),
+  savingsRate: z.number(),
+  caixasSummary: z.array(
+    z.object({
+      nome: z.string().min(1),
+      categoria: z.string().min(1),
+      alocado: z.number().min(0),
+      gasto: z.number().min(0),
+      saldo: z.number(),
+      percentualGasto: z.number().min(0),
+      criticidade: z.enum(["alta", "media", "baixa"]),
+    })
+  ),
+  metasSummary: z.array(
+    z.object({
+      nome: z.string().min(1),
+      valorAlvo: z.number().min(0),
+      valorAtual: z.number().min(0),
+      progresso: z.number().min(0),
+      prazo: z.string().min(1),
+      risco: z.enum(["alto", "medio", "baixo"]),
+    })
+  ),
+  recentTransactions: z.array(
+    z.object({
+      description: z.string().min(1),
+      amount: z.number().min(0),
+      type: z.string().min(1),
+      date: z.string().min(1),
+      caixaNome: z.string().optional(),
+    })
+  ),
+  historicalMonths: z.array(
+    z.object({
+      monthId: z.string().min(1),
+      income: z.number().min(0),
+      allocated: z.number().min(0),
+      spent: z.number().min(0),
+      caixasCount: z.number().int().min(0),
+      metasCount: z.number().int().min(0),
+      transactionsCount: z.number().int().min(0),
+    })
+  ),
+  counts: z.object({
+    caixas: z.number().int().min(0),
+    metas: z.number().int().min(0),
+    transactions: z.number().int().min(0),
+  }),
+});
+
 const aiSessionInputSchema = z.object({
   monthId: z.string(),
   sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
   sourceEntityId: z.string().optional(),
   timeZone: z.string().optional(),
+  explicitContext: aiExplicitContextSchema.optional(),
 });
 
 function resolveUserPlan(
@@ -190,11 +249,141 @@ function getMetaRisk(
   return "medio" as const;
 }
 
+function scoreSnapshotRichness(snapshot: Pick<
+  AIContextSnapshot,
+  | "totalIncome"
+  | "counts"
+  | "caixasSummary"
+  | "metasSummary"
+  | "recentTransactions"
+  | "historicalMonths"
+>) {
+  return (
+    (snapshot.totalIncome > 0 ? 5 : 0) +
+    snapshot.counts.caixas * 4 +
+    snapshot.counts.metas * 3 +
+    Math.min(snapshot.counts.transactions, 18) +
+    Math.min(snapshot.recentTransactions.length, 12) +
+    snapshot.historicalMonths.length * 4 +
+    snapshot.caixasSummary.filter((caixa) => caixa.gasto > 0 || caixa.alocado > 0).length * 2
+  );
+}
+
+function mergeAISnapshotWithExplicitContext(
+  snapshot: AIContextSnapshot,
+  explicitContext?: AIExplicitContextInput
+): AIContextSnapshot {
+  if (!explicitContext) {
+    return snapshot;
+  }
+
+  const explicitScore = scoreSnapshotRichness({
+    totalIncome: explicitContext.totalIncome,
+    counts: explicitContext.counts,
+    caixasSummary: explicitContext.caixasSummary,
+    metasSummary: explicitContext.metasSummary,
+    recentTransactions: explicitContext.recentTransactions,
+    historicalMonths: explicitContext.historicalMonths,
+  });
+  const snapshotScore = scoreSnapshotRichness(snapshot);
+
+  if (explicitScore === 0) {
+    return snapshot;
+  }
+
+  if (explicitScore >= snapshotScore) {
+    return {
+      ...snapshot,
+      contextState: deriveAIContextState({
+        income: explicitContext.totalIncome,
+        caixasCount: explicitContext.counts.caixas,
+        metasCount: explicitContext.counts.metas,
+        transactionsCount: explicitContext.counts.transactions,
+      }),
+      totalIncome: explicitContext.totalIncome,
+      totalAllocated: explicitContext.totalAllocated,
+      totalSpent: explicitContext.totalSpent,
+      currentBalance: explicitContext.currentBalance,
+      savingsRate: explicitContext.savingsRate,
+      caixasSummary: explicitContext.caixasSummary,
+      metasSummary: explicitContext.metasSummary,
+      recentTransactions: explicitContext.recentTransactions,
+      historicalMonths: explicitContext.historicalMonths,
+      counts: explicitContext.counts,
+    };
+  }
+
+  return {
+    ...snapshot,
+    contextState: deriveAIContextState({
+      income:
+        snapshot.totalIncome > 0 ? snapshot.totalIncome : explicitContext.totalIncome,
+      caixasCount:
+        snapshot.counts.caixas > 0
+          ? snapshot.counts.caixas
+          : explicitContext.counts.caixas,
+      metasCount:
+        snapshot.counts.metas > 0
+          ? snapshot.counts.metas
+          : explicitContext.counts.metas,
+      transactionsCount:
+        snapshot.counts.transactions > 0
+          ? snapshot.counts.transactions
+          : explicitContext.counts.transactions,
+    }),
+    totalIncome:
+      snapshot.totalIncome > 0 ? snapshot.totalIncome : explicitContext.totalIncome,
+    totalAllocated:
+      snapshot.totalAllocated > 0
+        ? snapshot.totalAllocated
+        : explicitContext.totalAllocated,
+    totalSpent:
+      snapshot.totalSpent > 0 ? snapshot.totalSpent : explicitContext.totalSpent,
+    currentBalance:
+      snapshot.counts.caixas > 0
+        ? snapshot.currentBalance
+        : explicitContext.currentBalance,
+    savingsRate:
+      snapshot.totalIncome > 0 ? snapshot.savingsRate : explicitContext.savingsRate,
+    caixasSummary:
+      snapshot.caixasSummary.length > 0
+        ? snapshot.caixasSummary
+        : explicitContext.caixasSummary,
+    metasSummary:
+      snapshot.metasSummary.length > 0
+        ? snapshot.metasSummary
+        : explicitContext.metasSummary,
+    recentTransactions:
+      snapshot.recentTransactions.length > 0
+        ? snapshot.recentTransactions
+        : explicitContext.recentTransactions,
+    historicalMonths:
+      snapshot.historicalMonths.length > 0
+        ? snapshot.historicalMonths
+        : explicitContext.historicalMonths,
+    counts: {
+      caixas:
+        snapshot.counts.caixas > 0
+          ? snapshot.counts.caixas
+          : explicitContext.counts.caixas,
+      metas:
+        snapshot.counts.metas > 0
+          ? snapshot.counts.metas
+          : explicitContext.counts.metas,
+      transactions:
+        snapshot.counts.transactions > 0
+          ? snapshot.counts.transactions
+          : explicitContext.counts.transactions,
+    },
+  };
+}
+
 async function buildAISnapshot(params: {
   userId: number;
   monthId: string;
   sourceView: AISourceView;
   plan: PlanTier;
+  explicitContext?: AIExplicitContextInput;
 }): Promise<AIContextSnapshot> {
   const referenceDate = getAIReferenceDate(params.monthId);
   const currentMonth = await getOrCreateMonth(params.userId, params.monthId);
@@ -310,7 +499,7 @@ async function buildAISnapshot(params: {
     transactions: allTransactions.length,
   };
 
-  return {
+  const snapshot: AIContextSnapshot = {
     monthId: params.monthId,
     sourceView: params.sourceView,
     plan: params.plan,
@@ -332,6 +521,8 @@ async function buildAISnapshot(params: {
     historicalMonths,
     counts,
   };
+
+  return mergeAISnapshotWithExplicitContext(snapshot, params.explicitContext);
 }
 
 async function getAIUsageForUser(params: {
@@ -753,18 +944,20 @@ export const appRouter = router({
           ctx.user,
           (planInfo?.plan ?? "free") as PlanTier
         );
-        const [snapshot, usage] = await Promise.all([
+        const [snapshot, usage, python] = await Promise.all([
           buildAISnapshot({
             userId: ctx.user.id,
             monthId: input.monthId,
             sourceView: input.sourceView,
             plan,
+            explicitContext: input.explicitContext,
           }),
           getAIUsageForUser({
             userId: ctx.user.id,
             plan,
             timeZone: input.timeZone,
           }),
+          getPythonAiHealth(),
         ]);
 
         return {
@@ -774,6 +967,7 @@ export const appRouter = router({
           usage,
           suggestions: buildAISuggestions(snapshot),
           contextState: snapshot.contextState,
+          python,
         };
       }),
 
@@ -787,6 +981,7 @@ export const appRouter = router({
           sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
           sourceEntityId: z.string().optional(),
           timeZone: z.string().optional(),
+          explicitContext: aiExplicitContextSchema.optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -809,6 +1004,7 @@ export const appRouter = router({
             monthId: input.monthId,
             sourceView: input.sourceView,
             plan,
+            explicitContext: input.explicitContext,
           }),
           getAIUsageForUser({
             userId: ctx.user.id,
@@ -846,9 +1042,10 @@ export const appRouter = router({
           ],
         });
 
-        const content =
+        const rawContent =
           normalizeLLMContent(response.choices?.[0]?.message?.content) ||
           "Não foi possível gerar análise.";
+        const content = enforceAIContextIntegrity(rawContent, snapshot, input.mode);
 
         try {
           await createAIUsageEvent({
@@ -874,6 +1071,7 @@ export const appRouter = router({
           content,
           mode: input.mode,
           usage: createAIUsageState(plan, usage.used + 1, input.timeZone),
+          pythonHealth: pythonInsights.health,
           python: pythonInsights.analyses,
         };
       }),

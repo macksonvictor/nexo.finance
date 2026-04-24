@@ -74,7 +74,7 @@ export interface FinanceState {
   initMonth: (monthId: string) => void;
 }
 
-export type ViewType = 'dashboard' | 'caixas' | 'metas' | 'historico' | 'relatorios' | 'openbanking' | 'planos' | 'ia' | 'indicadores';
+export type ViewType = 'dashboard' | 'caixas' | 'metas' | 'historico' | 'relatorios' | 'openbanking' | 'planos' | 'ia' | 'indicadores' | 'configuracoes';
 
 export const CATEGORY_LABELS: Record<Caixa['category'], string> = {
   essencial: 'Essencial',

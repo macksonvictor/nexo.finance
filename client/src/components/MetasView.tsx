@@ -1,5 +1,5 @@
 // NEXO – Vault Architecture: Metas (goals) management view
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, TrendingUp, Calendar, Edit2, CalendarDays, Sparkles, Target, Wallet } from 'lucide-react';
 import { useFinanceStore } from '@/stores/useFinanceStore';
@@ -53,6 +53,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
     targetAmount: '',
     deadline: '',
   });
+  const formRef = useRef<HTMLDivElement>(null);
 
   if (!month) return null;
 
@@ -68,6 +69,19 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
     setEditingMetaId(null);
     setDeletingMetaId(null);
   }, [isHistoricalMonth]);
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const timeoutId = window.setTimeout(() => {
+      formRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showForm]);
 
   const handleAddMeta = () => {
     if (isHistoricalMonth) return;
@@ -250,6 +264,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
       <AnimatePresence>
         {showForm && (
           <motion.div
+            ref={formRef}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

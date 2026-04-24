@@ -418,10 +418,12 @@ export function buildAISuggestions(snapshot: AIContextSnapshot): Record<AIVisibl
 
 export function buildAISystemPrompt(snapshot: AIContextSnapshot, mode: AIVisibleMode) {
   const basePrompt =
-    "Você é o Nexo IA, assistente financeiro pessoal do NEXO. Responda em português do Brasil, com linguagem direta, acionável e sóbria. Use os dados reais do contexto quando existirem. Nunca invente números ausentes. Quando o contexto for insuficiente, diga isso claramente e oriente o usuário sobre o próximo passo mais útil.";
+    "Você é o Nexo IA, assistente financeiro pessoal do NEXO. Responda em português do Brasil, com linguagem direta, acionável, firme e sóbria. Use os dados reais do contexto quando existirem. Nunca invente números ausentes. Quando o contexto for insuficiente, diga isso claramente e oriente o usuário sobre o próximo passo mais útil. Evite respostas vagas, genéricas ou excessivamente diplomáticas quando houver sinais claros no contexto.";
 
   const modePrompt = getModePrompt(mode);
   const contextBlock = buildContextBlock(snapshot);
+  const priorityRead = buildPriorityRead(snapshot);
+  const integrityRules = buildContextIntegrityRules(snapshot);
 
   return `${basePrompt}
 
@@ -430,10 +432,202 @@ Origem da conversa: ${AI_SOURCE_LABELS[snapshot.sourceView]}
 Plano do usuário: ${snapshot.planName}
 Estado do contexto: ${snapshot.contextState}
 
+Regras de integridade do contexto:
+${integrityRules}
+
+Leitura prioritária do momento:
+${priorityRead}
+
 ${contextBlock}
 
 Instruções específicas do modo:
 ${modePrompt}`;
+}
+
+export function enforceAIContextIntegrity(
+  content: string,
+  snapshot: AIContextSnapshot,
+  mode: AIVisibleMode
+) {
+  const normalized = normalizeForIntegrityCheck(content);
+  const contradictions: string[] = [];
+
+  if (
+    snapshot.counts.caixas > 0 &&
+    /\b(nao|não)\s+(ha|há|tem|existem|vejo|encontrei)\s+(caixa|caixas)|\bnenhuma\s+caixa|\b0\s+caixas/.test(
+      normalized
+    )
+  ) {
+    contradictions.push("caixas");
+  }
+
+  if (
+    snapshot.counts.metas > 0 &&
+    /\b(nao|não)\s+(ha|há|tem|existem|vejo|encontrei)\s+(meta|metas)|\bnenhuma\s+meta|\b0\s+metas/.test(
+      normalized
+    )
+  ) {
+    contradictions.push("metas");
+  }
+
+  if (
+    snapshot.totalIncome > 0 &&
+    /\b(nao|não)\s+(ha|há|tem|vejo|encontrei)\s+(receita|renda)|\bsem\s+(receita|renda)|\breceita\s+de\s+r\$\s*0/.test(
+      normalized
+    )
+  ) {
+    contradictions.push("receita");
+  }
+
+  if (contradictions.length === 0) {
+    return content;
+  }
+
+  return buildContextGroundedFallback(snapshot, mode, contradictions);
+}
+
+function buildPriorityRead(snapshot: AIContextSnapshot) {
+  if (snapshot.contextState === "new_user") {
+    return "- O usuário ainda não estruturou dados suficientes. Oriente com clareza o primeiro passo operacional dentro do app.";
+  }
+
+  const criticalCaixa = snapshot.caixasSummary[0];
+  const highRiskMetas = snapshot.metasSummary.filter((meta) => meta.risco === "alto");
+  const historicalSpentAverage =
+    snapshot.historicalMonths.length > 0
+      ? snapshot.historicalMonths.reduce((sum, month) => sum + month.spent, 0) /
+        snapshot.historicalMonths.length
+      : null;
+  const spendVsHistory =
+    historicalSpentAverage && historicalSpentAverage > 0
+      ? ((snapshot.totalSpent - historicalSpentAverage) / historicalSpentAverage) * 100
+      : null;
+
+  const bullets = [
+    `- Considere o contexto acima como o estado mais recente que o usuário está vendo no app neste momento.`,
+    `- Receita do mês: ${formatCurrency(snapshot.totalIncome)} | gasto atual: ${formatCurrency(snapshot.totalSpent)} | saldo livre: ${formatCurrency(snapshot.currentBalance)}.`,
+  ];
+
+  if (criticalCaixa) {
+    bullets.push(
+      `- Caixa mais pressionada agora: ${criticalCaixa.nome} com ${criticalCaixa.percentualGasto}% consumido e criticidade ${criticalCaixa.criticidade}.`
+    );
+  }
+
+  if (highRiskMetas.length > 0) {
+    bullets.push(
+      `- Metas em risco alto: ${highRiskMetas.map((meta) => meta.nome).join(", ")}.`
+    );
+  }
+
+  if (spendVsHistory !== null) {
+    const direction = spendVsHistory >= 0 ? "acima" : "abaixo";
+    bullets.push(
+      `- O gasto atual está ${formatPercentage(Math.abs(spendVsHistory))} ${direction} da média recente do histórico.`
+    );
+  }
+
+  return bullets.join("\n");
+}
+
+function buildContextIntegrityRules(snapshot: AIContextSnapshot) {
+  const rules = [
+    "- Trate o bloco de contexto financeiro como fonte de verdade da resposta atual.",
+    "- Se houver números, nomes de caixas, metas ou transações, cite esses dados de forma explícita e não responda como se o usuário fosse novo.",
+    "- Se o contexto disser que existem caixas, é proibido afirmar que não há caixas cadastradas.",
+    "- Se o contexto disser que existem metas, é proibido afirmar que não há metas cadastradas.",
+    "- Se o contexto disser que existe receita, é proibido afirmar que a receita está zerada.",
+    "- Se banco e contexto explícito divergirem, priorize o contexto mais rico que aparece neste prompt.",
+  ];
+
+  if (snapshot.counts.caixas > 0) {
+    rules.push(
+      `- O usuário tem ${snapshot.counts.caixas} caixa(s) ativa(s): ${snapshot.caixasSummary
+        .map((caixa) => caixa.nome)
+        .slice(0, 6)
+        .join(", ")}.`
+    );
+  }
+
+  if (snapshot.counts.metas > 0) {
+    rules.push(
+      `- O usuário tem ${snapshot.counts.metas} meta(s) ativa(s): ${snapshot.metasSummary
+        .map((meta) => meta.nome)
+        .slice(0, 6)
+        .join(", ")}.`
+    );
+  }
+
+  if (snapshot.totalIncome > 0) {
+    rules.push(`- A receita do mês é ${formatCurrency(snapshot.totalIncome)}.`);
+  }
+
+  return rules.join("\n");
+}
+
+function buildContextGroundedFallback(
+  snapshot: AIContextSnapshot,
+  mode: AIVisibleMode,
+  contradictions: string[]
+) {
+  const topCaixa = snapshot.caixasSummary[0];
+  const highRiskMetas = snapshot.metasSummary.filter((meta) => meta.risco === "alto");
+  const modeLead =
+    mode === "risk"
+      ? "Seu risco precisa ser lido pelos dados reais do mês, não por uma tela vazia."
+      : mode === "predict"
+      ? "A projeção precisa partir do que já está registrado no mês."
+      : mode === "recommendations"
+      ? "A recomendação correta precisa considerar o que já existe no seu mês."
+      : "Vou corrigir a leitura: já existe contexto financeiro para este mês.";
+
+  const lines = [
+    `${modeLead}`,
+    "",
+    `No mês ${snapshot.monthId}, eu vejo ${snapshot.counts.caixas} caixa(s), ${snapshot.counts.metas} meta(s), receita de ${formatCurrency(snapshot.totalIncome)}, gasto atual de ${formatCurrency(snapshot.totalSpent)} e saldo nas caixas de ${formatCurrency(snapshot.currentBalance)}.`,
+  ];
+
+  if (topCaixa) {
+    lines.push(
+      `A caixa mais pressionada agora é ${topCaixa.nome}: ${topCaixa.percentualGasto}% consumido, ${formatCurrency(topCaixa.gasto)} gastos de ${formatCurrency(topCaixa.alocado)} alocados, criticidade ${topCaixa.criticidade}.`
+    );
+  }
+
+  if (highRiskMetas.length > 0) {
+    lines.push(
+      `Também existe pressão em meta(s): ${highRiskMetas
+        .map((meta) => `${meta.nome} (${meta.progresso}% concluída, risco ${meta.risco})`)
+        .join("; ")}.`
+    );
+  } else if (snapshot.metasSummary.length > 0) {
+    const meta = snapshot.metasSummary[0];
+    lines.push(
+      `A meta mais relevante na leitura atual é ${meta.nome}, com ${meta.progresso}% de progresso e risco ${meta.risco}.`
+    );
+  }
+
+  lines.push(
+    "",
+    "Próximo passo: olhe primeiro para a caixa mais consumida e decida se vai reduzir gasto, realocar saldo ou pausar uma despesa antes de mexer no restante do mês."
+  );
+
+  if (contradictions.length > 0) {
+    lines.push(
+      "",
+      `Obs.: eu forcei esta resposta com base no contexto real porque a geração anterior contradizia: ${contradictions.join(", ")}.`
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function normalizeForIntegrityCheck(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function buildConversationMessages(
@@ -504,6 +698,7 @@ function buildContextBlock(snapshot: AIContextSnapshot) {
       : "- Sem histórico recente suficiente";
 
   return `Contexto financeiro do mês ${snapshot.monthId}:
+- Este contexto representa o retrato operacional mais recente disponível do mês no app.
 - Receita: ${formatCurrency(snapshot.totalIncome)}
 - Total alocado: ${formatCurrency(snapshot.totalAllocated)}
 - Total gasto: ${formatCurrency(snapshot.totalSpent)}
@@ -535,10 +730,10 @@ function getModePrompt(mode: AIVisibleMode) {
     case "predict":
       return "Faça uma projeção prudente para o restante do mês. Estime a chance de aperto, destaque caixas mais pressionadas e diga o que fazer agora para evitar problemas.";
     case "recommendations":
-      return "Entregue um plano de ação curto, específico e executável. Priorize o próximo passo mais inteligente e depois liste 2 ou 3 ajustes complementares.";
+      return "Entregue um plano de ação curto, específico e executável. Comece pelo movimento mais importante agora e depois liste 2 ou 3 ajustes complementares. Se houver risco ou padrão ruim claro, diga isso sem suavizar demais.";
     case "chat":
     default:
-      return "Converse de forma natural, mas use o contexto do mês para responder com utilidade real. Quando fizer sentido, termine com próximos passos claros.";
+      return "Converse de forma natural, mas use o contexto do mês para responder com utilidade real. Identifique o ponto principal do mês, fale com clareza e, quando fizer sentido, termine com próximos passos objetivos.";
   }
 }
 

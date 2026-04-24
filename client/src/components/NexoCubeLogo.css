@@ -1,10 +1,12 @@
-.nexo-cube-logo,
-.nexo-cube-logo * {
+.nexo-cube-asset,
+.nexo-cube-asset * {
   box-sizing: border-box;
 }
 
-.nexo-cube-logo {
+.nexo-cube-asset {
   --cube-size: 32px;
+  --cube-shadow: rgba(255, 255, 255, 0.18);
+  --cube-glow: rgba(229, 229, 229, 0.18);
 
   position: relative;
   display: inline-flex;
@@ -12,47 +14,468 @@
   justify-content: center;
   width: var(--cube-size);
   height: var(--cube-size);
-  perspective: calc(var(--cube-size) * 4.4);
-  filter: drop-shadow(0 0 calc(var(--cube-size) * 0.14) rgba(255, 255, 255, 0.15));
+  flex-shrink: 0;
+  isolation: isolate;
 }
 
-.nexo-cube-logo__cube {
+.nexo-cube-asset__shell {
   position: relative;
-  width: var(--cube-size);
-  height: var(--cube-size);
-  transform-style: preserve-3d;
-  will-change: transform;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
 }
 
-.nexo-cube-logo__face {
+.nexo-cube-asset__aura,
+.nexo-cube-asset__ring,
+.nexo-cube-asset__shadow,
+.nexo-cube-asset__scan,
+.nexo-cube-asset__spark,
+.nexo-cube-asset__backdrop,
+.nexo-cube-asset__image {
   position: absolute;
-  width: var(--cube-size);
-  height: var(--cube-size);
-  background: rgba(10, 12, 16, 0.48);
-  border: max(1px, calc(var(--cube-size) * 0.04)) solid rgba(255, 255, 255, 0.94);
-  box-shadow: inset 0 0 calc(var(--cube-size) * 0.1) rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  user-select: none;
 }
 
-.nexo-cube-logo__face--front {
-  transform: translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset__backdrop,
+.nexo-cube-asset__image {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 50% 58%;
 }
 
-.nexo-cube-logo__face--back {
-  transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset__image {
+  filter: none;
 }
 
-.nexo-cube-logo__face--left {
-  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset__backdrop {
+  opacity: 0.18;
+  transform: scale(1.04) translateY(2%);
+  filter: blur(calc(var(--cube-size) * 0.016)) brightness(0.86);
 }
 
-.nexo-cube-logo__face--right {
-  transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset--brand .nexo-cube-asset__image {
+  filter: none;
 }
 
-.nexo-cube-logo__face--top {
-  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset--brand .nexo-cube-asset__backdrop {
+  display: none;
 }
 
-.nexo-cube-logo__face--bottom {
-  transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2));
+.nexo-cube-asset--glow .nexo-cube-asset__image {
+  filter: none;
+}
+
+.nexo-cube-asset__pulse {
+  position: absolute;
+  inset: 14%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 76%);
+  filter: blur(calc(var(--cube-size) * 0.14));
+  opacity: 0;
+}
+
+.nexo-cube-asset__aura {
+  inset: -14%;
+  z-index: -2;
+  border-radius: 999px;
+  background:
+    conic-gradient(from 130deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0)),
+    radial-gradient(circle, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 62%);
+  filter: blur(calc(var(--cube-size) * 0.11));
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.nexo-cube-asset__ring {
+  inset: -10%;
+  z-index: -1;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    conic-gradient(
+      from 90deg,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.18) 48deg,
+      transparent 118deg,
+      transparent 360deg
+    );
+  -webkit-mask: radial-gradient(circle, transparent 56%, #000 58%);
+  mask: radial-gradient(circle, transparent 56%, #000 58%);
+  opacity: 0;
+  transform: rotate(-18deg) scale(0.92);
+}
+
+.nexo-cube-asset__shadow {
+  left: 18%;
+  right: 18%;
+  bottom: -6%;
+  z-index: -1;
+  height: calc(var(--cube-size) * 0.12);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  filter: blur(calc(var(--cube-size) * 0.075));
+  opacity: 0;
+  transform: scaleX(0.8);
+}
+
+.nexo-cube-asset__scan {
+  inset: 8% 13% 16%;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: 18% 18% 22% 22%;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.nexo-cube-asset__scan::before {
+  content: "";
+  position: absolute;
+  inset: -55% -40%;
+  background: linear-gradient(
+    100deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.28) 48%,
+    transparent 62%
+  );
+  transform: translateX(-70%) rotate(8deg);
+}
+
+.nexo-cube-asset__spark {
+  z-index: 4;
+  width: calc(var(--cube-size) * 0.045);
+  height: calc(var(--cube-size) * 0.045);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 calc(var(--cube-size) * 0.12) rgba(255, 255, 255, 0.65);
+  opacity: 0;
+}
+
+.nexo-cube-asset__spark--one {
+  right: 18%;
+  top: 16%;
+}
+
+.nexo-cube-asset__spark--two {
+  left: 18%;
+  bottom: 24%;
+  width: calc(var(--cube-size) * 0.032);
+  height: calc(var(--cube-size) * 0.032);
+}
+
+.nexo-cube-asset__spark--three {
+  right: 24%;
+  bottom: 18%;
+  width: calc(var(--cube-size) * 0.026);
+  height: calc(var(--cube-size) * 0.026);
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__pulse {
+  opacity: 0.78;
+  animation: nexo-cube-pulse 3.4s ease-in-out infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__aura {
+  opacity: 0.68;
+  animation: nexo-cube-aura 5.6s linear infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__ring {
+  opacity: 0.72;
+  animation: nexo-cube-ring 7.4s cubic-bezier(0.37, 0, 0.22, 1) infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__shadow {
+  opacity: 0.62;
+  animation: nexo-cube-shadow 3.8s cubic-bezier(0.37, 0, 0.22, 1) infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__scan {
+  opacity: 0.55;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__scan::before {
+  animation: nexo-cube-scan 4.8s ease-in-out infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__spark {
+  animation: nexo-cube-spark 4.2s ease-in-out infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__spark--two {
+  animation-delay: 1.4s;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__spark--three {
+  animation-delay: 2.3s;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__shell {
+  animation: nexo-cube-float 3.8s cubic-bezier(0.37, 0, 0.22, 1) infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__backdrop {
+  opacity: 0.24;
+  animation: nexo-cube-parallax 4.2s ease-in-out infinite;
+}
+
+.nexo-cube-asset--animated .nexo-cube-asset__image {
+  animation: nexo-cube-tilt 4.2s ease-in-out infinite;
+}
+
+.nexo-cube-asset--hero .nexo-cube-asset__pulse {
+  inset: 10%;
+  opacity: 0.92;
+}
+
+.nexo-cube-asset--hero .nexo-cube-asset__aura {
+  inset: -18%;
+  opacity: 0.82;
+}
+
+.nexo-cube-asset--hero .nexo-cube-asset__image {
+  filter: none;
+}
+
+.nexo-cube-asset--thinking .nexo-cube-asset__shell {
+  animation-duration: 2.6s;
+}
+
+.nexo-cube-asset--thinking .nexo-cube-asset__image {
+  animation-name: nexo-cube-thinking;
+  animation-duration: 2.6s;
+}
+
+.nexo-cube-asset--thinking .nexo-cube-asset__scan::before {
+  animation-duration: 2.2s;
+}
+
+.nexo-cube-asset--speaking .nexo-cube-asset__pulse {
+  animation-duration: 1.6s;
+}
+
+.nexo-cube-asset--speaking .nexo-cube-asset__shell {
+  animation-name: nexo-cube-speak;
+  animation-duration: 1.8s;
+}
+
+.nexo-cube-asset--speaking .nexo-cube-asset__aura {
+  animation-duration: 2.4s;
+}
+
+.nexo-cube-asset--listening .nexo-cube-asset__shell {
+  animation-duration: 4.8s;
+}
+
+.nexo-cube-asset--listening .nexo-cube-asset__pulse {
+  animation-duration: 2.8s;
+  opacity: 0.86;
+}
+
+.nexo-cube-asset--listening .nexo-cube-asset__ring {
+  animation-name: nexo-cube-listening-ring;
+  animation-duration: 4.2s;
+  opacity: 0.86;
+}
+
+.nexo-cube-asset--listening .nexo-cube-asset__image {
+  animation-duration: 5s;
+}
+
+@keyframes nexo-cube-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(calc(var(--cube-size) * -0.04)) scale(1.01);
+  }
+}
+
+@keyframes nexo-cube-ring {
+  0%,
+  100% {
+    transform: rotate(-18deg) scale(0.9);
+    opacity: 0.18;
+  }
+
+  45% {
+    transform: rotate(120deg) scale(1.05);
+    opacity: 0.58;
+  }
+
+  72% {
+    transform: rotate(220deg) scale(0.98);
+    opacity: 0.34;
+  }
+}
+
+@keyframes nexo-cube-listening-ring {
+  0%,
+  100% {
+    transform: rotate(-14deg) scale(0.94);
+    opacity: 0.28;
+  }
+
+  50% {
+    transform: rotate(130deg) scale(1.1);
+    opacity: 0.78;
+  }
+}
+
+@keyframes nexo-cube-tilt {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotate(-2.6deg) translateY(calc(var(--cube-size) * -0.01)) scale(1.01);
+  }
+
+  65% {
+    transform: rotate(2.8deg) translateY(calc(var(--cube-size) * 0.018)) scale(1.02);
+  }
+}
+
+@keyframes nexo-cube-parallax {
+  0%,
+  100% {
+    transform: scale(1.04) translateY(2%);
+    opacity: 0.18;
+  }
+
+  50% {
+    transform: scale(1.07) translateY(6%);
+    opacity: 0.3;
+  }
+}
+
+@keyframes nexo-cube-pulse {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.42;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 0.82;
+  }
+}
+
+@keyframes nexo-cube-aura {
+  0% {
+    transform: rotate(0deg) scale(0.88);
+    opacity: 0.32;
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.04);
+    opacity: 0.76;
+  }
+
+  100% {
+    transform: rotate(360deg) scale(0.88);
+    opacity: 0.32;
+  }
+}
+
+@keyframes nexo-cube-shadow {
+  0%,
+  100% {
+    transform: scaleX(0.78);
+    opacity: 0.44;
+  }
+
+  50% {
+    transform: scaleX(1);
+    opacity: 0.72;
+  }
+}
+
+@keyframes nexo-cube-scan {
+  0%,
+  28% {
+    transform: translateX(-75%) rotate(8deg);
+    opacity: 0;
+  }
+
+  45% {
+    opacity: 0.9;
+  }
+
+  68%,
+  100% {
+    transform: translateX(76%) rotate(8deg);
+    opacity: 0;
+  }
+}
+
+@keyframes nexo-cube-spark {
+  0%,
+  48%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.5);
+    opacity: 0;
+  }
+
+  58% {
+    transform: translate3d(12%, -18%, 0) scale(1);
+    opacity: 0.9;
+  }
+
+  72% {
+    transform: translate3d(-18%, 12%, 0) scale(0.65);
+    opacity: 0;
+  }
+}
+
+@keyframes nexo-cube-thinking {
+  0%,
+  100% {
+    transform: rotate(-1.2deg) scale(1);
+  }
+
+  35% {
+    transform: rotate(3.2deg) translateY(calc(var(--cube-size) * -0.018)) scale(1.025);
+  }
+
+  70% {
+    transform: rotate(-3deg) translateY(calc(var(--cube-size) * 0.012)) scale(1.01);
+  }
+}
+
+@keyframes nexo-cube-speak {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  28% {
+    transform: translateY(calc(var(--cube-size) * -0.025)) scale(1.025);
+  }
+
+  55% {
+    transform: translateY(calc(var(--cube-size) * 0.012)) scale(0.995);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexo-cube-asset--animated .nexo-cube-asset__aura,
+  .nexo-cube-asset--animated .nexo-cube-asset__ring,
+  .nexo-cube-asset--animated .nexo-cube-asset__pulse,
+  .nexo-cube-asset--animated .nexo-cube-asset__shadow,
+  .nexo-cube-asset--animated .nexo-cube-asset__shell,
+  .nexo-cube-asset--animated .nexo-cube-asset__image,
+  .nexo-cube-asset--animated .nexo-cube-asset__backdrop,
+  .nexo-cube-asset--animated .nexo-cube-asset__scan::before,
+  .nexo-cube-asset--animated .nexo-cube-asset__spark {
+    animation: none !important;
+  }
 }

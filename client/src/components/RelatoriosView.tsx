@@ -77,7 +77,7 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-[#BFBFBF] text-sm">Carregando relatório...</div>
+        <div className="text-muted-foreground text-sm">Carregando relatório...</div>
       </div>
     );
   }
@@ -91,13 +91,13 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">Relatórios</h1>
-          <p className="text-[#BFBFBF] text-sm mt-1">Análise detalhada do mês</p>
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">Relatórios</h1>
+          <p className="text-muted-foreground text-sm mt-1">Análise detalhada do mês</p>
         </div>
         <button
           onClick={() => backupMutation.mutate({ monthId })}
           disabled={backupMutation.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-[#2E2E2E] border border-white/10 text-white rounded-lg text-sm hover:bg-[#3E3E3E] transition-all"
+          className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm text-foreground transition-all hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Download size={14} />
           {backupMutation.isPending ? "Salvando..." : "Fazer Backup"}
@@ -107,21 +107,21 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Receita Mensal", value: `R$ ${month.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-white" },
-          { label: "Total Gasto", value: `R$ ${stats.totalSpent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-red-400" },
-          { label: "Taxa de Poupança", value: `${stats.savingsRate.toFixed(1)}%`, icon: TrendingUp, color: "text-green-400" },
-          { label: "Score Financeiro", value: `${stats.score}/100`, icon: Target, color: "text-[#BFBFBF]" },
+          { label: "Receita Mensal", value: `R$ ${month.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-foreground" },
+          { label: "Total Gasto", value: `R$ ${stats.totalSpent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-destructive" },
+          { label: "Taxa de Poupança", value: `${stats.savingsRate.toFixed(1)}%`, icon: TrendingUp, color: "text-nexo-positive" },
+          { label: "Score Financeiro", value: `${stats.score}/100`, icon: Target, color: "text-muted-foreground" },
         ].map((item, i) => (
           <motion.div
             key={item.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className="nexo-depth-2 border border-white/10 rounded-xl p-4"
+            className="nexo-depth-2 border border-border rounded-xl p-4"
           >
             <div className="flex items-center gap-2 mb-2">
               <item.icon size={14} className={item.color} />
-              <span className="text-[#BFBFBF] text-xs">{item.label}</span>
+              <span className="text-muted-foreground text-xs">{item.label}</span>
             </div>
             <div className={`font-mono font-bold text-xl ${item.color}`}>{item.value}</div>
           </motion.div>
@@ -131,8 +131,8 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie: By Category */}
-        <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-          <h3 className="text-white font-medium mb-4">Distribuição por Categoria</h3>
+        <div className="nexo-depth-2 border border-border rounded-xl p-5">
+          <h3 className="text-foreground font-medium mb-4">Distribuição por Categoria</h3>
           {stats.byCategory.length > 0 ? (
             <div className="flex items-center gap-4">
               <ResponsiveContainer width={160} height={160}>
@@ -149,9 +149,9 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
                   <div key={cat.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                      <span className="text-[#BFBFBF] text-xs">{cat.name}</span>
+                      <span className="text-muted-foreground text-xs">{cat.name}</span>
                     </div>
-                    <span className="text-white text-xs font-mono">
+                    <span className="text-foreground text-xs font-mono">
                       R$ {cat.value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -159,64 +159,64 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-40 text-[#BFBFBF] text-sm">Nenhuma caixa criada</div>
+            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Nenhuma caixa criada</div>
           )}
         </div>
 
         {/* Bar: Allocated vs Spent per Caixa */}
-        <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-          <h3 className="text-white font-medium mb-4">Alocado vs Gasto por Caixa</h3>
+        <div className="nexo-depth-2 border border-border rounded-xl p-5">
+          <h3 className="text-foreground font-medium mb-4">Alocado vs Gasto por Caixa</h3>
           {caixas.length > 0 ? (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={caixas.map(c => ({ name: c.name.slice(0, 8), alocado: c.allocated, gasto: c.spent }))}>
-                <XAxis dataKey="name" tick={{ fill: "#BFBFBF", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#BFBFBF", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: "#2E2E2E", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
-                  labelStyle={{ color: "#fff" }}
-                  itemStyle={{ color: "#BFBFBF" }}
+                  contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--popover-foreground)" }}
+                  labelStyle={{ color: "var(--popover-foreground)" }}
+                  itemStyle={{ color: "var(--muted-foreground)" }}
                 />
-                <Bar dataKey="alocado" fill="#3E3E3E" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="gasto" fill="#F5F5F5" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="alocado" fill="var(--muted-foreground)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="gasto" fill="var(--foreground)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-40 text-[#BFBFBF] text-sm">Nenhuma caixa criada</div>
+            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Nenhuma caixa criada</div>
           )}
         </div>
       </div>
 
       {/* Top Transactions */}
-      <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-        <h3 className="text-white font-medium mb-4">Maiores Transações do Mês</h3>
+      <div className="nexo-depth-2 border border-border rounded-xl p-5">
+        <h3 className="text-foreground font-medium mb-4">Maiores Transações do Mês</h3>
         {stats.allTx.length > 0 ? (
           <div className="space-y-2">
             {stats.allTx.map((tx, i) => (
-              <div key={tx.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+              <div key={tx.id} className="flex items-center justify-between py-2 border-b border-border/60 last:border-0">
                 <div className="flex items-center gap-3">
-                  <span className="text-[#BFBFBF] text-xs font-mono w-5">{i + 1}.</span>
+                  <span className="text-muted-foreground text-xs font-mono w-5">{i + 1}.</span>
                   <div>
-                    <div className="text-white text-sm">{tx.description}</div>
-                    <div className="flex items-center gap-1.5 text-[#BFBFBF] text-xs">
+                    <div className="text-foreground text-sm">{tx.description}</div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                       <CategoryIcon category={(tx as any).caixaCategory} className="h-3.5 w-3.5" />
                       <span>{(tx as any).caixaName}</span>
                     </div>
                   </div>
                 </div>
-                <div className={`font-mono font-semibold text-sm ${tx.type === "expense" ? "text-red-400" : "text-green-400"}`}>
+                <div className={`font-mono font-semibold text-sm ${tx.type === "expense" ? "text-destructive" : "text-nexo-positive"}`}>
                   {tx.type === "expense" ? "-" : "+"}R$ {tx.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center text-[#BFBFBF] text-sm py-8">Nenhuma transação registrada</div>
+          <div className="text-center text-muted-foreground text-sm py-8">Nenhuma transação registrada</div>
         )}
       </div>
 
       {/* Caixa Performance */}
-      <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-        <h3 className="text-white font-medium mb-4">Desempenho das Caixas</h3>
+      <div className="nexo-depth-2 border border-border rounded-xl p-5">
+        <h3 className="text-foreground font-medium mb-4">Desempenho das Caixas</h3>
         <div className="space-y-3">
           {caixas.map(c => {
             const pct = c.allocated > 0 ? (c.spent / c.allocated) * 100 : 0;
@@ -224,17 +224,17 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
             return (
               <div key={c.id}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="flex items-center gap-2 text-white text-sm">
+                  <span className="flex items-center gap-2 text-foreground text-sm">
                     <CategoryIcon category={c.category} className="h-4 w-4" />
                     {c.name}
                   </span>
-                  <span className={`text-xs font-mono ${isOver ? "text-red-400" : "text-[#BFBFBF]"}`}>
+                  <span className={`text-xs font-mono ${isOver ? "text-destructive" : "text-muted-foreground"}`}>
                     {pct.toFixed(0)}% utilizado
                   </span>
                 </div>
-                <div className="h-1.5 bg-[#2E2E2E] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
-                    className={`h-full rounded-full ${isOver ? "bg-red-500" : "bg-white"}`}
+                    className={`h-full rounded-full ${isOver ? "bg-destructive" : "bg-foreground"}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, pct)}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -244,7 +244,7 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
             );
           })}
           {caixas.length === 0 && (
-            <div className="text-center text-[#BFBFBF] text-sm py-4">Nenhuma caixa criada</div>
+            <div className="text-center text-muted-foreground text-sm py-4">Nenhuma caixa criada</div>
           )}
         </div>
       </div>

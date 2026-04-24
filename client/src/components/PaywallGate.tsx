@@ -31,14 +31,14 @@ const PLAN_ICONS: Record<PlanTier, React.ReactNode> = {
 };
 
 const PLAN_COLORS: Record<PlanTier, string> = {
-  free: "text-[#BFBFBF]",
+  free: "text-muted-foreground",
   premium: "text-amber-400",
   pro: "text-blue-400",
   elite: "text-purple-400",
 };
 
 const PLAN_BORDER_COLORS: Record<PlanTier, string> = {
-  free: "border-[#2E2E2E]",
+  free: "border-border",
   premium: "border-amber-500/30",
   pro: "border-blue-500/30",
   elite: "border-purple-500/30",
@@ -81,19 +81,19 @@ export function PaywallGate({
 
       {/* Overlay de upgrade */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className={`bg-[#1A1A1A] border ${borderColor} rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl`}>
+        <div className={`nexo-depth-2 border ${borderColor} rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl`}>
           {/* Ícone de cadeado */}
           <div className="flex items-center justify-center mb-4">
-            <div className={`w-14 h-14 rounded-full bg-[#2E2E2E] flex items-center justify-center ${color}`}>
+            <div className={`w-14 h-14 rounded-full bg-muted flex items-center justify-center ${color}`}>
               <Lock className="w-6 h-6" />
             </div>
           </div>
 
           {/* Título */}
-          <h3 className="text-[#F5F5F5] font-semibold text-lg mb-2 font-['Space_Grotesk']">
+          <h3 className="text-foreground font-semibold text-lg mb-2 font-['Space_Grotesk']">
             {featureName}
           </h3>
-          <p className="text-[#BFBFBF] text-sm mb-6 leading-relaxed">
+          <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
             Esta funcionalidade está disponível a partir do plano{" "}
             <span className={`font-semibold ${color}`}>{planName}</span>.
           </p>
@@ -102,7 +102,7 @@ export function PaywallGate({
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${borderColor} ${color} text-sm font-medium mb-6`}>
             {icon}
             <span>Plano {planName}</span>
-            <span className="text-[#BFBFBF] font-normal">
+            <span className="text-muted-foreground font-normal">
               R$ {price.toFixed(2).replace(".", ",")}/mês
             </span>
           </div>
@@ -112,7 +112,7 @@ export function PaywallGate({
             <button
               onClick={onUpgrade}
               className={`w-full py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200 
-                bg-[#F5F5F5] text-[#0D0D0D] hover:bg-white hover:scale-[1.02] active:scale-[0.98]
+                bg-foreground text-background hover:bg-foreground/90 hover:scale-[1.02] active:scale-[0.98]
                 font-['Space_Grotesk']`}
             >
               Fazer Upgrade

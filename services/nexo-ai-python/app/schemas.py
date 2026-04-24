@@ -129,6 +129,11 @@ class PatternsResult(BaseModel):
     behavior_flags: list[BehaviorFlag] = Field(alias="behaviorFlags")
     impulsivity_score: float = Field(alias="impulsivityScore")
     sabotage_score: float = Field(alias="sabotageScore")
+    concentration_score: float = Field(alias="concentrationScore")
+    weekend_spend_ratio: float = Field(alias="weekendSpendRatio")
+    burst_days_count: int = Field(alias="burstDaysCount")
+    dominant_category: str = Field(alias="dominantCategory")
+    dominant_caixa: str | None = Field(default=None, alias="dominantCaixa")
     spending_signals: list[SpendingSignal] = Field(alias="spendingSignals")
     anomalies: list[Anomaly]
     summary: str
@@ -150,6 +155,11 @@ class RiskResult(BaseModel):
     negative_balance_risk: Literal["baixo", "medio", "alto"] = Field(
         alias="negativeBalanceRisk"
     )
+    runway_days: float = Field(alias="runwayDays")
+    stability_score: float = Field(alias="stabilityScore")
+    history_pressure: Literal["baixo", "medio", "alto"] = Field(
+        alias="historyPressure"
+    )
     drivers: list[str]
     vulnerable_caixas: list[str] = Field(alias="vulnerableCaixas")
     meta_pressure: MetaPressure = Field(alias="metaPressure")
@@ -161,6 +171,9 @@ class RiskResult(BaseModel):
 class PredictResult(BaseModel):
     projected_spent: float = Field(alias="projectedSpent")
     projected_balance: float = Field(alias="projectedBalance")
+    projected_range_low: float = Field(alias="projectedRangeLow")
+    projected_range_high: float = Field(alias="projectedRangeHigh")
+    days_remaining: int = Field(alias="daysRemaining")
     month_end_risk: Literal["baixo", "medio", "alto"] = Field(alias="monthEndRisk")
     trend: Literal["desacelerando", "estavel", "acelerando"]
     methodology: str
@@ -176,6 +189,9 @@ class HealthResponse(BaseModel):
     modules: dict[str, bool]
     prophet_enabled: bool = Field(alias="prophetEnabled")
     prophet_available: bool = Field(alias="prophetAvailable")
+    runtime: dict[str, str]
+    recommended_environment: str = Field(alias="recommendedEnvironment")
+    recommended_python: str = Field(alias="recommendedPython")
 
     model_config = ConfigDict(populate_by_name=True)
 

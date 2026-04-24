@@ -14,10 +14,10 @@ const PLANS = [
     period: "/mês",
     description: "Para começar sua jornada financeira",
     icon: Zap,
-    iconColor: "text-[#BFBFBF]",
-    iconBg: "bg-[#2E2E2E]",
-    borderColor: "border-white/10",
-    activeBorder: "border-white/30",
+    iconColor: "text-muted-foreground",
+    iconBg: "bg-muted",
+    borderColor: "border-border",
+    activeBorder: "border-foreground/30",
     badgeColor: "",
     badge: "",
     features: [
@@ -43,7 +43,7 @@ const PLANS = [
     icon: Crown,
     iconColor: "text-yellow-400",
     iconBg: "bg-yellow-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-yellow-500/40",
     badgeColor: "text-yellow-400",
     badge: "Popular",
@@ -71,7 +71,7 @@ const PLANS = [
     icon: Sparkles,
     iconColor: "text-blue-400",
     iconBg: "bg-blue-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-blue-500/40",
     badgeColor: "text-blue-400",
     badge: "Recomendado",
@@ -99,7 +99,7 @@ const PLANS = [
     icon: Gem,
     iconColor: "text-purple-400",
     iconBg: "bg-purple-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-purple-500/40",
     badgeColor: "text-purple-400",
     badge: "Elite",
@@ -168,8 +168,8 @@ export function PlanosView() {
   return (
     <div className="space-y-4 md:space-y-6 w-full">
       <div>
-        <h1 className="text-white text-xl md:text-2xl font-semibold tracking-tight">Planos</h1>
-        <p className="text-[#BFBFBF] text-xs md:text-sm mt-1">Escolha o plano ideal para sua jornada financeira</p>
+        <h1 className="text-foreground text-xl md:text-2xl font-semibold tracking-tight">Planos</h1>
+        <p className="text-muted-foreground text-xs md:text-sm mt-1">Escolha o plano ideal para sua jornada financeira</p>
       </div>
 
       {/* Admin Banner */}
@@ -177,12 +177,12 @@ export function PlanosView() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border rounded-xl p-4 flex items-center gap-3 bg-[#F5F5F5]/5 border-[#F5F5F5]/20"
+          className="border rounded-xl p-4 flex items-center gap-3 bg-foreground text-background border-foreground/20 dark:bg-[#F5F5F5]/5 dark:text-foreground dark:border-[#F5F5F5]/20"
         >
-          <Shield size={20} className="text-[#F5F5F5]" />
+          <Shield size={20} className="text-background dark:text-[#F5F5F5]" />
           <div className="flex-1">
-            <div className="text-white font-medium">Conta do Criador – Acesso Elite Permanente</div>
-            <div className="text-[#BFBFBF] text-xs">Todas as funcionalidades liberadas gratuitamente para a conta macksongaspar@gmail.com</div>
+            <div className="font-medium">Conta do Criador – Acesso Elite Permanente</div>
+            <div className="text-background/70 text-xs dark:text-muted-foreground">Todas as funcionalidades liberadas gratuitamente para a conta macksongaspar@gmail.com</div>
           </div>
         </motion.div>
       )}
@@ -208,10 +208,10 @@ export function PlanosView() {
             <Crown size={20} className="text-yellow-400" />
           )}
           <div className="flex-1">
-            <div className="text-white font-medium">
+            <div className="text-foreground font-medium">
               Você está no plano {PLANS.find(p => p.id === currentPlan)?.name}!
             </div>
-            <div className="text-[#BFBFBF] text-xs">
+            <div className="text-muted-foreground text-xs">
               {planData?.planExpiresAt
                 ? `Renova em ${new Date(planData.planExpiresAt).toLocaleDateString("pt-BR")}`
                 : "Assinatura ativa"}
@@ -233,7 +233,7 @@ export function PlanosView() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
-              className={`bg-[#1A1A1A] border rounded-xl md:rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full ${
+              className={`nexo-depth-2 border rounded-xl md:rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full ${
                 isActive ? plan.activeBorder : plan.borderColor
               }`}
             >
@@ -252,7 +252,7 @@ export function PlanosView() {
 
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl font-bold">{plan.name}</h2>
+                <h2 className="text-foreground text-xl font-bold">{plan.name}</h2>
                 <div className={`w-9 h-9 ${plan.iconBg} rounded-xl flex items-center justify-center`}>
                   <Icon size={16} className={plan.iconColor} />
                 </div>
@@ -260,13 +260,13 @@ export function PlanosView() {
 
               {/* Price */}
               <div className="mb-1">
-                <span className="text-white text-3xl font-bold font-mono">{plan.price}</span>
+                <span className="text-foreground text-3xl font-bold font-mono">{plan.price}</span>
                 {plan.priceDecimal && (
-                  <span className="text-[#BFBFBF] text-base font-mono">{plan.priceDecimal}</span>
+                  <span className="text-muted-foreground text-base font-mono">{plan.priceDecimal}</span>
                 )}
-                <span className="text-[#BFBFBF] text-sm">{plan.period}</span>
+                <span className="text-muted-foreground text-sm">{plan.period}</span>
               </div>
-              <p className="text-[#BFBFBF] text-xs mb-5">{plan.description}</p>
+              <p className="text-muted-foreground text-xs mb-5">{plan.description}</p>
 
               {/* Features */}
               <div className="space-y-2 mb-6 flex-1">
@@ -275,9 +275,9 @@ export function PlanosView() {
                     {f.included ? (
                       <Check size={13} className={plan.iconColor} />
                     ) : (
-                      <X size={13} className="text-white/20" />
+                      <X size={13} className="text-muted-foreground/35" />
                     )}
-                    <span className={`text-xs ${f.included ? "text-[#BFBFBF]" : "text-white/30"}`}>
+                    <span className={`text-xs ${f.included ? "text-foreground/80" : "text-muted-foreground/45"}`}>
                       {f.text}
                     </span>
                   </div>
@@ -288,7 +288,7 @@ export function PlanosView() {
               {isActive ? (
                 <div className={`w-full py-2.5 rounded-lg text-xs text-center font-medium border ${
                   plan.id === "free"
-                    ? "bg-[#2E2E2E] text-white border-white/10"
+                    ? "bg-secondary text-foreground border-border"
                     : `bg-transparent border-current ${plan.iconColor}`
                 }`}>
                   Plano Atual
@@ -310,7 +310,7 @@ export function PlanosView() {
               ) : (
                 <button
                   onClick={handleDowngrade}
-                  className="w-full py-2.5 border border-white/10 text-[#BFBFBF] rounded-lg text-xs hover:text-white hover:border-white/20 transition-all"
+                  className="w-full py-2.5 border border-border text-muted-foreground rounded-lg text-xs hover:text-foreground hover:border-foreground/30 transition-all"
                 >
                   Fazer Downgrade
                 </button>
@@ -321,13 +321,13 @@ export function PlanosView() {
       </div>
 
       {/* Comparison Table */}
-      <div className="nexo-depth-2 border border-white/10 rounded-xl p-5 overflow-x-auto">
-        <h3 className="text-white font-medium mb-4">Comparativo Completo</h3>
+      <div className="nexo-depth-2 border border-border rounded-xl p-5 overflow-x-auto">
+        <h3 className="text-foreground font-medium mb-4">Comparativo Completo</h3>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
-              <th className="text-left text-[#BFBFBF] font-normal py-2 pr-4">Funcionalidade</th>
-              <th className="text-center text-[#BFBFBF] font-normal py-2 px-3">Free</th>
+            <tr className="border-b border-border">
+              <th className="text-left text-muted-foreground font-normal py-2 pr-4">Funcionalidade</th>
+              <th className="text-center text-muted-foreground font-normal py-2 px-3">Free</th>
               <th className="text-center text-yellow-400 font-medium py-2 px-3">Premium</th>
               <th className="text-center text-blue-400 font-medium py-2 px-3">Pro</th>
               <th className="text-center text-purple-400 font-medium py-2 px-3">Elite</th>
@@ -349,12 +349,12 @@ export function PlanosView() {
               { feature: "Alertas prioritários 24/7", free: "—", premium: "—", pro: "—", elite: "✓" },
               { feature: "Suporte VIP", free: "—", premium: "—", pro: "—", elite: "✓" },
             ].map((row, i, arr) => (
-              <tr key={row.feature} className={i < arr.length - 1 ? "border-b border-white/5" : ""}>
-                <td className="text-[#BFBFBF] py-2.5 pr-4">{row.feature}</td>
-                <td className="text-center py-2.5 px-3 text-[#BFBFBF]">{row.free}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.premium === "✓" || row.premium === "∞" ? "text-yellow-400" : "text-white/20"}`}>{row.premium}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.pro === "✓" || row.pro === "∞" ? "text-blue-400" : "text-white/20"}`}>{row.pro}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.elite === "✓" || row.elite === "∞" ? "text-purple-400" : "text-white/20"}`}>{row.elite}</td>
+              <tr key={row.feature} className={i < arr.length - 1 ? "border-b border-border/60" : ""}>
+                <td className="text-muted-foreground py-2.5 pr-4">{row.feature}</td>
+                <td className="text-center py-2.5 px-3 text-muted-foreground">{row.free}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.premium === "✓" || row.premium === "∞" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground/35"}`}>{row.premium}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.pro === "✓" || row.pro === "∞" ? "text-blue-500 dark:text-blue-400" : "text-muted-foreground/35"}`}>{row.pro}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.elite === "✓" || row.elite === "∞" ? "text-purple-500 dark:text-purple-400" : "text-muted-foreground/35"}`}>{row.elite}</td>
               </tr>
             ))}
           </tbody>
@@ -363,16 +363,16 @@ export function PlanosView() {
 
       {/* Backups */}
       {backups && backups.length > 0 && (
-        <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-          <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-            <Shield size={16} className="text-[#BFBFBF]" />
+        <div className="nexo-depth-2 border border-border rounded-xl p-5">
+          <h3 className="text-foreground font-medium mb-4 flex items-center gap-2">
+            <Shield size={16} className="text-muted-foreground" />
             Backups Salvos
           </h3>
           <div className="space-y-2">
             {backups.map(b => (
-              <div key={b.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                <div className="text-white text-sm">{b.monthId}</div>
-                <div className="text-[#BFBFBF] text-xs">{new Date(b.createdAt).toLocaleDateString("pt-BR")}</div>
+              <div key={b.id} className="flex items-center justify-between py-2 border-b border-border/60 last:border-0">
+                <div className="text-foreground text-sm">{b.monthId}</div>
+                <div className="text-muted-foreground text-xs">{new Date(b.createdAt).toLocaleDateString("pt-BR")}</div>
               </div>
             ))}
           </div>
@@ -380,11 +380,11 @@ export function PlanosView() {
       )}
 
       {/* Security Note */}
-      <div className="flex items-start gap-3 p-4 nexo-depth-2 border border-white/10 rounded-xl">
-        <Shield size={16} className="text-[#BFBFBF] mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 nexo-depth-2 border border-border rounded-xl">
+        <Shield size={16} className="text-muted-foreground mt-0.5 shrink-0" />
         <div>
-          <div className="text-white text-sm font-medium mb-1">Pagamento Seguro via Stripe</div>
-          <div className="text-[#BFBFBF] text-xs">
+          <div className="text-foreground text-sm font-medium mb-1">Pagamento Seguro via Stripe</div>
+          <div className="text-muted-foreground text-xs">
             Todos os pagamentos são processados com criptografia SSL/TLS. Seus dados financeiros nunca são compartilhados.
             Cancele a qualquer momento sem taxas adicionais.
           </div>

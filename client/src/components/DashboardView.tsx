@@ -34,9 +34,15 @@ import {
   getCurrentCalendarMonthId,
 } from '@/lib/formatters';
 import { AnimatedNumber } from './AnimatedNumber';
-import { EditIncomeModal } from './EditIncomeModal';
 
-const CHART_COLORS = ['#F5F5F5', '#BFBFBF', '#808080', '#595959', '#404040', '#2E2E2E'];
+const CHART_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--muted-foreground)',
+];
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -51,10 +57,15 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
 };
 
-export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
+export function DashboardView({
+  onAskAI,
+  onOpenSettings,
+}: {
+  onAskAI?: () => void;
+  onOpenSettings?: () => void;
+}) {
   const store = useFinanceStore();
   const month = store.getCurrentMonth();
-  const [showEditModal, setShowEditModal] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   // Atualiza o relógio a cada minuto
@@ -97,12 +108,6 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
   const isCurrentCalendarMonth = month.id === getCurrentCalendarMonthId();
   const isHistoricalMonth = compareMonthIds(month.id, getCurrentCalendarMonthId()) < 0;
   const monthLabel = formatMonthYear(month.id);
-
-  useEffect(() => {
-    if (isHistoricalMonth && showEditModal) {
-      setShowEditModal(false);
-    }
-  }, [isHistoricalMonth, showEditModal]);
 
   const pieData = month.caixas.map((c) => ({
     name: c.name,
@@ -207,7 +212,7 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
               </div>
             ) : (
               <button
-                onClick={() => setShowEditModal(true)}
+                onClick={onOpenSettings}
                 className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
                 title="Editar receita"
               >
@@ -218,13 +223,6 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
           </div>
         </div>
       </motion.div>
-
-      {/* Edit Income Modal */}
-      <EditIncomeModal
-        isOpen={showEditModal && !isHistoricalMonth}
-        onClose={() => setShowEditModal(false)}
-        currentIncome={month.income}
-      />
 
       {/* Metric Cards */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -354,12 +352,12 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
                 <BarChart data={barData} barGap={2}>
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10, fill: '#808080' }}
+                    tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: '#808080' }}
+                    tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
@@ -380,8 +378,8 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
                       );
                     }}
                   />
-                  <Bar dataKey="alocado" fill="#F5F5F5" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="gasto" fill="rgba(245,245,245,0.25)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="alocado" fill="var(--foreground)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="gasto" fill="var(--muted-foreground)" radius={[3, 3, 0, 0]} opacity={0.45} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -413,7 +411,7 @@ export function DashboardView({ onAskAI }: { onAskAI?: () => void }) {
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
-                style={{ backgroundColor: score >= 80 ? '#2D5016' : score >= 50 ? '#BFBFBF' : '#8B2500' }}
+                style={{ backgroundColor: score >= 80 ? '#2D5016' : score >= 50 ? 'var(--muted-foreground)' : '#8B2500' }}
                 initial={{ width: 0 }}
                 animate={{ width: `${score}%` }}
                 transition={{ duration: 0.8, delay: 0.3 }}
@@ -496,7 +494,7 @@ function MetricCard({
     <div className="nexo-depth-2 rounded-xl p-5 transition-all duration-200 cursor-default">
       <div className="flex items-center justify-between mb-3">
         <span className="nexo-label">{label}</span>
-        <span className={`p-1.5 rounded-lg ${alert ? 'text-[#8B2500] bg-[#8B2500]/10' : positive ? 'text-[#2D5016] bg-[#2D5016]/10' : 'text-muted-foreground bg-white/5'}`}>
+        <span className={`p-1.5 rounded-lg ${alert ? 'text-[#8B2500] bg-[#8B2500]/10' : positive ? 'text-[#2D5016] bg-[#2D5016]/10' : 'text-muted-foreground bg-muted'}`}>
           {icon}
         </span>
       </div>

@@ -1,5 +1,5 @@
 // NEXO – Vault Architecture: Caixas management view
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -57,6 +57,7 @@ export function CaixasView({ onAskAI }: { onAskAI?: () => void }) {
     allocated: '',
     category: 'essencial' as const,
   });
+  const formRef = useRef<HTMLDivElement>(null);
 
   if (!month) return null;
 
@@ -94,6 +95,19 @@ export function CaixasView({ onAskAI }: { onAskAI?: () => void }) {
     setEditingCaixaId(null);
     setDeletingCaixaId(null);
   }, [isHistoricalMonth]);
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const timeoutId = window.setTimeout(() => {
+      formRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showForm]);
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -306,6 +320,7 @@ export function CaixasView({ onAskAI }: { onAskAI?: () => void }) {
       <AnimatePresence>
         {showForm && (
           <motion.div
+            ref={formRef}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

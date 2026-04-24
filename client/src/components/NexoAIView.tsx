@@ -1,5 +1,7 @@
 import {
   type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type RefObject,
   useEffect,
@@ -10,7 +12,8 @@ import {
 import { trpc } from "@/lib/trpc";
 import { NexoCubeAnimated } from "./NexoCubeAnimated";
 import { NexoCubeLogo } from "./NexoCubeLogo";
-import { BRAND_AI_NAME } from "@/lib/branding";
+import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
+import { buildAIExplicitContext } from "@/lib/aiExplicitContext";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -26,18 +29,23 @@ import {
 import {
   BarChart3,
   ChevronDown,
+  FileUp,
+  ImagePlus,
   Lightbulb,
   LockKeyhole,
   MessageSquare,
-  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
   Search,
   Send,
   Shield,
-  Sparkles,
+  SlidersHorizontal,
   SquarePen,
   X,
   Zap,
 } from "lucide-react";
+import "./NexoAIView.css";
 
 type AIMessage = {
   id: string;
@@ -45,6 +53,64 @@ type AIMessage = {
   content: string;
   mode: AIVisibleMode;
   timestamp: string;
+  attachments?: AIAttachment[];
+  pythonInsights?: AIPythonInsights | null;
+};
+
+type AIAttachment = {
+  id: string;
+  name: string;
+  kind: "image" | "video" | "file";
+  type: string;
+  size: number;
+};
+
+type PythonAnalysisStatus =
+  | "ok"
+  | "empty"
+  | "validation_error"
+  | "integration_error";
+
+type AIPythonInsights = {
+  patterns?: {
+    status: PythonAnalysisStatus;
+    result: {
+      impulsivityScore: number;
+      sabotageScore: number;
+      concentrationScore: number;
+      dominantCategory: string;
+      dominantCaixa?: string | null;
+      burstDaysCount: number;
+      weekendSpendRatio: number;
+      summary: string;
+    } | null;
+  };
+  risk?: {
+    status: PythonAnalysisStatus;
+    result: {
+      score0to100: number;
+      level: "baixo" | "medio" | "alto" | "critico";
+      negativeBalanceRisk: "baixo" | "medio" | "alto";
+      runwayDays: number;
+      stabilityScore: number;
+      historyPressure: "baixo" | "medio" | "alto";
+      summary: string;
+    } | null;
+  };
+  predict?: {
+    status: PythonAnalysisStatus;
+    result: {
+      projectedSpent: number;
+      projectedBalance: number;
+      projectedRangeLow: number;
+      projectedRangeHigh: number;
+      daysRemaining: number;
+      monthEndRisk: "baixo" | "medio" | "alto";
+      trend: "desacelerando" | "estavel" | "acelerando";
+      methodology: string;
+      summary: string;
+    } | null;
+  };
 };
 
 type AIUsageState = {
@@ -75,6 +141,13 @@ type AIConversationState = {
   conversations: AIConversation[];
 };
 
+type AIUIPreferences = {
+  showStructuredInsights: boolean;
+  showSuggestionChips: boolean;
+};
+
+type AISettingsAnchor = "rail" | "header";
+
 interface ModeMeta {
   id: AIVisibleMode;
   label: string;
@@ -90,6 +163,11 @@ interface ModeMeta {
 const AI_CONVERSATION_STORAGE_PREFIX = "nexo:ai:v2:conversations";
 const AI_LEGACY_SESSION_STORAGE_PREFIX = "nexo:ai:v2:session";
 const AI_HISTORY_VISIBILITY_STORAGE_KEY = "nexo:ai:history-visible";
+const AI_UI_PREFERENCES_STORAGE_KEY = "nexo:ai:ui-preferences";
+const DEFAULT_AI_UI_PREFERENCES: AIUIPreferences = {
+  showStructuredInsights: true,
+  showSuggestionChips: true,
+};
 
 const MODE_META: Record<AIVisibleMode, ModeMeta> = {
   chat: {
@@ -186,6 +264,7 @@ export function NexoAIView({
   initialMode = "chat",
   entryKey,
   overlayMode = false,
+  resetOnEntry = false,
   onClose,
 }: {
   onNavigate?: (view: string) => void;
@@ -196,22 +275,27 @@ export function NexoAIView({
   initialMode?: AIVisibleMode;
   entryKey?: number;
   overlayMode?: boolean;
+  resetOnEntry?: boolean;
   onClose?: () => void;
 }) {
-  const AI_AVATAR_SIZE = 30;
-  const AI_LOADING_SIZE = 30;
+  const AI_AVATAR_SIZE = 72;
+  const AI_LOADING_SIZE = 72;
   const isDesktopHistoryViewport = () =>
     typeof window !== "undefined" &&
     window.matchMedia("(min-width: 1280px)").matches;
-  const { currentMonthId: selectedMonth } = useFinanceStore();
+  const { currentMonthId: selectedMonth, months } = useFinanceStore();
   const [conversations, setConversations] = useState<AIConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [activeMode, setActiveMode] = useState<AIVisibleMode>("chat");
   const [input, setInput] = useState("");
+  const [composerAttachments, setComposerAttachments] = useState<AIAttachment[]>([]);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAnchor, setSettingsAnchor] =
+    useState<AISettingsAnchor>("header");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [desktopHistoryVisible, setDesktopHistoryVisible] = useState(() => {
     if (typeof window === "undefined") {
@@ -220,12 +304,24 @@ export function NexoAIView({
 
     return window.localStorage.getItem(AI_HISTORY_VISIBILITY_STORAGE_KEY) !== "false";
   });
+  const [uiPreferences, setUiPreferences] = useState<AIUIPreferences>(() =>
+    readStoredAIPreferences()
+  );
   const [usageOverride, setUsageOverride] = useState<AIUsageState | null>(null);
   const activeConversationIdRef = useRef<string | null>(null);
   const pendingConversationIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const modeMenuRef = useRef<HTMLFormElement>(null);
+  const settingsPanelRef = useRef<HTMLDivElement>(null);
+  const mediaAttachmentInputRef = useRef<HTMLInputElement>(null);
+  const fileAttachmentInputRef = useRef<HTMLInputElement>(null);
+  const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  const historySearchInputRef = useRef<HTMLInputElement>(null);
   const timeZone = useMemo(() => getBrowserTimeZone(), []);
+  const explicitContext = useMemo(
+    () => buildAIExplicitContext(months, selectedMonth),
+    [months, selectedMonth]
+  );
   const resolvedStorageScopeId = useMemo(
     () => sanitizeStorageScopeId(storageScopeId),
     [storageScopeId]
@@ -240,9 +336,10 @@ export function NexoAIView({
             sourceView,
             sourceEntityId,
             timeZone,
+            explicitContext,
           }
         : undefined,
-    [selectedMonth, sourceEntityId, sourceView, timeZone]
+    [explicitContext, selectedMonth, sourceEntityId, sourceView, timeZone]
   );
 
   const { data: sessionData, isLoading: isSessionLoading } =
@@ -257,14 +354,14 @@ export function NexoAIView({
   const currentSuggestions =
     sessionData?.suggestions?.[activeMode] ?? activeModeMeta.suggestions;
   const contextState = sessionData?.contextState ?? "new_user";
-  const canUseCurrentMode = availableModes.includes(activeMode);
   const isQuotaReached = currentUsage?.reached ?? false;
   const canStartNewConversation =
     activeConversationId !== null ||
     messages.length > 0 ||
     activeMode !== "chat" ||
-    input.trim().length > 0;
-  const contentShellClass = overlayMode ? "max-w-none" : "max-w-4xl";
+    input.trim().length > 0 ||
+    composerAttachments.length > 0;
+  const contentShellClass = overlayMode ? "max-w-none" : "max-w-[980px]";
   const filteredConversations = useMemo(() => {
     const normalizedQuery = historySearchQuery.trim().toLowerCase();
 
@@ -277,6 +374,11 @@ export function NexoAIView({
       return haystack.includes(normalizedQuery);
     });
   }, [conversations, historySearchQuery]);
+  const activeConversationTitle = useMemo(() => {
+    return conversations.find(
+      (conversation) => conversation.id === activeConversationId
+    )?.title;
+  }, [activeConversationId, conversations]);
 
   useEffect(() => {
     if (overlayMode) {
@@ -291,6 +393,14 @@ export function NexoAIView({
       String(desktopHistoryVisible)
     );
   }, [desktopHistoryVisible, overlayMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      AI_UI_PREFERENCES_STORAGE_KEY,
+      JSON.stringify(uiPreferences)
+    );
+  }, [uiPreferences]);
 
   useEffect(() => {
     if (!selectedMonth) {
@@ -324,8 +434,10 @@ export function NexoAIView({
     setMessages(activeConversation?.messages ?? []);
     setActiveMode(activeConversation?.lastMode ?? "chat");
     setInput("");
+    setComposerAttachments([]);
     setIsLoading(false);
     setModeMenuOpen(false);
+    setSettingsOpen(false);
   }, [resolvedStorageScopeId, selectedMonth]);
 
   useEffect(() => {
@@ -349,9 +461,23 @@ export function NexoAIView({
   useEffect(() => {
     if (entryKey === undefined) return;
 
+    if (resetOnEntry) {
+      activeConversationIdRef.current = null;
+      pendingConversationIdRef.current = null;
+      setActiveConversationId(null);
+      setMessages([]);
+      setActiveMode("chat");
+      setInput("");
+      setComposerAttachments([]);
+      setIsLoading(false);
+      setModeMenuOpen(false);
+      setSettingsOpen(false);
+      return;
+    }
+
     setActiveMode(initialMode);
     setInput(initialPrompt ?? "");
-  }, [entryKey, initialMode, initialPrompt]);
+  }, [entryKey, initialMode, initialPrompt, resetOnEntry]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -362,14 +488,30 @@ export function NexoAIView({
       if (modeMenuRef.current && !modeMenuRef.current.contains(event.target as Node)) {
         setModeMenuOpen(false);
       }
+
+      const target = event.target as HTMLElement | null;
+      if (
+        settingsPanelRef.current &&
+        !settingsPanelRef.current.contains(event.target as Node) &&
+        !target?.closest("[data-ai-settings-trigger='true']")
+      ) {
+        setSettingsOpen(false);
+      }
     }
 
-    if (modeMenuOpen) {
+    if (modeMenuOpen || settingsOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [modeMenuOpen]);
+  }, [modeMenuOpen, settingsOpen]);
+
+  useEffect(() => {
+    const textarea = composerInputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 176)}px`;
+  }, [input]);
 
   const analyzeMutation = trpc.ai.analyze.useMutation({
     onSuccess: async (data) => {
@@ -382,6 +524,7 @@ export function NexoAIView({
             : JSON.stringify(data.content, null, 2),
         mode: data.mode,
         timestamp: new Date().toISOString(),
+        pythonInsights: data.python ?? null,
       };
 
       const conversationId =
@@ -450,7 +593,11 @@ export function NexoAIView({
     setModeMenuOpen(false);
   }
 
-  function handleAnalyze(mode: AIVisibleMode, question?: string) {
+  function handleAnalyze(
+    mode: AIVisibleMode,
+    question?: string,
+    attachments: AIAttachment[] = composerAttachments
+  ) {
     if (!selectedMonth || !sessionInput) {
       toast.error("Selecione um mês primeiro");
       return;
@@ -475,51 +622,71 @@ export function NexoAIView({
     }
 
     const finalQuestion = (question?.trim() || MODE_META[mode].starter).trim();
+    const userFacingContent =
+      finalQuestion || (attachments.length > 0 ? "Arquivos anexados para contexto." : "");
+    const questionForModel = buildQuestionWithAttachments(userFacingContent, attachments);
 
-    if (mode === "chat" && !finalQuestion) {
+    if (mode === "chat" && !userFacingContent) {
       return;
     }
 
     const userMsg: AIMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: finalQuestion,
+      content: userFacingContent,
       mode,
       timestamp: new Date().toISOString(),
+      attachments,
     };
 
-    const conversationId = ensureConversation(finalQuestion, mode);
+    const conversationId = ensureConversation(userFacingContent, mode);
     const nextMessages = [...messages, userMsg];
 
     setActiveConversationIdState(conversationId);
     setMessages(nextMessages);
     pendingConversationIdRef.current = conversationId;
     syncConversation(conversationId, nextMessages, mode, {
-      title: buildConversationTitle(finalQuestion),
+      title: buildConversationTitle(userFacingContent),
       sourceView,
       initialMode: mode,
     });
     setIsLoading(true);
+    setComposerAttachments([]);
 
     analyzeMutation.mutate({
       monthId: selectedMonth,
       mode,
-      question: finalQuestion,
+      question: questionForModel,
       messages: nextMessages.map((message) => ({
         role: message.role === "ai" ? ("assistant" as const) : ("user" as const),
-        content: message.content,
+        content:
+          message.role === "ai"
+            ? message.content
+            : buildQuestionWithAttachments(message.content, message.attachments ?? []),
       })),
       sourceView,
       sourceEntityId,
       timeZone,
+      explicitContext,
     });
+  }
+
+  function submitCurrentInput() {
+    const question = input.trim() || (activeMode === "chat" ? "" : activeModeMeta.starter);
+    handleAnalyze(activeMode, question, composerAttachments);
+    setInput("");
   }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const question = input.trim() || (activeMode === "chat" ? "" : activeModeMeta.starter);
-    handleAnalyze(activeMode, question);
-    setInput("");
+    submitCurrentInput();
+  }
+
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submitCurrentInput();
+    }
   }
 
   function handleSelectMode(mode: AIVisibleMode) {
@@ -625,7 +792,9 @@ export function NexoAIView({
     setMessages(targetConversation.messages);
     setActiveMode(targetConversation.lastMode);
     setInput("");
+    setComposerAttachments([]);
     setModeMenuOpen(false);
+    setSettingsOpen(false);
     closeHistoryDrawerIfNeeded();
     setIsLoading(false);
   }
@@ -639,9 +808,61 @@ export function NexoAIView({
     setMessages([]);
     setActiveMode("chat");
     setInput("");
+    setComposerAttachments([]);
     setModeMenuOpen(false);
+    setSettingsOpen(false);
     setIsLoading(false);
     closeHistoryDrawerIfNeeded();
+  }
+
+  function handleAttachFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    const next = Array.from(files)
+      .slice(0, 6)
+      .map((file) => ({
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        kind: resolveAttachmentKind(file.type),
+      })) satisfies AIAttachment[];
+
+    setComposerAttachments((current) => [...current, ...next].slice(0, 6));
+  }
+
+  function handleRemoveAttachment(attachmentId: string) {
+    setComposerAttachments((current) =>
+      current.filter((attachment) => attachment.id !== attachmentId)
+    );
+  }
+
+  function handleTogglePreference(key: keyof AIUIPreferences) {
+    setUiPreferences((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
+
+  function handleToggleSettings(anchor: AISettingsAnchor) {
+    setSettingsAnchor(anchor);
+    setSettingsOpen((open) => (settingsAnchor === anchor ? !open : true));
+  }
+
+  function handleRenameConversation(conversationId: string, title: string) {
+    const normalizedTitle = title.trim().replace(/\s+/g, " ");
+
+    if (!normalizedTitle) {
+      return;
+    }
+
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, title: normalizedTitle }
+          : conversation
+      )
+    );
   }
 
   function closeHistoryDrawerIfNeeded() {
@@ -668,14 +889,20 @@ export function NexoAIView({
     setHistoryOpen(false);
   }
 
+  function handleFocusHistorySearch() {
+    openHistoryPanel();
+
+    requestAnimationFrame(() => {
+      historySearchInputRef.current?.focus();
+    });
+  }
+
   const rootClassName = overlayMode
-    ? "relative flex h-full min-h-0 w-full overflow-hidden bg-[#0D0D0D]"
-    : desktopHistoryVisible
-      ? "relative grid h-full min-h-0 w-full grid-cols-1 overflow-hidden bg-[#050505] p-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:gap-5"
-      : "relative flex h-full min-h-0 w-full overflow-hidden bg-[#050505] p-5";
+    ? "nexo-ai-view relative flex h-full min-h-0 w-full overflow-hidden bg-[#060606]"
+    : "nexo-ai-view relative flex h-full min-h-0 w-full overflow-hidden bg-[#030303] p-3 md:p-4";
   const chatShellClass = overlayMode
-    ? "flex min-h-0 min-w-0 flex-1 flex-col"
-    : "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] border border-[#222222] bg-[#0D0D0D] shadow-[0_18px_50px_rgba(0,0,0,0.32)]";
+    ? "nexo-ai-panel flex min-h-0 min-w-0 flex-1 flex-col"
+    : "nexo-ai-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] border border-[#171717] bg-[#070707]";
 
   return (
     <div className={rootClassName}>
@@ -685,19 +912,21 @@ export function NexoAIView({
             <>
               <button
                 type="button"
-                className="absolute inset-0 z-20 bg-black/48 xl:hidden"
+                className="absolute inset-0 z-40 bg-black/48 xl:hidden"
                 aria-label="Fechar histórico de conversas"
                 onClick={hideHistoryPanel}
               />
 
-              <div className="absolute inset-y-0 left-0 z-30 min-h-0 xl:hidden">
+              <div className="absolute inset-y-0 left-0 z-50 min-h-0 xl:hidden">
                 <HistorySidebar
                   conversations={filteredConversations}
                   activeConversationId={activeConversationId}
+                  searchInputRef={historySearchInputRef}
                   searchQuery={historySearchQuery}
                   isLoading={isLoading}
                   onChangeSearchQuery={setHistorySearchQuery}
                   onClose={hideHistoryPanel}
+                  onRenameConversation={handleRenameConversation}
                   onSelectConversation={handleSelectConversation}
                   onStartNewConversation={handleStartNewConversation}
                 />
@@ -705,81 +934,115 @@ export function NexoAIView({
             </>
           )}
 
-          {desktopHistoryVisible && (
-            <aside className="hidden h-full min-h-0 shrink-0 xl:block">
-              <HistorySidebar
-                conversations={filteredConversations}
-                activeConversationId={activeConversationId}
-                searchQuery={historySearchQuery}
-                isLoading={isLoading}
-                onChangeSearchQuery={setHistorySearchQuery}
-                onClose={hideHistoryPanel}
-                onSelectConversation={handleSelectConversation}
-                onStartNewConversation={handleStartNewConversation}
-              />
-            </aside>
+          <div className="hidden h-full min-h-0 shrink-0 items-stretch gap-3 overflow-visible xl:flex">
+            <DesktopHistoryRail
+              historyVisible={desktopHistoryVisible}
+              onFocusSearch={handleFocusHistorySearch}
+              onOpenSettings={() => handleToggleSettings("rail")}
+              onStartNewConversation={handleStartNewConversation}
+              onToggleHistory={() => {
+                if (desktopHistoryVisible) {
+                  hideHistoryPanel();
+                } else {
+                  openHistoryPanel();
+                }
+              }}
+            />
+
+            {desktopHistoryVisible && (
+              <aside className="h-full min-h-0 w-[312px] shrink-0 overflow-visible">
+                <HistorySidebar
+                  conversations={filteredConversations}
+                  activeConversationId={activeConversationId}
+                  searchInputRef={historySearchInputRef}
+                  searchQuery={historySearchQuery}
+                  isLoading={isLoading}
+                  onChangeSearchQuery={setHistorySearchQuery}
+                  onRenameConversation={handleRenameConversation}
+                  onSelectConversation={handleSelectConversation}
+                  onStartNewConversation={handleStartNewConversation}
+                />
+              </aside>
+            )}
+          </div>
+
+          {settingsOpen && settingsAnchor === "rail" && (
+            <AISettingsPanel
+              panelRef={settingsPanelRef}
+              uiPreferences={uiPreferences}
+              className="absolute bottom-8 left-[92px] z-[160]"
+              onTogglePreference={handleTogglePreference}
+            />
           )}
         </>
       )}
 
       <div className={chatShellClass}>
-        <div className="shrink-0 border-b border-[#222222] px-4 py-4 md:px-6 xl:px-7">
+        <div className="nexo-ai-header relative z-30 shrink-0 border-b border-[#171717] bg-[#090909]/96 px-4 py-4 backdrop-blur-xl md:px-6 xl:px-7">
           <div
-            className={`mx-auto flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between ${contentShellClass}`}
+            className={`mx-auto flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between ${contentShellClass}`}
           >
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F5]">
-                {BRAND_AI_NAME}
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#7C7C7C]">
-                Comece pelo chat livre. Quando quiser aprofundar, abra uma ferramenta
-                específica.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {!overlayMode && (
+            <div className="flex min-w-0 items-center gap-3">
+              {overlayMode ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (isDesktopHistoryViewport() && desktopHistoryVisible) {
-                      hideHistoryPanel();
-                    } else {
-                      openHistoryPanel();
-                    }
-                  }}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[#141414] text-[#D2D2D2] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
-                  title={
-                    isDesktopHistoryViewport() && desktopHistoryVisible
-                      ? "Ocultar histórico"
-                      : "Abrir histórico"
-                  }
-                  aria-label={
-                    isDesktopHistoryViewport() && desktopHistoryVisible
-                      ? "Ocultar histórico de conversas"
-                      : "Abrir histórico de conversas"
-                  }
-                  disabled={isLoading}
+                  onClick={handleStartNewConversation}
+                  className="group flex min-w-0 items-center gap-3 rounded-[22px] bg-transparent pr-2 text-left transition duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
+                  title="Voltar para o início da IA"
+                  aria-label="Voltar para o início da IA"
                 >
-                  <PanelLeft size={15} />
+                  <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl transition duration-200 group-hover:scale-[1.02]">
+                    <img
+                      src={frontCubeUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-20 w-20 object-contain"
+                    />
+                  </span>
+                  <span className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold tracking-tight text-[#F5F5F5]">
+                      {activeConversationTitle ?? "Nova conversa"}
+                    </h2>
+                    {activeMode !== "chat" && (
+                      <span className="mt-1 block text-[11px] uppercase tracking-[0.18em] text-[#7B7B7B]">
+                        {activeModeMeta.label}
+                      </span>
+                    )}
+                  </span>
                 </button>
+              ) : (
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-semibold tracking-tight text-[#F5F5F5]">
+                    {activeConversationTitle ?? "Nova conversa"}
+                  </h2>
+                  {activeMode !== "chat" && (
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#7B7B7B]">
+                      {activeModeMeta.label}
+                    </p>
+                  )}
+                </div>
               )}
+            </div>
 
+            <div className="relative flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleStartNewConversation}
-                disabled={!canStartNewConversation}
-                className="inline-flex items-center gap-2 rounded-2xl border border-[#2A2A2A] bg-[#141414] px-3 py-2 text-sm text-[#D2D2D2] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
-                title="Nova conversa"
+                onClick={() => handleToggleSettings("header")}
+                data-ai-settings-trigger="true"
+                className={`${overlayMode ? "inline-flex" : "inline-flex xl:hidden"} h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+                  settingsOpen && settingsAnchor === "header"
+                    ? "border-[#2F2F2F] bg-[#151515] text-[#F5F5F5]"
+                    : "border-[#1F1F1F] bg-[#101010] text-[#BDBDBD] hover:border-[#343434] hover:text-[#F5F5F5]"
+                }`}
+                aria-label="Abrir configurações da IA"
               >
-                <SquarePen size={15} />
-                <span className="hidden sm:inline">Nova conversa</span>
+                <SlidersHorizontal size={15} />
               </button>
 
               {currentUsage && <UsagePill usage={currentUsage} />}
 
               {activeMode !== "chat" && (
-                <div className="flex items-center gap-2 rounded-2xl border border-[#2A2A2A] bg-[#141414] px-3 py-2 text-sm text-[#D2D2D2]">
+                <div className="flex items-center gap-2 rounded-2xl border border-[#252525] bg-[#121212] px-3 py-2 text-sm text-[#D2D2D2]">
                   <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
                   <span>{activeModeMeta.label}</span>
                   <button
@@ -792,21 +1055,30 @@ export function NexoAIView({
                 </div>
               )}
 
-              {overlayMode && (
+              {onClose && (
                 <button
                   onClick={onClose}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[#141414] text-[#D2D2D2] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#2A2A2A] bg-[#141414] text-[#D2D2D2] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
                   title="Fechar a janela da IA"
                   aria-label="Fechar a janela da IA"
                 >
-                  <X size={15} />
+                  <X size={14} />
                 </button>
+              )}
+
+              {settingsOpen && settingsAnchor === "header" && (
+                <AISettingsPanel
+                  panelRef={settingsPanelRef}
+                  uiPreferences={uiPreferences}
+                  className="absolute right-0 top-[calc(100%+12px)]"
+                  onTogglePreference={handleTogglePreference}
+                />
               )}
             </div>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 px-4 py-4 md:px-6 xl:px-7">
+        <div className="relative z-10 min-h-0 flex-1 px-4 py-4 md:px-6 xl:px-7">
           <div
             className={`mx-auto flex h-full min-h-0 w-full flex-col ${contentShellClass}`}
           >
@@ -821,7 +1093,7 @@ export function NexoAIView({
                 onSelectPrompt={setInput}
               />
             ) : (
-              <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="nexo-ai-chat-scroll min-h-0 flex-1 overflow-y-auto pr-1">
                 <div className="space-y-4 pb-6">
                   {messages.map((msg) => (
                     <div
@@ -831,16 +1103,19 @@ export function NexoAIView({
                       }`}
                     >
                       {msg.role === "ai" && (
-                        <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
-                          <NexoCubeLogo size={AI_AVATAR_SIZE} />
+                        <div
+                          className="mt-1 flex shrink-0 items-center justify-center"
+                          style={{ width: AI_AVATAR_SIZE, height: AI_AVATAR_SIZE }}
+                        >
+                          <NexoCubeLogo size={AI_AVATAR_SIZE} glow />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[90%] rounded-2xl px-4 py-3 md:max-w-[82%] ${
+                        className={`nexo-ai-message max-w-[90%] rounded-2xl px-4 py-3 md:max-w-[82%] ${
                           msg.role === "user"
-                            ? "bg-[#2A2A2A] text-[#F5F5F5]"
-                            : "border border-[#242424] bg-[#141414] text-[#F5F5F5]"
+                            ? "nexo-ai-message--user bg-[#2A2A2A] text-[#F5F5F5]"
+                            : "nexo-ai-message--assistant border border-[#242424] bg-[#141414] text-[#F5F5F5]"
                         }`}
                       >
                         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-[#737373]">
@@ -859,6 +1134,23 @@ export function NexoAIView({
                           <p className="text-sm leading-relaxed">{msg.content}</p>
                         )}
 
+                        {msg.role === "user" && msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {msg.attachments.map((attachment) => (
+                              <AttachmentBadge key={attachment.id} attachment={attachment} />
+                            ))}
+                          </div>
+                        )}
+
+                        {msg.role === "ai" &&
+                          uiPreferences.showStructuredInsights &&
+                          hasRenderablePythonInsights(msg.pythonInsights) && (
+                            <PythonInsightGrid
+                              insights={msg.pythonInsights!}
+                              mode={msg.mode}
+                            />
+                          )}
+
                         <p className="mt-3 text-[10px] font-mono text-[#5A5A5A]">
                           {new Date(msg.timestamp).toLocaleTimeString("pt-BR", {
                             hour: "2-digit",
@@ -871,8 +1163,11 @@ export function NexoAIView({
 
                   {isLoading && (
                     <div className="flex justify-start gap-3 px-2 py-2 sm:px-4">
-                      <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center">
-                        <NexoCubeAnimated size={AI_LOADING_SIZE} />
+                      <div
+                        className="mt-1 flex shrink-0 items-center justify-center"
+                        style={{ width: AI_LOADING_SIZE, height: AI_LOADING_SIZE }}
+                      >
+                        <NexoCubeAnimated size={AI_LOADING_SIZE} mood="thinking" />
                       </div>
                       <div className="rounded-2xl border border-[#242424] bg-[#141414] px-4 py-3">
                         <p className="text-xs uppercase tracking-[0.16em] text-[#737373]">
@@ -892,24 +1187,34 @@ export function NexoAIView({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#222222] bg-[#0D0D0D] px-4 py-4 md:px-6 xl:px-7">
+        <div className="nexo-ai-composer-zone relative z-40 shrink-0 overflow-visible border-t border-[#222222] bg-[#0D0D0D] px-4 py-4 md:px-6 xl:px-7">
           <div className={`mx-auto w-full ${contentShellClass}`}>
             <Composer
               activeMode={activeMode}
               activeModeMeta={activeModeMeta}
               availableModes={availableModes}
+              attachments={composerAttachments}
               currentUsage={currentUsage}
+              fileAttachmentInputRef={fileAttachmentInputRef}
               input={input}
+              inputRef={composerInputRef}
               isLoading={isLoading}
               isQuotaReached={isQuotaReached}
               lockedModes={lockedModes}
+              mediaAttachmentInputRef={mediaAttachmentInputRef}
               modeMenuOpen={modeMenuOpen}
               modeMenuRef={modeMenuRef}
+              onAttachFiles={handleAttachFiles}
               onChangeInput={setInput}
+              onComposerKeyDown={handleComposerKeyDown}
+              onOpenFilePicker={() => fileAttachmentInputRef.current?.click()}
+              onOpenMediaPicker={() => mediaAttachmentInputRef.current?.click()}
               onOpenModeMenu={() => setModeMenuOpen((open) => !open)}
+              onRemoveAttachment={handleRemoveAttachment}
               onSelectLockedMode={handleLockedMode}
               onSelectMode={handleSelectMode}
               onSubmit={handleSubmit}
+              showSuggestionChips={uiPreferences.showSuggestionChips}
               suggestions={currentSuggestions}
             />
           </div>
@@ -919,46 +1224,237 @@ export function NexoAIView({
   );
 }
 
+function AISettingsPanel({
+  className = "",
+  panelRef,
+  uiPreferences,
+  onTogglePreference,
+}: {
+  className?: string;
+  panelRef: RefObject<HTMLDivElement | null>;
+  uiPreferences: AIUIPreferences;
+  onTogglePreference: (key: keyof AIUIPreferences) => void;
+}) {
+  return (
+    <div
+      ref={panelRef}
+      className={`z-[200] w-[360px] max-w-[calc(100vw-48px)] rounded-[24px] border border-[#222222] bg-[#111111] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
+    >
+      <div className="px-2 pb-3">
+        <p className="text-sm font-semibold text-[#F5F5F5]">
+          Configurações da IA
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-[#767676]">
+          Ajustes visuais da conversa e da camada analítica.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <SettingsToggle
+          checked={uiPreferences.showStructuredInsights}
+          description="Mostra blocos analíticos nas respostas quando houver leitura rica."
+          label="Cartões analíticos"
+          onChange={() => onTogglePreference("showStructuredInsights")}
+        />
+        <SettingsToggle
+          checked={uiPreferences.showSuggestionChips}
+          description="Mantém sugestões rápidas abaixo da barra de conversa."
+          label="Sugestões rápidas"
+          onChange={() => onTogglePreference("showSuggestionChips")}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DesktopHistoryRail({
+  historyVisible,
+  onFocusSearch,
+  onOpenSettings,
+  onStartNewConversation,
+  onToggleHistory,
+}: {
+  historyVisible: boolean;
+  onFocusSearch: () => void;
+  onOpenSettings: () => void;
+  onStartNewConversation: () => void;
+  onToggleHistory: () => void;
+}) {
+  return (
+    <div className="nexo-ai-rail relative z-30 flex h-full w-[68px] shrink-0 flex-col items-center overflow-visible rounded-[28px] border border-[#171717] bg-[#060606] px-3 py-4">
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={onToggleHistory}
+          className="group flex h-14 w-14 items-center justify-center bg-transparent text-[#F5F5F5] transition duration-200 hover:scale-[1.03] hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
+          aria-label={historyVisible ? "Ocultar conversas" : "Abrir conversas"}
+        >
+          <span className="relative flex h-14 w-14 items-center justify-center">
+            <img
+              src={frontCubeUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-14 w-14 object-contain transition-opacity duration-150 group-hover:opacity-0"
+            />
+            <span className="absolute inset-0 flex items-center justify-center text-[#F5F5F5] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              {historyVisible ? (
+                <PanelLeftClose size={18} aria-hidden="true" />
+              ) : (
+                <PanelLeftOpen size={18} aria-hidden="true" />
+              )}
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div className="mt-5 flex flex-col items-center gap-3">
+        <DockIconButton
+          icon={<SquarePen size={16} />}
+          label="Nova conversa"
+          onClick={onStartNewConversation}
+        />
+        {!historyVisible && (
+          <DockIconButton
+            icon={<Search size={16} />}
+            label="Buscar conversas"
+            onClick={onFocusSearch}
+          />
+        )}
+      </div>
+
+      <div className="mt-auto flex flex-col items-center gap-3">
+        <DockIconButton
+          icon={<SlidersHorizontal size={16} />}
+          label="Configurações"
+          onClick={onOpenSettings}
+          dataAttribute="true"
+          hideTooltip
+        />
+      </div>
+    </div>
+  );
+}
+
+function DockIconButton({
+  dataAttribute,
+  hideTooltip = false,
+  icon,
+  label,
+  onClick,
+}: {
+  dataAttribute?: string;
+  hideTooltip?: boolean;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={onClick}
+        data-ai-settings-trigger={dataAttribute}
+        className="nexo-ai-icon-button flex h-11 w-11 items-center justify-center rounded-2xl border border-[#202020] bg-[#0F0F0F] text-[#B7B7B7] transition-colors hover:text-[#F5F5F5]"
+        aria-label={label}
+        title={hideTooltip ? undefined : label}
+      >
+        {icon}
+      </button>
+      {!hideTooltip && <DockTooltip>{label}</DockTooltip>}
+    </div>
+  );
+}
+
+function DockTooltip({
+  children,
+  compact = false,
+}: {
+  children: ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden -translate-y-1/2 items-center justify-center rounded-xl border border-[#262626] bg-[#101010] text-xs text-[#D0D0D0] shadow-[0_12px_30px_rgba(0,0,0,0.4)] group-hover:flex ${
+        compact
+          ? "h-9 w-9"
+          : "min-w-max max-w-[240px] whitespace-nowrap px-3 py-1.5"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function HistorySidebar({
   activeConversationId,
   conversations,
+  searchInputRef,
   searchQuery,
   isLoading,
   onChangeSearchQuery,
   onClose,
+  onRenameConversation,
   onSelectConversation,
   onStartNewConversation,
 }: {
   activeConversationId: string | null;
   conversations: AIConversation[];
+  searchInputRef?: RefObject<HTMLInputElement | null>;
   searchQuery: string;
   isLoading: boolean;
   onChangeSearchQuery: (value: string) => void;
   onClose?: () => void;
+  onRenameConversation: (conversationId: string, title: string) => void;
   onSelectConversation: (conversationId: string) => void;
   onStartNewConversation: () => void;
 }) {
+  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const skipBlurCommitRef = useRef(false);
+
+  function startRenamingConversation(
+    event: ReactMouseEvent,
+    conversation: AIConversation
+  ) {
+    event.stopPropagation();
+
+    if (isLoading) {
+      return;
+    }
+
+    setEditingConversationId(conversation.id);
+    setDraftTitle(conversation.title);
+  }
+
+  function finishRenamingConversation(conversation: AIConversation) {
+    if (skipBlurCommitRef.current) {
+      skipBlurCommitRef.current = false;
+      return;
+    }
+
+    const normalizedTitle = draftTitle.trim().replace(/\s+/g, " ");
+
+    if (normalizedTitle && normalizedTitle !== conversation.title) {
+      onRenameConversation(conversation.id, normalizedTitle);
+    }
+
+    setEditingConversationId(null);
+    setDraftTitle("");
+  }
+
+  function cancelRenamingConversation() {
+    skipBlurCommitRef.current = true;
+    setEditingConversationId(null);
+    setDraftTitle("");
+  }
+
   return (
-    <div className="flex h-full min-h-0 w-[312px] max-w-[84vw] flex-col overflow-hidden border border-[#222222] bg-[#101010] xl:w-full xl:max-w-none xl:rounded-[30px] xl:shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
-      <div className="sticky top-0 z-10 shrink-0 border-b border-[#222222] bg-[#101010]">
+    <div className="nexo-ai-sidebar flex h-full min-h-0 w-[312px] max-w-[84vw] flex-col overflow-hidden rounded-[28px] border border-[#171717] bg-[#060606] xl:w-full xl:max-w-none">
+      <div className="shrink-0 border-b border-[#171717] bg-[#080808]">
         <div className="flex items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-sm font-semibold text-[#F5F5F5]">Conversas</p>
-            <p className="mt-1 text-xs text-[#727272]">Seu histórico da IA neste mês</p>
-          </div>
+          <p className="text-sm font-semibold text-[#F5F5F5]">Conversas</p>
 
           {onClose && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="hidden h-9 w-9 items-center justify-center rounded-2xl border border-[#262626] bg-[#141414] text-[#BDBDBD] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] xl:inline-flex"
-                aria-label="Ocultar histórico"
-                title="Ocultar histórico"
-              >
-                <PanelLeft size={15} />
-              </button>
-
+            <div className="flex items-center gap-2 xl:hidden">
               <button
                 type="button"
                 onClick={onClose}
@@ -988,6 +1484,7 @@ function HistorySidebar({
           <label className="flex items-center gap-3 rounded-2xl border border-[#242424] bg-[#141414] px-3 py-3 text-[#9B9B9B] transition-colors focus-within:border-[#383838] focus-within:text-[#F5F5F5]">
             <Search size={15} className="shrink-0" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(event) => onChangeSearchQuery(event.target.value)}
@@ -998,7 +1495,7 @@ function HistorySidebar({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="nexo-ai-thread-list min-h-0 flex-1 overflow-y-auto p-2">
         {conversations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#262626] bg-[#121212] px-4 py-5 text-sm leading-relaxed text-[#848484]">
             {searchQuery.trim()
@@ -1011,21 +1508,70 @@ function HistorySidebar({
               const isActive = conversation.id === activeConversationId;
 
               return (
-                <button
+                <div
                   key={conversation.id}
-                  type="button"
-                  onClick={() => onSelectConversation(conversation.id)}
-                  disabled={isLoading}
-                  className={`w-full rounded-2xl border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                  role="button"
+                  tabIndex={isLoading ? -1 : 0}
+                  aria-disabled={isLoading}
+                  onClick={() => {
+                    if (!isLoading && editingConversationId !== conversation.id) {
+                      onSelectConversation(conversation.id);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      isLoading ||
+                      editingConversationId === conversation.id ||
+                      (event.key !== "Enter" && event.key !== " ")
+                    ) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    onSelectConversation(conversation.id);
+                  }}
+                  className={`nexo-ai-thread-card w-full cursor-pointer rounded-2xl border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A] ${
+                    isLoading ? "cursor-not-allowed opacity-45" : ""
+                  } ${
                     isActive
-                      ? "border-[#333333] bg-[#1A1A1A]"
+                      ? "nexo-ai-thread-card--active border-[#333333] bg-[#1A1A1A]"
                       : "border-transparent bg-transparent hover:border-[#242424] hover:bg-[#161616]"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="truncate text-sm font-medium text-[#F5F5F5]">
-                      {conversation.title}
-                    </p>
+                  <div className="flex min-w-0 items-center justify-between gap-3">
+                    {editingConversationId === conversation.id ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={draftTitle}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(event) => setDraftTitle(event.target.value)}
+                        onBlur={() => finishRenamingConversation(conversation)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            finishRenamingConversation(conversation);
+                          }
+
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            cancelRenamingConversation();
+                          }
+                        }}
+                        className="min-w-0 flex-1 rounded-xl border border-[#343434] bg-[#101010] px-2 py-1 text-sm font-medium text-[#F5F5F5] outline-none focus:border-[#555555]"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          startRenamingConversation(event, conversation)
+                        }
+                        className="min-w-0 flex-1 truncate rounded-lg text-left text-sm font-medium text-[#F5F5F5] outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
+                        title="Clique para renomear"
+                      >
+                        {conversation.title}
+                      </button>
+                    )}
                     <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[#6E6E6E]">
                       {MODE_META[conversation.lastMode].shortLabel}
                     </span>
@@ -1036,7 +1582,7 @@ function HistorySidebar({
                   <p className="mt-3 text-[11px] text-[#5F5F5F]">
                     {formatConversationTimestamp(conversation.updatedAt)}
                   </p>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -1050,95 +1596,240 @@ function Composer({
   activeMode,
   activeModeMeta,
   availableModes,
+  attachments,
   currentUsage,
+  fileAttachmentInputRef,
   input,
+  inputRef,
   isLoading,
   isQuotaReached,
   lockedModes,
+  mediaAttachmentInputRef,
   modeMenuOpen,
   modeMenuRef,
+  onAttachFiles,
   onChangeInput,
+  onComposerKeyDown,
+  onOpenFilePicker,
+  onOpenMediaPicker,
   onOpenModeMenu,
+  onRemoveAttachment,
   onSelectLockedMode,
   onSelectMode,
   onSubmit,
+  showSuggestionChips,
   suggestions,
 }: {
   activeMode: AIVisibleMode;
   activeModeMeta: ModeMeta;
   availableModes: AIVisibleMode[];
+  attachments: AIAttachment[];
   currentUsage: AIUsageState | null;
+  fileAttachmentInputRef: RefObject<HTMLInputElement | null>;
   input: string;
+  inputRef: RefObject<HTMLTextAreaElement | null>;
   isLoading: boolean;
   isQuotaReached: boolean;
   lockedModes: AIVisibleMode[];
+  mediaAttachmentInputRef: RefObject<HTMLInputElement | null>;
   modeMenuOpen: boolean;
   modeMenuRef: RefObject<HTMLFormElement | null>;
+  onAttachFiles: (files: FileList | null) => void;
   onChangeInput: (value: string) => void;
+  onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onOpenFilePicker: () => void;
+  onOpenMediaPicker: () => void;
   onOpenModeMenu: () => void;
+  onRemoveAttachment: (attachmentId: string) => void;
   onSelectLockedMode: (mode: AIVisibleMode) => void;
   onSelectMode: (mode: AIVisibleMode) => void;
   onSubmit: (event: FormEvent) => void;
+  showSuggestionChips: boolean;
   suggestions: string[];
 }) {
+  const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
+  const attachmentMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        attachmentMenuRef.current &&
+        !attachmentMenuRef.current.contains(event.target as Node)
+      ) {
+        setAttachmentMenuOpen(false);
+      }
+    }
+
+    if (attachmentMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [attachmentMenuOpen]);
+
   return (
     <div className="space-y-3">
-      <form onSubmit={onSubmit} className="relative" ref={modeMenuRef}>
-        <div className="flex items-center gap-2 rounded-[28px] border border-[#262626] bg-[#121212] px-3 py-3 shadow-[0_0_0_1px_rgba(255,255,255,0.01)]">
-          <Sparkles size={16} className="ml-1 shrink-0 text-[#717171]" />
-          <input
-            type="text"
-            value={input}
-            onChange={(event) => onChangeInput(event.target.value)}
-            placeholder={
-              isQuotaReached
-                ? "Seu limite desta janela foi atingido."
-                : activeMode === "chat"
-                  ? "O que você quer saber?"
-                  : activeModeMeta.starter
-            }
-            className="flex-1 bg-transparent text-sm text-[#F5F5F5] outline-none placeholder:text-[#5C5C5C]"
-            disabled={isLoading || isQuotaReached}
-          />
+      <form
+        onSubmit={onSubmit}
+        className="relative z-20"
+        ref={modeMenuRef}
+      >
+        <div className="nexo-ai-composer-shell relative rounded-[32px] border border-[#1C1C1C] bg-[#101010]">
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 border-b border-[#1B1B1B] px-3 py-3">
+              {attachments.map((attachment) => (
+                <AttachmentBadge
+                  key={attachment.id}
+                  attachment={attachment}
+                  removable
+                  onRemove={() => onRemoveAttachment(attachment.id)}
+                />
+              ))}
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={onOpenModeMenu}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
-              modeMenuOpen || activeMode !== "chat"
-                ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
-                : "border-[#2A2A2A] bg-[#171717] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
-            }`}
-          >
-            {activeMode === "chat" ? (
-              <MessageSquare size={15} />
-            ) : (
-              <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
-            )}
-            <span className="hidden sm:inline">
-              {activeMode === "chat" ? "Chat Livre" : activeModeMeta.shortLabel}
-            </span>
-            <ChevronDown
-              size={15}
-              className={`transition-transform ${modeMenuOpen ? "rotate-180" : ""}`}
+          <div className="flex items-end gap-2 px-3 py-3">
+            <input
+              ref={mediaAttachmentInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept="image/*,video/*"
+              onChange={(event) => {
+                onAttachFiles(event.target.files);
+                event.currentTarget.value = "";
+                setAttachmentMenuOpen(false);
+              }}
             />
-          </button>
+            <input
+              ref={fileAttachmentInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip,.json"
+              onChange={(event) => {
+                onAttachFiles(event.target.files);
+                event.currentTarget.value = "";
+                setAttachmentMenuOpen(false);
+              }}
+            />
 
-          <button
-            type="submit"
-            disabled={isLoading || isQuotaReached || (activeMode === "chat" && !input.trim())}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F5F5F5] text-[#0D0D0D] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isLoading ? (
-              <span className="h-4 w-4 animate-spin rounded-full border border-[#0D0D0D] border-t-transparent" />
-            ) : (
-              <Send size={16} />
-            )}
-          </button>
+            <div className="relative z-40 shrink-0">
+              <button
+                type="button"
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => setAttachmentMenuOpen((open) => !open)}
+                disabled={isLoading}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#252525] bg-[#181818] text-[#D0D0D0] transition-colors hover:border-[#3A3A3A] hover:bg-[#1D1D1D] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
+                title="Adicionar anexos"
+                aria-label="Adicionar anexos"
+              >
+                <Plus size={17} />
+              </button>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <textarea
+                ref={inputRef}
+                rows={1}
+                value={input}
+                onChange={(event) => onChangeInput(event.target.value)}
+                onKeyDown={onComposerKeyDown}
+                placeholder={
+                  isQuotaReached
+                    ? "Seu limite desta janela foi atingido."
+                    : activeMode === "chat"
+                      ? "Pergunte algo com contexto real do seu mês..."
+                      : activeModeMeta.starter
+                }
+                className="max-h-44 min-h-[44px] w-full resize-none bg-transparent py-2 text-sm leading-6 text-[#F5F5F5] outline-none placeholder:text-[#5C5C5C]"
+                disabled={isLoading || isQuotaReached}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenModeMenu}
+              className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-sm transition-colors ${
+                modeMenuOpen || activeMode !== "chat"
+                  ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
+                  : "border-[#242424] bg-[#161616] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
+              }`}
+            >
+              {activeMode === "chat" ? (
+                <MessageSquare size={15} />
+              ) : (
+                <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
+              )}
+              <span className="hidden sm:inline">
+                {activeMode === "chat" ? "Chat livre" : activeModeMeta.shortLabel}
+              </span>
+              <ChevronDown
+                size={15}
+                className={`transition-transform ${modeMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            <button
+              type="submit"
+              disabled={
+                isLoading ||
+                isQuotaReached ||
+                (activeMode === "chat" &&
+                  !input.trim() &&
+                  attachments.length === 0)
+              }
+              className="nexo-ai-send-button flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F5F5F5] text-[#0D0D0D] transition disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border border-[#0D0D0D] border-t-transparent" />
+              ) : (
+                <Send size={16} />
+              )}
+            </button>
+          </div>
         </div>
 
+        {attachmentMenuOpen && (
+          <div
+            ref={attachmentMenuRef}
+            className="nexo-ai-floating-menu absolute bottom-[calc(100%+12px)] left-0 z-[100] w-[min(340px,calc(100vw-48px))] overflow-visible rounded-[22px] border border-[#2A2A2A] bg-[#121212] p-2"
+          >
+            <button
+              type="button"
+              onClick={onOpenMediaPicker}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-[#E7E7E7] transition-colors hover:bg-[#1B1B1B]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#2B3555] bg-[#151A2A] text-[#B9C7FF]">
+                <ImagePlus size={17} />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-medium">Imagem ou vídeo</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-[#8A8A8A]">
+                  Anexe mídia para usar como referência da conversa.
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenFilePicker}
+              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-[#E7E7E7] transition-colors hover:bg-[#1B1B1B]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#303030] bg-[#191919] text-[#DADADA]">
+                <FileUp size={17} />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-medium">Arquivo</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-[#8A8A8A]">
+                  PDF, planilha, texto, JSON e documentos.
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
+
         {modeMenuOpen && (
-          <div className="absolute bottom-[calc(100%+10px)] right-0 z-30 w-[320px] rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
+          <div className="nexo-ai-floating-menu absolute bottom-[calc(100%+10px)] right-0 z-[90] w-[320px] rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2">
             <div className="mb-1 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#767676]">
               Ferramentas
             </div>
@@ -1183,19 +1874,21 @@ function Composer({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {suggestions.map((prompt) => (
-          <button
-            key={`${activeMode}-${prompt}`}
-            onClick={() => onChangeInput(prompt)}
-            type="button"
-            disabled={isQuotaReached}
-            className="rounded-full border border-[#2A2A2A] bg-[#141414] px-3 py-1.5 text-xs text-[#9C9C9C] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
+      {showSuggestionChips && (
+        <div className="flex flex-wrap gap-2">
+          {suggestions.map((prompt) => (
+            <button
+              key={`${activeMode}-${prompt}`}
+              onClick={() => onChangeInput(prompt)}
+              type="button"
+              disabled={isQuotaReached}
+              className="rounded-full border border-[#222222] bg-[#111111] px-3 py-1.5 text-xs text-[#9C9C9C] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1219,12 +1912,12 @@ function EmptyState({
     <div className="flex h-full flex-col items-center justify-center py-10 text-center">
       <div className="space-y-5">
         <div className="mx-auto flex items-center justify-center">
-          <NexoCubeLogo size={92} />
+          <NexoCubeAnimated size={192} intensity="hero" mood="listening" />
         </div>
 
         <div className="space-y-3">
           <h3 className="text-3xl font-semibold tracking-tight text-[#F5F5F5]">
-            {activeMode === "chat" ? BRAND_AI_NAME : activeModeMeta.label}
+            {activeMode === "chat" ? "Pronto para conversar" : activeModeMeta.label}
           </h3>
           <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8A8A8A] md:text-[15px]">
             {getEmptyStateCopy(contextState, sourceView, activeMode)}
@@ -1251,7 +1944,7 @@ function SessionLoadingState({ activeMode }: { activeMode: AIVisibleMode }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 py-10">
       <div className="mx-auto flex items-center justify-center">
-        <NexoCubeLogo size={92} />
+        <NexoCubeAnimated size={192} intensity="hero" mood="thinking" />
       </div>
       <p className="text-sm leading-relaxed text-[#A8A8A8]">
         {getLoadingCopy(activeMode)}
@@ -1317,6 +2010,196 @@ function UsagePill({ usage }: { usage: AIUsageState }) {
   );
 }
 
+function AttachmentBadge({
+  attachment,
+  removable = false,
+  onRemove,
+}: {
+  attachment: AIAttachment;
+  removable?: boolean;
+  onRemove?: () => void;
+}) {
+  const kindLabel =
+    attachment.kind === "image"
+      ? "Foto"
+      : attachment.kind === "video"
+        ? "Vídeo"
+        : "Arquivo";
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-[#262626] bg-[#151515] px-3 py-1.5 text-xs text-[#D1D1D1]">
+      <span className="font-medium text-[#F5F5F5]">{kindLabel}</span>
+      <span className="max-w-[160px] truncate text-[#A1A1A1]">{attachment.name}</span>
+      <span className="text-[#6F6F6F]">{formatFileSize(attachment.size)}</span>
+      {removable && onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#848484] transition-colors hover:bg-[#222222] hover:text-[#F5F5F5]"
+          aria-label={`Remover ${attachment.name}`}
+        >
+          <X size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SettingsToggle({
+  checked,
+  description,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex w-full items-start justify-between gap-4 rounded-2xl border border-[#202020] bg-[#0D0D0D] px-4 py-3 text-left transition-colors hover:border-[#313131]"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="whitespace-normal text-sm font-medium leading-snug text-[#F5F5F5]">
+          {label}
+        </p>
+        <p className="mt-1 whitespace-normal text-xs leading-relaxed text-[#7A7A7A]">
+          {description}
+        </p>
+      </div>
+      <span
+        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+          checked
+            ? "border-[#3D4F89] bg-[#1A2547]"
+            : "border-[#2A2A2A] bg-[#121212]"
+        }`}
+      >
+        <span
+          className={`mx-1 h-4 w-4 rounded-full transition-transform ${
+            checked
+              ? "translate-x-5 bg-[#E7ECFF]"
+              : "translate-x-0 bg-[#5F5F5F]"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function PythonInsightGrid({
+  insights,
+  mode,
+}: {
+  insights: AIPythonInsights;
+  mode: AIVisibleMode;
+}) {
+  const cards = buildPythonInsightCards(insights, mode);
+
+  if (cards.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 grid gap-2 md:grid-cols-2">
+      {cards.map((card) => (
+        <div
+          key={card.title}
+          className="rounded-2xl border border-[#242424] bg-[#101010] px-3 py-3"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#7B7B7B]">
+              {card.title}
+            </p>
+            <p className="text-sm font-medium text-[#F5F5F5]">{card.value}</p>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-[#A0A0A0]">
+            {card.description}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function buildPythonInsightCards(
+  insights: AIPythonInsights,
+  mode: AIVisibleMode
+) {
+  const cards: Array<{ title: string; value: string; description: string }> = [];
+
+  if (
+    insights.risk?.status === "ok" &&
+    insights.risk.result &&
+    (mode === "chat" ||
+      mode === "risk" ||
+      mode === "predict" ||
+      mode === "recommendations")
+  ) {
+    cards.push({
+      title: "Índice de risco",
+      value: `${Math.round(insights.risk.result.score0to100)}/100`,
+      description: `${capitalize(insights.risk.result.level)} | saldo negativo ${insights.risk.result.negativeBalanceRisk} | runway ${formatCompactNumber(insights.risk.result.runwayDays)} dias.`,
+    });
+    cards.push({
+      title: "Estabilidade",
+      value: `${Math.round(insights.risk.result.stabilityScore)}/100`,
+      description: `Pressão histórica ${insights.risk.result.historyPressure}. ${insights.risk.result.summary}`,
+    });
+  }
+
+  if (
+    insights.predict?.status === "ok" &&
+    insights.predict.result &&
+    (mode === "chat" ||
+      mode === "predict" ||
+      mode === "indicators" ||
+      mode === "recommendations")
+  ) {
+    cards.push({
+      title: "Projeção do mês",
+      value: formatCurrency(insights.predict.result.projectedSpent),
+      description: `Faixa provável ${formatCurrency(insights.predict.result.projectedRangeLow)} a ${formatCurrency(insights.predict.result.projectedRangeHigh)}.`,
+    });
+    cards.push({
+      title: "Fechamento projetado",
+      value: formatCurrency(insights.predict.result.projectedBalance),
+      description: `${capitalize(insights.predict.result.trend)} | risco ${insights.predict.result.monthEndRisk} | ${insights.predict.result.daysRemaining} dias restantes.`,
+    });
+  }
+
+  if (
+    insights.patterns?.status === "ok" &&
+    insights.patterns.result &&
+    (mode === "chat" ||
+      mode === "recommendations" ||
+      mode === "risk" ||
+      mode === "indicators")
+  ) {
+    cards.push({
+      title: "Comportamento",
+      value: `${Math.round(insights.patterns.result.impulsivityScore)}/100`,
+      description: `Impulsividade | sabotagem ${Math.round(insights.patterns.result.sabotageScore)}/100 | categoria dominante ${insights.patterns.result.dominantCategory}.`,
+    });
+    cards.push({
+      title: "Pressão de consumo",
+      value: `${Math.round(insights.patterns.result.concentrationScore)}/100`,
+      description: `${Math.round(insights.patterns.result.weekendSpendRatio)}% do gasto caiu no fim de semana e houve ${insights.patterns.result.burstDaysCount} dias de explosão.`,
+    });
+  }
+
+  return cards.slice(0, 4);
+}
+
+function hasRenderablePythonInsights(insights: AIPythonInsights | null | undefined) {
+  return Boolean(
+    (insights?.patterns?.status === "ok" && insights.patterns.result) ||
+      (insights?.risk?.status === "ok" && insights.risk.result) ||
+      (insights?.predict?.status === "ok" && insights.predict.result)
+  );
+}
+
 function getEmptyStateCopy(
   contextState: AIContextState,
   sourceView: AISourceView,
@@ -1350,6 +2233,65 @@ function getLoadingCopy(mode: AIVisibleMode) {
     case "chat":
     default:
       return "Lendo seu mês atual e organizando uma resposta útil...";
+  }
+}
+
+function buildQuestionWithAttachments(
+  question: string,
+  attachments: AIAttachment[]
+) {
+  const trimmedQuestion = question.trim();
+
+  if (attachments.length === 0) {
+    return trimmedQuestion;
+  }
+
+  const attachmentLines = attachments.map(
+    (attachment) =>
+      `- ${attachment.name} | ${attachment.kind} | ${attachment.type || "tipo desconhecido"} | ${formatFileSize(attachment.size)}`
+  );
+
+  return `${trimmedQuestion || "Considere os arquivos anexados junto com o meu contexto financeiro atual."}
+
+Arquivos anexados pelo usuário (contexto textual, sem leitura binária direta):
+${attachmentLines.join("\n")}`.trim();
+}
+
+function resolveAttachmentKind(fileType: string): AIAttachment["kind"] {
+  if (fileType.startsWith("image/")) return "image";
+  if (fileType.startsWith("video/")) return "video";
+  return "file";
+}
+
+function formatFileSize(sizeInBytes: number) {
+  if (sizeInBytes < 1024) {
+    return `${sizeInBytes} B`;
+  }
+
+  if (sizeInBytes < 1024 * 1024) {
+    return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function readStoredAIPreferences(): AIUIPreferences {
+  if (typeof window === "undefined") {
+    return DEFAULT_AI_UI_PREFERENCES;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(AI_UI_PREFERENCES_STORAGE_KEY);
+    if (!raw) return DEFAULT_AI_UI_PREFERENCES;
+    const parsed = JSON.parse(raw) as Partial<AIUIPreferences>;
+    return {
+      showStructuredInsights:
+        parsed.showStructuredInsights ?? DEFAULT_AI_UI_PREFERENCES.showStructuredInsights,
+      showSuggestionChips:
+        parsed.showSuggestionChips ?? DEFAULT_AI_UI_PREFERENCES.showSuggestionChips,
+    };
+  } catch {
+    return DEFAULT_AI_UI_PREFERENCES;
   }
 }
 
@@ -1569,4 +2511,23 @@ function formatConversationTimestamp(timestamp: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function capitalize(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }

@@ -73,13 +73,6 @@ async function startServer() {
     next();
   });
 
-  app.use(
-    clerkMiddleware({
-      publishableKey: ENV.clerkPublishableKey,
-      secretKey: ENV.clerkSecretKey,
-    })
-  );
-
   const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 200,
@@ -94,6 +87,10 @@ async function startServer() {
 
   app.use(
     "/api/trpc",
+    clerkMiddleware({
+      publishableKey: ENV.clerkPublishableKey,
+      secretKey: ENV.clerkSecretKey,
+    }),
     createExpressMiddleware({
       router: appRouter,
       createContext,

@@ -23,6 +23,9 @@ def test_predict_returns_baseline_projection(client, base_payload):
     assert data["status"] == "ok"
     assert data["result"]["methodology"] == "baseline_weighted"
     assert data["result"]["projectedSpent"] > 0
+    assert data["result"]["projectedRangeLow"] <= data["result"]["projectedSpent"]
+    assert data["result"]["projectedRangeHigh"] >= data["result"]["projectedSpent"]
+    assert data["result"]["daysRemaining"] >= 0
 
 
 def test_predict_uses_prophet_when_gate_is_open(monkeypatch, client, base_payload):
@@ -56,3 +59,5 @@ def test_predict_uses_prophet_when_gate_is_open(monkeypatch, client, base_payloa
     data = response.json()
     assert data["status"] == "ok"
     assert data["result"]["methodology"] == "prophet"
+    assert data["result"]["projectedRangeLow"] <= data["result"]["projectedSpent"]
+    assert data["result"]["projectedRangeHigh"] >= data["result"]["projectedSpent"]

@@ -41,17 +41,23 @@ def predict_spending(payload: AnalysisRequest) -> PredictResponse:
 
     methodology = "baseline_weighted"
     projected_spent = baseline_result["projected_spent"]
+    projected_range_low = baseline_result["projected_range_low"]
+    projected_range_high = baseline_result["projected_range_high"]
     debug_error = None
 
     if settings.enable_prophet and is_prophet_eligible(payload) and PROPHET_AVAILABLE:
         prophet_projection = _predict_with_prophet(payload, historical_frame)
         if prophet_projection is not None:
             projected_spent = prophet_projection
+            spread = max(baseline_result["projection_spread"], projected_spent * 0.06)
+            projected_range_low = round(max(projected_spent - spread, 0), 2)
+            projected_range_high = round(projected_spent + spread, 2)
             methodology = "prophet"
         else:
             debug_error = "Prophet falhou; baseline_weighted usado como fallback"
 
     projected_balance = round(payload.month.income - projected_spent, 2)
+    days_remaining = baseline_result["days_remaining"]
     month_end_risk = (
         "alto"
         if projected_balance < 0
@@ -69,11 +75,19 @@ def predict_spending(payload: AnalysisRequest) -> PredictResponse:
         result=PredictResult(
             projectedSpent=projected_spent,
             projectedBalance=projected_balance,
+            projectedRangeLow=projected_range_low,
+            projectedRangeHigh=projected_range_high,
+            daysRemaining=days_remaining,
             monthEndRisk=month_end_risk,
             trend=baseline_result["trend"],
             methodology=methodology,
             summary=_build_summary(
-                projected_spent, projected_balance, month_end_risk, baseline_result["trend"]
+                projected_spent,
+                projected_balance,
+                month_end_risk,
+                baseline_result["trend"],
+                projected_range_low,
+                projected_range_high,
             ),
         ),
         confidence=confidence,
@@ -96,6 +110,7 @@ def _predict_with_baseline(payload: AnalysisRequest, historical_frame, tx_frame)
     month_days = calendar.monthrange(
         payload.generated_at.year, payload.generated_at.month
     )[1]
+    days_remaining = max(month_days - current_day, 0)
     progress_ratio = max(min(current_day / month_days, 1), 0.15)
     run_rate_projection = payload.month.spent / progress_ratio
 
@@ -112,11 +127,15 @@ def _predict_with_baseline(payload: AnalysisRequest, historical_frame, tx_frame)
     )
 
     acceleration_factor = _calculate_acceleration_factor(tx_frame)
+    volatility_factor = _calculate_monthly_volatility(historical_frame, run_rate_projection)
     projected_spent = round(
         ((run_rate_projection * 0.58) + (weighted_history * 0.42))
         * acceleration_factor,
         2,
     )
+    projection_spread = max(projected_spent * volatility_factor, projected_spent * 0.04)
+    projected_range_low = round(max(projected_spent - projection_spread, 0), 2)
+    projected_range_high = round(projected_spent + projection_spread, 2)
 
     trend = (
         "acelerando"
@@ -128,6 +147,10 @@ def _predict_with_baseline(payload: AnalysisRequest, historical_frame, tx_frame)
 
     return {
         "projected_spent": projected_spent,
+        "projected_range_low": projected_range_low,
+        "projected_range_high": projected_range_high,
+        "projection_spread": round(projection_spread, 2),
+        "days_remaining": days_remaining,
         "trend": trend,
     }
 
@@ -174,6 +197,23 @@ def _calculate_acceleration_factor(tx_frame) -> float:
     return max(0.88, min(1.18, factor))
 
 
+def _calculate_monthly_volatility(historical_frame, run_rate_projection: float) -> float:
+    if historical_frame.empty:
+        return 0.08
+
+    spent_values = historical_frame["spent"].tolist()
+    if len(spent_values) < 2:
+        return 0.08
+
+    series = pd.Series(spent_values + [run_rate_projection], dtype="float64")
+    mean_value = float(series.mean())
+    if mean_value <= 0:
+        return 0.08
+
+    coefficient = float(series.std(ddof=0) / mean_value)
+    return max(0.06, min(0.18, coefficient))
+
+
 def _month_end_date(month_id: str) -> datetime:
     year, month = [int(piece) for piece in month_id.split("-")]
     day = calendar.monthrange(year, month)[1]
@@ -181,10 +221,16 @@ def _month_end_date(month_id: str) -> datetime:
 
 
 def _build_summary(
-    projected_spent: float, projected_balance: float, month_end_risk: str, trend: str
+    projected_spent: float,
+    projected_balance: float,
+    month_end_risk: str,
+    trend: str,
+    projected_range_low: float,
+    projected_range_high: float,
 ) -> str:
     return (
         f"A projecao aponta gasto final em R$ {projected_spent:,.2f} "
         f"e saldo de R$ {projected_balance:,.2f}, com risco {month_end_risk} "
-        f"e tendencia {trend}."
+        f"e tendencia {trend}. A faixa provavel fica entre "
+        f"R$ {projected_range_low:,.2f} e R$ {projected_range_high:,.2f}."
     ).replace(",", "X").replace(".", ",").replace("X", ".")

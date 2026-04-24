@@ -1,0 +1,369 @@
+.light .nexo-ai-view {
+  background:
+    radial-gradient(circle at 16% 12%, oklch(1 0 0 / 0.92), transparent 32%),
+    linear-gradient(135deg, oklch(0.95 0.014 82), oklch(0.9 0.012 82));
+  color: oklch(0.19 0.01 82);
+}
+
+.light .nexo-ai-view [class*="bg-[#0"],
+.light .nexo-ai-view [class*="bg-[#1"],
+.light .nexo-ai-view [class*="bg-[#2"],
+.light .nexo-ai-view [class*="bg-[#3"] {
+  background-color: oklch(0.985 0.008 82) !important;
+}
+
+.light .nexo-ai-view [class*="border-[#"] {
+  border-color: oklch(0.81 0.012 82) !important;
+}
+
+.light .nexo-ai-view [class*="text-[#F"],
+.light .nexo-ai-view [class*="text-[#E"],
+.light .nexo-ai-view [class*="text-[#D"],
+.light .nexo-ai-view [class*="text-[#C"],
+.light .nexo-ai-view [class*="text-[#B"] {
+  color: oklch(0.2 0.01 82) !important;
+}
+
+.light .nexo-ai-view [class*="text-[#5"],
+.light .nexo-ai-view [class*="text-[#6"],
+.light .nexo-ai-view [class*="text-[#7"],
+.light .nexo-ai-view [class*="text-[#8"],
+.light .nexo-ai-view [class*="text-[#9"],
+.light .nexo-ai-view [class*="text-[#A"] {
+  color: oklch(0.48 0.01 82) !important;
+}
+
+.light .nexo-ai-view [class*="bg-[#F5F5F5]"] {
+  background-color: oklch(0.2 0.01 82) !important;
+}
+
+.light .nexo-ai-view [class*="text-[#0D0D0D]"] {
+  color: oklch(0.98 0.006 82) !important;
+}
+
+.light .nexo-ai-view textarea,
+.light .nexo-ai-view input {
+  color: oklch(0.2 0.01 82);
+}
+
+.light .nexo-ai-view textarea::placeholder,
+.light .nexo-ai-view input::placeholder {
+  color: oklch(0.56 0.01 82) !important;
+}
+
+.nexo-ai-view {
+  --nexo-ai-bg: #030303;
+  --nexo-ai-panel: #080808;
+  --nexo-ai-panel-raised: #101010;
+  --nexo-ai-border: #1b1b1b;
+  --nexo-ai-border-strong: #303030;
+  --nexo-ai-text: #f5f5f5;
+  --nexo-ai-muted: #8b8b8b;
+  --nexo-ai-soft: #151515;
+}
+
+.nexo-ai-panel {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.045), transparent 30%),
+    linear-gradient(180deg, #090909 0%, #060606 54%, #040404 100%);
+  border-color: var(--nexo-ai-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 28px 90px rgba(0, 0, 0, 0.48);
+}
+
+.nexo-ai-rail {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06), transparent 28%),
+    linear-gradient(180deg, #090909 0%, #050505 54%, #030303 100%);
+  border-color: #181818;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 70px rgba(0, 0, 0, 0.48);
+}
+
+.nexo-ai-sidebar {
+  background:
+    linear-gradient(180deg, #080808 0%, #050505 48%, #040404 100%);
+  border-color: #1a1a1a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.nexo-ai-header {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.06), transparent 28%),
+    linear-gradient(180deg, rgba(14, 14, 14, 0.98), rgba(8, 8, 8, 0.94));
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.nexo-ai-chat-scroll {
+  scrollbar-gutter: stable;
+}
+
+.nexo-ai-chat-scroll::-webkit-scrollbar,
+.nexo-ai-thread-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.nexo-ai-chat-scroll::-webkit-scrollbar-track,
+.nexo-ai-thread-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nexo-ai-chat-scroll::-webkit-scrollbar-thumb,
+.nexo-ai-thread-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  background-clip: padding-box;
+}
+
+.nexo-ai-icon-button {
+  background:
+    linear-gradient(180deg, rgba(28, 28, 28, 0.95), rgba(12, 12, 12, 0.95));
+  border-color: #242424;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 26px rgba(0, 0, 0, 0.28);
+}
+
+.nexo-ai-icon-button:hover {
+  border-color: #3a3a3a;
+  background:
+    linear-gradient(180deg, rgba(35, 35, 35, 0.98), rgba(17, 17, 17, 0.98));
+}
+
+.nexo-ai-thread-card {
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.72), rgba(10, 10, 10, 0.62));
+  border-color: transparent;
+}
+
+.nexo-ai-thread-card:hover {
+  border-color: #262626;
+  background: linear-gradient(180deg, rgba(24, 24, 24, 0.88), rgba(13, 13, 13, 0.8));
+}
+
+.nexo-ai-thread-card--active {
+  border-color: #363636;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.055), transparent 35%),
+    linear-gradient(180deg, #1a1a1a, #111111);
+  box-shadow:
+    inset 3px 0 0 rgba(255, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.nexo-ai-message {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 16px 44px rgba(0, 0, 0, 0.22);
+}
+
+.nexo-ai-message--assistant {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.035), transparent 30%),
+    linear-gradient(180deg, #151515, #101010);
+  border-color: #242424;
+}
+
+.nexo-ai-message--user {
+  background:
+    linear-gradient(180deg, #2e2e2e, #242424);
+}
+
+.nexo-ai-composer-zone {
+  background:
+    linear-gradient(180deg, rgba(10, 10, 10, 0.82), rgba(7, 7, 7, 0.98));
+  box-shadow: 0 -20px 70px rgba(0, 0, 0, 0.34);
+}
+
+.nexo-ai-composer-shell {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.06), transparent 24%),
+    linear-gradient(180deg, #171717, #101010);
+  border-color: #272727;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 22px 70px rgba(0, 0, 0, 0.45);
+}
+
+.nexo-ai-composer-shell:focus-within {
+  border-color: #454545;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 26px 76px rgba(0, 0, 0, 0.5);
+}
+
+.nexo-ai-floating-menu {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.055), transparent 30%),
+    linear-gradient(180deg, #171717, #0f0f0f);
+  border-color: #2a2a2a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 80px rgba(0, 0, 0, 0.65);
+}
+
+.nexo-ai-send-button {
+  background:
+    linear-gradient(180deg, #ffffff, #e5e5e5);
+  color: #050505;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 14px 34px rgba(255, 255, 255, 0.08);
+}
+
+.nexo-ai-send-button:hover {
+  transform: translateY(-1px);
+}
+
+.light .nexo-ai-view {
+  --nexo-ai-bg: oklch(0.95 0.014 82);
+  --nexo-ai-panel: oklch(0.985 0.008 82);
+  --nexo-ai-panel-raised: oklch(1 0 0);
+  --nexo-ai-border: oklch(0.82 0.012 82);
+  --nexo-ai-border-strong: oklch(0.7 0.014 82);
+  --nexo-ai-text: oklch(0.2 0.01 82);
+  --nexo-ai-muted: oklch(0.48 0.01 82);
+  --nexo-ai-soft: oklch(0.93 0.008 82);
+}
+
+.light .nexo-ai-panel,
+.light .nexo-ai-sidebar,
+.light .nexo-ai-rail,
+.light .nexo-ai-header,
+.light .nexo-ai-composer-zone,
+.light .nexo-ai-composer-shell,
+.light .nexo-ai-floating-menu {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.86), transparent 32%),
+    linear-gradient(180deg, oklch(0.985 0.008 82), oklch(0.94 0.01 82));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 20px 70px rgba(80, 70, 52, 0.12);
+}
+
+.light .nexo-ai-message--assistant,
+.light .nexo-ai-thread-card,
+.light .nexo-ai-composer-shell {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.8), transparent 35%),
+    linear-gradient(180deg, oklch(0.985 0.008 82), oklch(0.955 0.01 82));
+}
+
+.light .nexo-ai-message--user {
+  background:
+    linear-gradient(180deg, oklch(0.28 0.01 82), oklch(0.22 0.01 82));
+}
+
+.light .nexo-ai-icon-button,
+.light .nexo-ai-thread-card--active,
+.light .nexo-ai-composer-shell,
+.light .nexo-ai-floating-menu {
+  border-color: oklch(0.82 0.012 82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 44px rgba(80, 70, 52, 0.12);
+}
+
+.light .nexo-ai-icon-button {
+  background:
+    linear-gradient(180deg, oklch(0.99 0.008 82), oklch(0.95 0.01 82));
+  color: oklch(0.28 0.01 82);
+}
+
+.light .nexo-ai-icon-button:hover {
+  border-color: oklch(0.74 0.014 82);
+  background:
+    linear-gradient(180deg, oklch(1 0 0), oklch(0.955 0.01 82));
+}
+
+.light .nexo-ai-thread-card--active {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.9), transparent 35%),
+    linear-gradient(180deg, oklch(0.99 0.008 82), oklch(0.95 0.01 82));
+  box-shadow:
+    inset 3px 0 0 oklch(0.32 0.02 82 / 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 44px rgba(80, 70, 52, 0.12);
+}
+
+.light .nexo-ai-thread-card:hover {
+  border-color: oklch(0.78 0.014 82);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.82), transparent 36%),
+    linear-gradient(180deg, oklch(0.988 0.008 82), oklch(0.952 0.01 82));
+}
+
+.light .nexo-ai-chat-scroll::-webkit-scrollbar-thumb,
+.light .nexo-ai-thread-list::-webkit-scrollbar-thumb {
+  background: oklch(0.74 0.012 82 / 0.9);
+  background-clip: padding-box;
+}
+
+.light .nexo-ai-send-button {
+  background:
+    linear-gradient(180deg, oklch(0.24 0.01 82), oklch(0.18 0.01 82));
+  color: oklch(0.98 0.006 82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 34px rgba(41, 35, 24, 0.18);
+}
+
+.light .nexo-ai-send-button span {
+  border-color: oklch(0.98 0.006 82);
+}
+
+.light .nexo-ai-view .text-white {
+  color: oklch(0.2 0.01 82) !important;
+}
+
+.light .nexo-ai-view .border-white\/10,
+.light .nexo-ai-view .border-white\/5 {
+  border-color: oklch(0.81 0.012 82) !important;
+}
+
+.light .nexo-ai-view .prose,
+.light .nexo-ai-view .prose :where(p, span, li, blockquote, code, pre, strong, em, h1, h2, h3, h4, h5, h6) {
+  color: oklch(0.22 0.01 82) !important;
+}
+
+.light .nexo-ai-view .prose a {
+  color: oklch(0.38 0.06 82) !important;
+}
+
+.light .nexo-ai-view .nexo-ai-message--user,
+.light .nexo-ai-view .nexo-ai-message--user :where(*) {
+  color: oklch(0.985 0.006 82) !important;
+}
+
+.light .nexo-ai-view .nexo-ai-message--assistant,
+.light .nexo-ai-view .nexo-ai-message--assistant :where(*) {
+  color: oklch(0.22 0.01 82) !important;
+}
+
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#5"],
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#6"],
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#7"],
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#8"],
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#9"],
+.light .nexo-ai-view .nexo-ai-message--assistant [class*="text-[#A"] {
+  color: oklch(0.48 0.01 82) !important;
+}
+
+.light .nexo-ai-view .nexo-ai-floating-menu,
+.light .nexo-ai-view .nexo-ai-floating-menu :where(button, label, p, span, div) {
+  color: oklch(0.22 0.01 82);
+}
+
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#5"],
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#6"],
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#7"],
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#8"],
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#9"],
+.light .nexo-ai-view .nexo-ai-floating-menu [class*="text-[#A"] {
+  color: oklch(0.48 0.01 82) !important;
+}

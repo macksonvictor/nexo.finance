@@ -27,6 +27,21 @@ const pythonDebugSchema = z
   .passthrough()
   .default({});
 
+const pythonHealthSchema = z.object({
+  status: z.literal("ok"),
+  service: z.string(),
+  version: z.string(),
+  modules: z.record(z.string(), z.boolean()),
+  prophetEnabled: z.boolean(),
+  prophetAvailable: z.boolean(),
+  runtime: z.object({
+    platform: z.string(),
+    pythonVersion: z.string(),
+  }),
+  recommendedEnvironment: z.string(),
+  recommendedPython: z.string(),
+});
+
 const pythonBehaviorFlagSchema = z.object({
   code: z.string(),
   label: z.string(),
@@ -50,6 +65,11 @@ const pythonPatternsResultSchema = z.object({
   behaviorFlags: z.array(pythonBehaviorFlagSchema),
   impulsivityScore: z.number(),
   sabotageScore: z.number(),
+  concentrationScore: z.number(),
+  weekendSpendRatio: z.number(),
+  burstDaysCount: z.number().int(),
+  dominantCategory: z.string(),
+  dominantCaixa: z.string().nullable().optional(),
   spendingSignals: z.array(pythonSpendingSignalSchema),
   anomalies: z.array(pythonAnomalySchema),
   summary: z.string(),
@@ -59,6 +79,9 @@ const pythonRiskResultSchema = z.object({
   score0to100: z.number(),
   level: z.enum(["baixo", "medio", "alto", "critico"]),
   negativeBalanceRisk: z.enum(["baixo", "medio", "alto"]),
+  runwayDays: z.number(),
+  stabilityScore: z.number(),
+  historyPressure: z.enum(["baixo", "medio", "alto"]),
   drivers: z.array(z.string()),
   vulnerableCaixas: z.array(z.string()),
   metaPressure: z.object({
@@ -72,6 +95,9 @@ const pythonRiskResultSchema = z.object({
 const pythonPredictResultSchema = z.object({
   projectedSpent: z.number(),
   projectedBalance: z.number(),
+  projectedRangeLow: z.number(),
+  projectedRangeHigh: z.number(),
+  daysRemaining: z.number().int(),
   monthEndRisk: z.enum(["baixo", "medio", "alto"]),
   trend: z.enum(["desacelerando", "estavel", "acelerando"]),
   methodology: z.string(),
@@ -101,10 +127,31 @@ const pythonResponseSchemas = {
 export type PythonPatternsResponse = z.infer<typeof pythonResponseSchemas.patterns>;
 export type PythonRiskResponse = z.infer<typeof pythonResponseSchemas.risk>;
 export type PythonPredictResponse = z.infer<typeof pythonResponseSchemas.predict>;
+export type PythonHealthResponse = z.infer<typeof pythonHealthSchema>;
+
+export type PythonHealthState = {
+  configured: boolean;
+  enabled: boolean;
+  available: boolean;
+  service: string | null;
+  version: string | null;
+  prophetEnabled: boolean;
+  prophetAvailable: boolean;
+  modules: Record<string, boolean>;
+  runtime: {
+    platform: string;
+    pythonVersion: string;
+  } | null;
+  recommendedEnvironment: string;
+  recommendedPython: string;
+  checkedAt: string;
+  error?: string;
+};
 
 export type PythonInsightBundle = {
   requestId: string;
   promptBlock: string;
+  health: PythonHealthState;
   analyses: {
     patterns?: PythonPatternsResponse;
     risk?: PythonRiskResponse;
@@ -144,19 +191,114 @@ type CollectParams = {
   snapshot: AIContextSnapshot;
 };
 
+const PYTHON_HEALTH_CACHE_TTL_MS = 15_000;
+
+let pythonHealthCache:
+  | {
+      value: PythonHealthState;
+      expiresAt: number;
+    }
+  | undefined;
+
 export function isPythonAiEnabled() {
   return ENV.pyAiEnabled;
+}
+
+export async function getPythonAiHealth(forceRefresh = false): Promise<PythonHealthState> {
+  if (!ENV.pyAiEnabled) {
+    return buildDisabledHealthState();
+  }
+
+  if (!forceRefresh && pythonHealthCache && pythonHealthCache.expiresAt > Date.now()) {
+    return pythonHealthCache.value;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ENV.pyAiTimeoutMs);
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetch(`${ENV.pyAiBaseUrl.replace(/\/$/, "")}/health`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+    const rawBody = await response.text();
+    const parsedBody = rawBody ? safeJsonParse(rawBody) : null;
+
+    if (!response.ok) {
+      const value = buildUnavailableHealthState(
+        `${response.status} ${response.statusText}`,
+        Date.now() - startedAt
+      );
+      pythonHealthCache = {
+        value,
+        expiresAt: Date.now() + PYTHON_HEALTH_CACHE_TTL_MS,
+      };
+      return value;
+    }
+
+    const result = pythonHealthSchema.safeParse(parsedBody);
+
+    if (!result.success) {
+      const value = buildUnavailableHealthState(
+        result.error.issues
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+          .join("; "),
+        Date.now() - startedAt
+      );
+      pythonHealthCache = {
+        value,
+        expiresAt: Date.now() + PYTHON_HEALTH_CACHE_TTL_MS,
+      };
+      return value;
+    }
+
+    const value: PythonHealthState = {
+      configured: true,
+      enabled: true,
+      available: true,
+      service: result.data.service,
+      version: result.data.version,
+      prophetEnabled: result.data.prophetEnabled,
+      prophetAvailable: result.data.prophetAvailable,
+      modules: result.data.modules,
+      runtime: result.data.runtime,
+      recommendedEnvironment: result.data.recommendedEnvironment,
+      recommendedPython: result.data.recommendedPython,
+      checkedAt: new Date().toISOString(),
+    };
+
+    pythonHealthCache = {
+      value,
+      expiresAt: Date.now() + PYTHON_HEALTH_CACHE_TTL_MS,
+    };
+    return value;
+  } catch (error) {
+    const value = buildUnavailableHealthState(
+      error instanceof Error ? error.message : "Python AI health request failed",
+      Date.now() - startedAt
+    );
+    pythonHealthCache = {
+      value,
+      expiresAt: Date.now() + PYTHON_HEALTH_CACHE_TTL_MS,
+    };
+    return value;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function collectPythonInsights(
   params: CollectParams
 ): Promise<PythonInsightBundle> {
   const analyses: PythonInsightBundle["analyses"] = {};
+  const health = await getPythonAiHealth();
 
-  if (!isPythonAiEnabled()) {
+  if (!isPythonAiEnabled() || !health.available) {
     return {
       requestId: params.requestId,
       promptBlock: "",
+      health,
       analyses,
     };
   }
@@ -195,6 +337,7 @@ export async function collectPythonInsights(
     promptBlock: ENV.pyAiShadowMode
       ? ""
       : buildPromptBlock(params.mode, analyses),
+    health,
     analyses,
   };
 }
@@ -227,9 +370,9 @@ function buildPythonAiRequest(
 function resolveRequestedAnalyses(mode: AIVisibleMode): PythonAnalysisType[] {
   switch (mode) {
     case "chat":
-      return ["patterns"];
-    case "recommendations":
       return ["patterns", "risk"];
+    case "recommendations":
+      return ["patterns", "risk", "predict"];
     case "risk":
       return ["patterns", "risk"];
     case "predict":
@@ -360,7 +503,7 @@ function buildPromptBlock(
   const instruction =
     mode === "risk" || mode === "predict"
       ? "Use a análise Python abaixo como base principal para números, risco, tendência e sinais comportamentais. Não contradiga os valores analíticos quando o status estiver ok."
-      : "Use os sinais analíticos do motor Python abaixo para enriquecer a resposta, mantendo consistência com os dados reais do mês.";
+      : "Use os sinais analíticos abaixo para deixar a resposta mais assertiva, menos genérica e mais conclusiva. Quando houver status ok, transforme os sinais em diagnóstico prático sem citar o motor Python ao usuário.";
 
   return `Análise estruturada do motor Python:\n${instruction}\n\n${sections.join(
     "\n\n"
@@ -387,6 +530,11 @@ function formatPatternsSection(response?: PythonPatternsResponse) {
   return `Patterns:
 - Impulsividade: ${Math.round(response.result.impulsivityScore)}/100
 - Sabotagem: ${Math.round(response.result.sabotageScore)}/100
+- Concentração: ${Math.round(response.result.concentrationScore)}/100
+- Fim de semana: ${Math.round(response.result.weekendSpendRatio)}% do gasto
+- Dias de explosão: ${response.result.burstDaysCount}
+- Categoria dominante: ${response.result.dominantCategory}
+- Caixa dominante: ${response.result.dominantCaixa ?? "Nenhuma dominante"}
 - Flags: ${flagLabels || "Nenhuma flag relevante"}
 - Anomalias: ${anomalySummary}
 - Resumo: ${response.result.summary}`;
@@ -400,6 +548,9 @@ function formatRiskSection(response?: PythonRiskResponse) {
   return `Risk:
 - Score: ${Math.round(response.result.score0to100)}/100 (${response.result.level})
 - Risco de saldo negativo: ${response.result.negativeBalanceRisk}
+- Runway: ${response.result.runwayDays} dias
+- Estabilidade: ${Math.round(response.result.stabilityScore)}/100
+- Pressão histórica: ${response.result.historyPressure}
 - Caixas vulneráveis: ${response.result.vulnerableCaixas.join(", ") || "Nenhuma"}
 - Vetores principais: ${response.result.drivers.join(", ") || "Sem vetores dominantes"}
 - Resumo: ${response.result.summary}`;
@@ -413,6 +564,8 @@ function formatPredictSection(response?: PythonPredictResponse) {
   return `Predict:
 - Gasto projetado: ${formatCurrency(response.result.projectedSpent)}
 - Saldo projetado: ${formatCurrency(response.result.projectedBalance)}
+- Faixa provável: ${formatCurrency(response.result.projectedRangeLow)} até ${formatCurrency(response.result.projectedRangeHigh)}
+- Dias restantes: ${response.result.daysRemaining}
 - Risco de fechamento: ${response.result.monthEndRisk}
 - Tendência: ${response.result.trend}
 - Metodologia: ${response.result.methodology}
@@ -440,6 +593,44 @@ function safeJsonParse(value: string) {
   } catch {
     return { detail: value };
   }
+}
+
+function buildDisabledHealthState(): PythonHealthState {
+  return {
+    configured: false,
+    enabled: false,
+    available: false,
+    service: null,
+    version: null,
+    prophetEnabled: false,
+    prophetAvailable: false,
+    modules: {},
+    runtime: null,
+    recommendedEnvironment: "WSL",
+    recommendedPython: "3.12",
+    checkedAt: new Date().toISOString(),
+  };
+}
+
+function buildUnavailableHealthState(
+  error: string,
+  durationMs: number
+): PythonHealthState {
+  return {
+    configured: true,
+    enabled: true,
+    available: false,
+    service: null,
+    version: null,
+    prophetEnabled: ENV.pyAiEnableProphet,
+    prophetAvailable: false,
+    modules: {},
+    runtime: null,
+    recommendedEnvironment: "WSL",
+    recommendedPython: "3.12",
+    checkedAt: new Date().toISOString(),
+    error: `${error} (${durationMs}ms)`,
+  };
 }
 
 function formatCurrency(value: number) {

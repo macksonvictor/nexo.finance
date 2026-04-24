@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Brain, ChevronDown, Crown, Sparkles } from "lucide-react";
+import { ChevronDown, Crown } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { BRAND_AI_NAME } from "@/lib/branding";
 import type { ViewType } from "@/types/finance";
+import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
+import { NexoRiveMascot } from "./NexoRiveMascot";
+import { AccountMenuPanel } from "./AccountMenuPanel";
 
 interface DesktopHeaderProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   onOpenAIWindow?: () => void;
+  onOpenSettings?: () => void;
   isAIWindowOpen?: boolean;
   sidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
@@ -58,12 +62,17 @@ const VIEW_META: Record<ViewType, { title: string; subtitle: string }> = {
     title: "Indicadores",
     subtitle: "Leitura mais profunda da saúde financeira e da sua consistência.",
   },
+  configuracoes: {
+    title: "Configurações",
+    subtitle: "Preferências do aplicativo, aparência e ajustes da experiência.",
+  },
 };
 
 export function DesktopHeader({
   currentView,
   onViewChange,
   onOpenAIWindow,
+  onOpenSettings,
   isAIWindowOpen = false,
   user,
   isPremium,
@@ -97,35 +106,48 @@ export function DesktopHeader({
     "U";
 
   return (
-    <header className="sticky top-0 z-30 hidden h-[76px] items-center justify-between border-b border-[#242424] bg-[#0D0D0D]/92 px-6 backdrop-blur-xl md:flex">
+    <header className="nexo-shell-panel relative z-30 hidden h-[76px] shrink-0 items-center justify-between border-b border-border/70 px-6 md:flex">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="truncate text-[20px] font-semibold tracking-tight text-[#F5F5F5]">
+          <h1 className="truncate text-[20px] font-semibold tracking-tight text-foreground">
             {meta.title}
           </h1>
         </div>
-        <p className="truncate text-sm text-[#6F6F6F]">{meta.subtitle}</p>
+        <p className="truncate text-sm text-muted-foreground">{meta.subtitle}</p>
       </div>
 
       <div className="flex items-center gap-3">
         <button
           onClick={() => onOpenAIWindow?.()}
-          className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+          aria-label={`Abrir ${BRAND_AI_NAME}`}
+          aria-pressed={isAIWindowOpen}
+          title={BRAND_AI_NAME}
+          className={`flex h-16 w-16 items-center justify-center bg-transparent p-0 transition-opacity duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A] ${
             isAIWindowOpen
-              ? "border-[#2F2F2F] bg-[#181818] text-[#F5F5F5]"
-              : "border-[#252525] bg-[#131313] text-[#D7D7D7] hover:border-[#353535] hover:bg-[#171717]"
+              ? "opacity-100"
+              : "opacity-80"
           }`}
         >
-          <Brain size={16} className="text-[#BFBFBF]" />
-          <span>{BRAND_AI_NAME}</span>
+          <NexoRiveMascot
+            size={64}
+            state="idle"
+            fallback={
+              <img
+                src={frontCubeUrl}
+                alt=""
+                aria-hidden="true"
+                className="h-16 w-16 object-contain"
+              />
+            }
+          />
         </button>
 
         <button
           onClick={() => onViewChange("planos")}
-          className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors ${
             isPremium || isAdmin
-              ? "border-[#2C2612] bg-[#18140B] text-[#DABF74] hover:border-[#3C3116]"
-              : "border-[#2D3D8A] bg-[#10172F] text-[#D9E3FF] hover:border-[#4A63CC]"
+              ? "nexo-plan-chip-active"
+              : "nexo-plan-chip-upgrade"
           }`}
         >
           <Crown size={16} />
@@ -137,7 +159,8 @@ export function DesktopHeader({
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen((value) => !value)}
-            className="flex items-center gap-2 rounded-2xl border border-[#2A2A2A] bg-[#151515] px-3 py-2 pr-2 text-left transition-colors hover:border-[#383838]"
+            aria-expanded={profileOpen}
+            className="nexo-shell-control flex items-center gap-2 rounded-2xl px-3 py-2 pr-2 text-left"
           >
             {user?.avatar ? (
               <img
@@ -146,44 +169,31 @@ export function DesktopHeader({
                 className="h-9 w-9 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2A2A2A] text-sm font-semibold text-[#F5F5F5]">
+              <div className="nexo-shell-control-inset flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-foreground">
                 {initials}
               </div>
             )}
             <div className="max-w-[140px]">
-              <p className="truncate text-sm font-medium text-[#F5F5F5]">
+              <p className="truncate text-sm font-medium text-foreground">
                 {user?.name || "Minha conta"}
               </p>
-              <p className="truncate text-xs text-[#6F6F6F]">
+              <p className="truncate text-xs text-muted-foreground">
                 {isAdmin ? "Criador" : isPremium ? "Premium" : "Free"}
               </p>
             </div>
-            <ChevronDown size={14} className="text-[#6F6F6F]" />
+            <ChevronDown size={14} className="text-muted-foreground" />
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 top-[calc(100%+10px)] w-[240px] rounded-2xl border border-[#2A2A2A] bg-[#141414] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  onOpenAIWindow?.();
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-[#D7D7D7] transition-colors hover:bg-[#1E1E1E]"
-              >
-                <Sparkles size={16} className="text-[#BFBFBF]" />
-                {BRAND_AI_NAME}
-              </button>
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  onViewChange("planos");
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-[#D7D7D7] transition-colors hover:bg-[#1E1E1E]"
-              >
-                <Crown size={16} className="text-[#DABF74]" />
-                Ver planos
-              </button>
-            </div>
+            <AccountMenuPanel
+              user={user}
+              isPremium={isPremium}
+              isAdmin={isAdmin}
+              onViewChange={onViewChange}
+              onOpenSettings={onOpenSettings ?? (() => onViewChange("configuracoes"))}
+              onClose={() => setProfileOpen(false)}
+              className="fixed right-4 top-[72px] z-[100]"
+            />
           )}
         </div>
       </div>

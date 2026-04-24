@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Calendar, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar, Download, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import {
   compareMonthIds,
@@ -23,7 +23,13 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-export function HistoricoView({ onAskAI }: { onAskAI?: () => void }) {
+export function HistoricoView({
+  onAskAI,
+  onExport,
+}: {
+  onAskAI?: () => void;
+  onExport?: () => void;
+}) {
   const store = useFinanceStore();
   const currentCalendarMonthId = getCurrentCalendarMonthId();
 
@@ -92,15 +98,26 @@ export function HistoricoView({ onAskAI }: { onAskAI?: () => void }) {
               ? "Meses anteriores permanecem fechados como histórico consolidado."
               : "O histórico será preenchido conforme os meses forem registrados."}
           </p>
-          {onAskAI && (
-            <button
-              onClick={onAskAI}
-              className="mt-3 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Perguntar à IA
-            </button>
-          )}
+          <div className="mt-3 flex flex-wrap gap-2 lg:justify-end">
+            {onExport && (
+              <button
+                onClick={onExport}
+                className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Exportar
+              </button>
+            )}
+            {onAskAI && (
+              <button
+                onClick={onAskAI}
+                className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Perguntar à IA
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
 

@@ -11,3 +11,6 @@ def test_health_returns_ok(client):
     assert data["modules"]["patterns"] is True
     assert data["modules"]["risk"] is True
     assert data["modules"]["predict"] is True
+    assert data["runtime"]["pythonVersion"]
+    assert data["recommendedEnvironment"] == "WSL"
+    assert data["recommendedPython"] == "3.12"
