@@ -50,8 +50,8 @@ export function MobileHeader({
 
   return (
     <>
-      <header className="nexo-shell-panel fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border/70 px-4 md:hidden">
-        <div className="flex items-center gap-2">
+      <header className="nexo-shell-panel fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border/70 px-3 md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={() => onMenuToggle(!menuOpen)}
             className="nexo-shell-control rounded-xl p-2"
@@ -66,18 +66,18 @@ export function MobileHeader({
 
           <button
             onClick={() => onViewChange("dashboard")}
-            className="flex items-center gap-3 rounded-2xl bg-transparent p-0 text-left transition-transform duration-200 hover:scale-[1.01]"
+            className="flex min-w-0 items-center gap-2 rounded-2xl bg-transparent p-0 text-left transition-transform duration-200 hover:scale-[1.01]"
             aria-label="Voltar para o Dashboard"
             title="Voltar para o Dashboard"
           >
-            <BrandLogo alt={BRAND_NAME} className="h-9 w-9" />
-            <span className="text-[15px] font-semibold leading-none text-foreground">
+            <BrandLogo alt={BRAND_NAME} className="h-9 w-9 shrink-0" />
+            <span className="max-w-[calc(100vw-190px)] truncate text-[15px] font-semibold leading-none text-foreground max-[380px]:hidden">
               {BRAND_NAME}
             </span>
           </button>
         </div>
 
-        <div className="flex items-center gap-1" ref={panelRef}>
+        <div className="flex shrink-0 items-center gap-1" ref={panelRef}>
           {!isPremium && !isAdmin && (
             <button
               onClick={() => onViewChange("planos")}

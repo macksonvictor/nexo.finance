@@ -106,8 +106,8 @@ export function DesktopHeader({
     "U";
 
   return (
-    <header className="nexo-shell-panel relative z-30 hidden h-[76px] shrink-0 items-center justify-between border-b border-border/70 px-6 md:flex">
-      <div className="min-w-0">
+    <header className="nexo-shell-panel relative z-30 hidden h-[76px] shrink-0 items-center justify-between border-b border-border/70 px-4 lg:px-6 md:flex">
+      <div className="min-w-0 flex-1 pr-4">
         <div className="flex items-center gap-2">
           <h1 className="truncate text-[20px] font-semibold tracking-tight text-foreground">
             {meta.title}
@@ -116,27 +116,27 @@ export function DesktopHeader({
         <p className="truncate text-sm text-muted-foreground">{meta.subtitle}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 xl:gap-3">
         <button
           onClick={() => onOpenAIWindow?.()}
           aria-label={`Abrir ${BRAND_AI_NAME}`}
           aria-pressed={isAIWindowOpen}
           title={BRAND_AI_NAME}
-          className={`flex h-16 w-16 items-center justify-center bg-transparent p-0 transition-opacity duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A] ${
+          className={`flex h-14 w-14 items-center justify-center bg-transparent p-0 transition-opacity duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A] xl:h-16 xl:w-16 ${
             isAIWindowOpen
               ? "opacity-100"
               : "opacity-80"
           }`}
         >
           <NexoRiveMascot
-            size={64}
+            size={56}
             state="idle"
             fallback={
               <img
                 src={frontCubeUrl}
                 alt=""
                 aria-hidden="true"
-                className="h-16 w-16 object-contain"
+                className="h-14 w-14 object-contain xl:h-16 xl:w-16"
               />
             }
           />
@@ -144,14 +144,14 @@ export function DesktopHeader({
 
         <button
           onClick={() => onViewChange("planos")}
-          className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors xl:px-4 ${
             isPremium || isAdmin
               ? "nexo-plan-chip-active"
               : "nexo-plan-chip-upgrade"
           }`}
         >
           <Crown size={16} />
-          <span>{isPremium || isAdmin ? "Plano ativo" : "Upgrade"}</span>
+          <span className="hidden xl:inline">{isPremium || isAdmin ? "Plano ativo" : "Upgrade"}</span>
         </button>
 
         {!isPreviewMode && <NotificationBell align="right" />}
@@ -173,7 +173,7 @@ export function DesktopHeader({
                 {initials}
               </div>
             )}
-            <div className="max-w-[140px]">
+            <div className="hidden max-w-[112px] lg:block xl:max-w-[140px]">
               <p className="truncate text-sm font-medium text-foreground">
                 {user?.name || "Minha conta"}
               </p>

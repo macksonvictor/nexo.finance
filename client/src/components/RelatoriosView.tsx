@@ -1,13 +1,16 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { TrendingUp, TrendingDown, DollarSign, Target, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Target, Download, Sparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CategoryIcon } from "./CategoryIcon";
+import type { ViewType } from "@/types/finance";
 
 interface RelatoriosViewProps {
   monthId: string;
+  onAskAI?: () => void;
+  onNavigate?: (view: ViewType) => void;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -26,7 +29,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   outro: "Outro",
 };
 
-export function RelatoriosView({ monthId }: RelatoriosViewProps) {
+export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewProps) {
   const { data, isLoading } = trpc.finance.getMonth.useQuery({ monthId });
   const { data: allMonths } = trpc.finance.getUserMonths.useQuery();
   const backupMutation = trpc.finance.createBackup.useMutation({
@@ -82,26 +85,47 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
     );
   }
 
-  if (!data || !stats) return null;
+  if (!data || !stats) {
+    return (
+      <ReportEmptyState
+        icon={<Target className="h-5 w-5" />}
+        title="Relatório ainda sem base"
+        description="Volte ao Dashboard para preparar o mês e liberar uma leitura mais completa."
+        actionLabel="Ir para Dashboard"
+        onAction={() => onNavigate?.("dashboard")}
+      />
+    );
+  }
 
   const { month, caixas } = data;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-foreground text-2xl font-semibold tracking-tight">Relatórios</h1>
           <p className="text-muted-foreground text-sm mt-1">Análise detalhada do mês</p>
         </div>
-        <button
-          onClick={() => backupMutation.mutate({ monthId })}
-          disabled={backupMutation.isPending}
-          className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm text-foreground transition-all hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Download size={14} />
-          {backupMutation.isPending ? "Salvando..." : "Fazer Backup"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onAskAI && (
+            <button
+              onClick={onAskAI}
+              className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-all hover:bg-secondary"
+            >
+              <Sparkles size={14} />
+              Perguntar à IA
+            </button>
+          )}
+          <button
+            onClick={() => backupMutation.mutate({ monthId })}
+            disabled={backupMutation.isPending}
+            className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm text-foreground transition-all hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Download size={14} />
+            {backupMutation.isPending ? "Salvando..." : "Fazer Backup"}
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -159,7 +183,14 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Nenhuma caixa criada</div>
+            <ReportEmptyState
+              compact
+              icon={<DollarSign className="h-4 w-4" />}
+              title="Categorias aguardando caixas"
+              description="Crie caixas para o relatório separar sua receita por missão."
+              actionLabel="Abrir caixas"
+              onAction={() => onNavigate?.("caixas")}
+            />
           )}
         </div>
 
@@ -181,7 +212,14 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Nenhuma caixa criada</div>
+            <ReportEmptyState
+              compact
+              icon={<TrendingUp className="h-4 w-4" />}
+              title="Sem barras para comparar"
+              description="O gráfico aparece quando houver caixas planejadas e registros do mês."
+              actionLabel="Criar caixa"
+              onAction={() => onNavigate?.("caixas")}
+            />
           )}
         </div>
       </div>
@@ -210,7 +248,14 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground text-sm py-8">Nenhuma transação registrada</div>
+          <ReportEmptyState
+            compact
+            icon={<Download className="h-4 w-4" />}
+            title="Nenhuma transação registrada"
+            description="Assim que você lançar movimentações, as maiores transações aparecem aqui."
+            actionLabel="Ver histórico"
+            onAction={() => onNavigate?.("historico")}
+          />
         )}
       </div>
 
@@ -244,10 +289,58 @@ export function RelatoriosView({ monthId }: RelatoriosViewProps) {
             );
           })}
           {caixas.length === 0 && (
-            <div className="text-center text-muted-foreground text-sm py-4">Nenhuma caixa criada</div>
+            <ReportEmptyState
+              compact
+              icon={<Target className="h-4 w-4" />}
+              title="Desempenho ainda sem caixas"
+              description="Crie caixas para acompanhar uso, pressão e sobra por categoria."
+              actionLabel="Abrir caixas"
+              onAction={() => onNavigate?.("caixas")}
+            />
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ReportEmptyState({
+  actionLabel,
+  compact = false,
+  description,
+  icon,
+  onAction,
+  title,
+}: {
+  actionLabel?: string;
+  compact?: boolean;
+  description: string;
+  icon: React.ReactNode;
+  onAction?: () => void;
+  title: string;
+}) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/35 px-5 text-center ${
+        compact ? "min-h-40 py-6" : "min-h-[360px] py-10"
+      }`}
+    >
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground">
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
+        {description}
+      </p>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-4 inline-flex items-center justify-center rounded-xl border border-border bg-foreground px-3 py-2 text-xs font-semibold text-background transition-transform hover:scale-[1.02]"
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }

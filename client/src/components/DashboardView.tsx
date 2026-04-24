@@ -26,6 +26,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { useFinanceStore } from '@/stores/useFinanceStore';
+import type { ViewType } from '@/types/finance';
 import {
   compareMonthIds,
   formatCurrency,
@@ -59,9 +60,11 @@ const fadeUp = {
 
 export function DashboardView({
   onAskAI,
+  onNavigate,
   onOpenSettings,
 }: {
   onAskAI?: () => void;
+  onNavigate?: (view: ViewType) => void;
   onOpenSettings?: () => void;
 }) {
   const store = useFinanceStore();
@@ -88,8 +91,14 @@ export function DashboardView({
 
   if (!month) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <p>Nenhum dado para este mês.</p>
+      <div className="flex min-h-[420px] items-center justify-center">
+        <PremiumEmptyState
+          icon={<CalendarDays className="h-5 w-5" />}
+          title="Prepare o mês antes da leitura"
+          description="Defina sua receita e crie a primeira estrutura para o Dashboard começar a mostrar decisões reais."
+          actionLabel="Configurar receita"
+          onAction={onOpenSettings}
+        />
       </div>
     );
   }
@@ -308,8 +317,15 @@ export function DashboardView({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-              Crie caixas neste mês para ver a distribuição.
+            <div className="h-[200px]">
+              <PremiumEmptyState
+                compact
+                icon={<PieChart className="h-4 w-4" />}
+                title="Distribuição ainda vazia"
+                description="Crie caixas para visualizar para onde cada parte da receita está indo."
+                actionLabel="Criar caixa"
+                onAction={() => onNavigate?.('caixas')}
+              />
             </div>
           )}
           {/* Legend */}
@@ -384,8 +400,15 @@ export function DashboardView({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
-              Adicione caixas neste mês para comparar o planejado com o realizado.
+            <div className="h-[240px]">
+              <PremiumEmptyState
+                compact
+                icon={<TrendingUp className="h-4 w-4" />}
+                title="Sem comparação por enquanto"
+                description="Depois de criar caixas, o NEXO compara o planejado com o que foi registrado."
+                actionLabel="Abrir caixas"
+                onAction={() => onNavigate?.('caixas')}
+              />
             </div>
           )}
         </motion.div>
@@ -446,6 +469,47 @@ export function DashboardView({
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+function PremiumEmptyState({
+  actionLabel,
+  compact = false,
+  description,
+  icon,
+  onAction,
+  title,
+}: {
+  actionLabel?: string;
+  compact?: boolean;
+  description: string;
+  icon: React.ReactNode;
+  onAction?: () => void;
+  title: string;
+}) {
+  return (
+    <div
+      className={`flex h-full min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/35 px-5 text-center ${
+        compact ? "min-h-0 py-4" : "max-w-xl py-10"
+      }`}
+    >
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground">
+        {icon}
+      </div>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
+        {description}
+      </p>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-4 inline-flex items-center justify-center rounded-xl border border-border bg-foreground px-3 py-2 text-xs font-semibold text-background transition-transform hover:scale-[1.02]"
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
   );
 }
 

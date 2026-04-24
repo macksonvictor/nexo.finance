@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -123,8 +124,6 @@ type AIUsageState = {
   reached: boolean;
 };
 
-type AIContextState = "new_user" | "partial" | "ready";
-
 type AIConversation = {
   id: string;
   title: string;
@@ -147,6 +146,7 @@ type AIUIPreferences = {
 };
 
 type AISettingsAnchor = "rail" | "header";
+type AISettingsPanelPosition = Pick<CSSProperties, "top" | "left" | "right">;
 
 interface ModeMeta {
   id: AIVisibleMode;
@@ -260,6 +260,7 @@ export function NexoAIView({
   sourceView = "ia",
   sourceEntityId,
   storageScopeId = "anonymous",
+  userName,
   initialPrompt,
   initialMode = "chat",
   entryKey,
@@ -271,6 +272,7 @@ export function NexoAIView({
   sourceView?: AISourceView;
   sourceEntityId?: string;
   storageScopeId?: string;
+  userName?: string | null;
   initialPrompt?: string;
   initialMode?: AIVisibleMode;
   entryKey?: number;
@@ -296,6 +298,8 @@ export function NexoAIView({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAnchor, setSettingsAnchor] =
     useState<AISettingsAnchor>("header");
+  const [settingsPanelPosition, setSettingsPanelPosition] =
+    useState<AISettingsPanelPosition | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [desktopHistoryVisible, setDesktopHistoryVisible] = useState(() => {
     if (typeof window === "undefined") {
@@ -353,7 +357,6 @@ export function NexoAIView({
   const currentUsage = usageOverride ?? sessionData?.usage ?? null;
   const currentSuggestions =
     sessionData?.suggestions?.[activeMode] ?? activeModeMeta.suggestions;
-  const contextState = sessionData?.contextState ?? "new_user";
   const isQuotaReached = currentUsage?.reached ?? false;
   const canStartNewConversation =
     activeConversationId !== null ||
@@ -844,8 +847,14 @@ export function NexoAIView({
     }));
   }
 
-  function handleToggleSettings(anchor: AISettingsAnchor) {
+  function handleToggleSettings(
+    anchor: AISettingsAnchor,
+    event?: ReactMouseEvent<HTMLElement>
+  ) {
     setSettingsAnchor(anchor);
+    setSettingsPanelPosition(
+      getSettingsPanelPosition(anchor, event?.currentTarget ?? null)
+    );
     setSettingsOpen((open) => (settingsAnchor === anchor ? !open : true));
   }
 
@@ -938,7 +947,7 @@ export function NexoAIView({
             <DesktopHistoryRail
               historyVisible={desktopHistoryVisible}
               onFocusSearch={handleFocusHistorySearch}
-              onOpenSettings={() => handleToggleSettings("rail")}
+              onOpenSettings={(event) => handleToggleSettings("rail", event)}
               onStartNewConversation={handleStartNewConversation}
               onToggleHistory={() => {
                 if (desktopHistoryVisible) {
@@ -970,7 +979,7 @@ export function NexoAIView({
             <AISettingsPanel
               panelRef={settingsPanelRef}
               uiPreferences={uiPreferences}
-              className="absolute bottom-8 left-[92px] z-[160]"
+              position={settingsPanelPosition}
               onTogglePreference={handleTogglePreference}
             />
           )}
@@ -978,7 +987,7 @@ export function NexoAIView({
       )}
 
       <div className={chatShellClass}>
-        <div className="nexo-ai-header relative z-30 shrink-0 border-b border-[#171717] bg-[#090909]/96 px-4 py-4 backdrop-blur-xl md:px-6 xl:px-7">
+        <div className="nexo-ai-header relative z-[70] shrink-0 border-b border-[#171717] bg-[#090909]/96 px-4 py-4 backdrop-blur-xl md:px-6 xl:px-7">
           <div
             className={`mx-auto flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between ${contentShellClass}`}
           >
@@ -1027,7 +1036,7 @@ export function NexoAIView({
             <div className="relative flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleToggleSettings("header")}
+                onClick={(event) => handleToggleSettings("header", event)}
                 data-ai-settings-trigger="true"
                 className={`${overlayMode ? "inline-flex" : "inline-flex xl:hidden"} h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
                   settingsOpen && settingsAnchor === "header"
@@ -1070,7 +1079,7 @@ export function NexoAIView({
                 <AISettingsPanel
                   panelRef={settingsPanelRef}
                   uiPreferences={uiPreferences}
-                  className="absolute right-0 top-[calc(100%+12px)]"
+                  position={settingsPanelPosition}
                   onTogglePreference={handleTogglePreference}
                 />
               )}
@@ -1087,10 +1096,8 @@ export function NexoAIView({
             ) : messages.length === 0 && !isLoading ? (
               <EmptyState
                 activeMode={activeMode}
-                contextState={contextState}
                 sourceView={sourceView}
-                suggestions={currentSuggestions}
-                onSelectPrompt={setInput}
+                userName={userName}
               />
             ) : (
               <div className="nexo-ai-chat-scroll min-h-0 flex-1 overflow-y-auto pr-1">
@@ -1227,28 +1234,35 @@ export function NexoAIView({
 function AISettingsPanel({
   className = "",
   panelRef,
+  position,
   uiPreferences,
   onTogglePreference,
 }: {
   className?: string;
   panelRef: RefObject<HTMLDivElement | null>;
+  position?: AISettingsPanelPosition | null;
   uiPreferences: AIUIPreferences;
   onTogglePreference: (key: keyof AIUIPreferences) => void;
 }) {
   return (
     <div
       ref={panelRef}
-      className={`z-[200] w-[360px] max-w-[calc(100vw-48px)] rounded-[24px] border border-[#222222] bg-[#111111] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
+      className={`nexo-ai-settings-panel fixed z-[240] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[28px] border border-[#222222] bg-[#111111] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
+      style={{
+        width: "min(520px, calc(100vw - 32px))",
+        maxHeight: "calc(100dvh - 96px)",
+        ...(position ?? { top: 88, right: 16 }),
+      }}
     >
-      <div className="px-2 pb-3">
-        <p className="text-sm font-semibold text-[#F5F5F5]">
+      <div className="border-b border-[#242424] px-1 pb-4">
+        <p className="text-lg font-semibold tracking-tight text-[#F5F5F5]">
           Configurações da IA
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-[#767676]">
+        <p className="mt-1.5 text-sm leading-relaxed text-[#8A8A8A]">
           Ajustes visuais da conversa e da camada analítica.
         </p>
       </div>
-      <div className="space-y-2">
+      <div className="mt-4 space-y-3">
         <SettingsToggle
           checked={uiPreferences.showStructuredInsights}
           description="Mostra blocos analíticos nas respostas quando houver leitura rica."
@@ -1275,7 +1289,7 @@ function DesktopHistoryRail({
 }: {
   historyVisible: boolean;
   onFocusSearch: () => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (event: ReactMouseEvent<HTMLElement>) => void;
   onStartNewConversation: () => void;
   onToggleHistory: () => void;
 }) {
@@ -1345,7 +1359,7 @@ function DockIconButton({
   hideTooltip?: boolean;
   icon: ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (event: ReactMouseEvent<HTMLElement>) => void;
 }) {
   return (
     <div className="group relative">
@@ -1895,45 +1909,26 @@ function Composer({
 
 function EmptyState({
   activeMode,
-  contextState,
   sourceView,
-  suggestions,
-  onSelectPrompt,
+  userName,
 }: {
   activeMode: AIVisibleMode;
-  contextState: AIContextState;
   sourceView: AISourceView;
-  suggestions: string[];
-  onSelectPrompt: (prompt: string) => void;
+  userName?: string | null;
 }) {
-  const activeModeMeta = MODE_META[activeMode];
+  const title = getEmptyStateTitle(activeMode, sourceView, userName);
 
   return (
     <div className="flex h-full flex-col items-center justify-center py-10 text-center">
-      <div className="space-y-5">
+      <div className="space-y-5 px-3">
         <div className="mx-auto flex items-center justify-center">
           <NexoCubeAnimated size={192} intensity="hero" mood="listening" />
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-3xl font-semibold tracking-tight text-[#F5F5F5]">
-            {activeMode === "chat" ? "Pronto para conversar" : activeModeMeta.label}
+          <h3 className="mx-auto max-w-2xl text-balance text-3xl font-semibold tracking-tight text-[#F5F5F5]">
+            {title}
           </h3>
-          <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8A8A8A] md:text-[15px]">
-            {getEmptyStateCopy(contextState, sourceView, activeMode)}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {suggestions.slice(0, 3).map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => onSelectPrompt(prompt)}
-              className="rounded-full border border-[#2A2A2A] bg-[#141414] px-4 py-2 text-sm text-[#BFBFBF] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
-            >
-              {prompt}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -2059,13 +2054,13 @@ function SettingsToggle({
     <button
       type="button"
       onClick={onChange}
-      className="flex w-full items-start justify-between gap-4 rounded-2xl border border-[#202020] bg-[#0D0D0D] px-4 py-3 text-left transition-colors hover:border-[#313131]"
+      className="nexo-ai-settings-toggle flex w-full items-center justify-between gap-5 rounded-[20px] border border-[#202020] bg-[#0D0D0D] px-4 py-3.5 text-left transition-colors hover:border-[#313131]"
     >
       <div className="min-w-0 flex-1">
-        <p className="whitespace-normal text-sm font-medium leading-snug text-[#F5F5F5]">
+        <p className="text-sm font-semibold leading-snug text-[#F5F5F5]">
           {label}
         </p>
-        <p className="mt-1 whitespace-normal text-xs leading-relaxed text-[#7A7A7A]">
+        <p className="mt-1 max-w-[34rem] text-xs leading-relaxed text-[#7A7A7A]">
           {description}
         </p>
       </div>
@@ -2200,26 +2195,6 @@ function hasRenderablePythonInsights(insights: AIPythonInsights | null | undefin
   );
 }
 
-function getEmptyStateCopy(
-  contextState: AIContextState,
-  sourceView: AISourceView,
-  mode: AIVisibleMode
-) {
-  if (mode !== "chat") {
-    return MODE_META[mode].description;
-  }
-
-  if (contextState === "new_user") {
-    return "Você ainda está começando. Pergunte como montar seu mês atual ou use um dos prompts abaixo para ganhar clareza sem complicar.";
-  }
-
-  if (contextState === "partial") {
-    return `Já existe contexto vindo de ${AI_SOURCE_LABELS[sourceView]}, mas ainda faltam alguns dados para aprofundar mais. A IA já consegue orientar o próximo passo com o que há hoje.`;
-  }
-
-  return `Seu mês atual já tem contexto suficiente para uma leitura útil. Comece pelo chat ou use um prompt focado em ${AI_SOURCE_LABELS[sourceView].toLowerCase()}.`;
-}
-
 function getLoadingCopy(mode: AIVisibleMode) {
   switch (mode) {
     case "risk":
@@ -2293,6 +2268,96 @@ function readStoredAIPreferences(): AIUIPreferences {
   } catch {
     return DEFAULT_AI_UI_PREFERENCES;
   }
+}
+
+function getEmptyStateTitle(
+  activeMode: AIVisibleMode,
+  sourceView: AISourceView,
+  userName?: string | null
+) {
+  const greeting = getTimeGreeting();
+  const firstName = getFirstName(userName);
+  const prefix = firstName ? `${greeting}, ${firstName}.` : `${greeting}.`;
+
+  if (activeMode !== "chat") {
+    return `${prefix} Vamos abrir ${MODE_META[activeMode].shortLabel.toLowerCase()}?`;
+  }
+
+  if (sourceView !== "ia") {
+    return `${prefix} Vamos olhar ${AI_SOURCE_LABELS[sourceView]} juntos?`;
+  }
+
+  return `${prefix} Pronto para conversar.`;
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 5) return "Boa noite";
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function getFirstName(userName?: string | null) {
+  const normalized = userName?.trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const visibleName = normalized.includes("@")
+    ? normalized.split("@")[0]
+    : normalized;
+
+  return visibleName
+    .split(/\s+/)[0]
+    .replace(/[._-]+/g, " ")
+    .trim();
+}
+
+function getSettingsPanelPosition(
+  anchor: AISettingsAnchor,
+  trigger: HTMLElement | null
+): AISettingsPanelPosition {
+  if (typeof window === "undefined" || !trigger) {
+    return anchor === "rail" ? { top: 88, left: 96 } : { top: 88, right: 16 };
+  }
+
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const panelWidth = Math.min(520, Math.max(0, viewportWidth - 32));
+  const panelHeight = Math.min(560, Math.max(280, viewportHeight - 96));
+  const safeGap = 12;
+
+  const top = clampNumber(
+    rect.top,
+    16,
+    Math.max(16, viewportHeight - panelHeight - 16)
+  );
+
+  if (anchor === "rail") {
+    const preferredLeft = rect.right + safeGap;
+    const left =
+      preferredLeft + panelWidth <= viewportWidth - 16
+        ? preferredLeft
+        : Math.max(16, rect.left - panelWidth - safeGap);
+
+    return { top, left };
+  }
+
+  const right = clampNumber(
+    Math.max(16, viewportWidth - rect.right),
+    16,
+    viewportWidth - panelWidth - 16
+  );
+  return { top: clampNumber(rect.bottom + safeGap, 16, viewportHeight - panelHeight - 16), right };
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  const safeMax = Math.max(min, max);
+  return Math.min(Math.max(value, min), safeMax);
 }
 
 function getBrowserTimeZone() {

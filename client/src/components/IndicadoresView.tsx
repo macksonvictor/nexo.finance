@@ -20,7 +20,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { Shield, TrendingUp, Target, Zap, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Shield, TrendingUp, Target, Zap, AlertTriangle, CheckCircle, Info, Sparkles } from 'lucide-react';
 import { PaywallGate } from './PaywallGate';
 import type { PlanTier } from '@shared/plans';
 
@@ -112,13 +112,19 @@ function IndicatorCard({ indicator }: { indicator: Indicator }) {
   );
 }
 
-export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) => void }) {
+export function IndicadoresView({
+  onAskAI,
+  onNavigate,
+}: {
+  onAskAI?: () => void;
+  onNavigate?: (view: string) => void;
+}) {
   const { currentMonthId, months } = useFinanceStore();
   const { data: planData } = trpc.finance.getPlan.useQuery();
   const userPlan = (planData?.plan ?? 'free') as PlanTier;
   const isAdmin = planData?.isAdmin ?? false;
 
-  const { data: monthData } = trpc.finance.getMonth.useQuery(
+  const { data: monthData, isLoading } = trpc.finance.getMonth.useQuery(
     { monthId: currentMonthId ?? '' },
     { enabled: !!currentMonthId }
   );
@@ -237,6 +243,9 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
     : 0;
 
   const overallStatus = getStatus(overallScore);
+  const hasAnalysisBase =
+    !!monthData &&
+    ((monthData.caixas?.length ?? 0) > 0 || (monthData.month?.income ?? 0) > 0);
 
   return (
     <PaywallGate
@@ -246,9 +255,9 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
       onUpgrade={() => onNavigate?.('planos')}
       isAdmin={isAdmin}
     >
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-0 md:p-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-foreground text-2xl font-semibold tracking-tight font-['Space_Grotesk']">
             Indicadores
@@ -268,6 +277,18 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
           <div className="text-muted-foreground text-xs">Score Geral</div>
         </div>
       </div>
+
+      {isLoading ? (
+        <div className="nexo-depth-2 border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
+          Calculando indicadores...
+        </div>
+      ) : !hasAnalysisBase ? (
+        <IndicatorEmptyState
+          onAskAI={onAskAI}
+          onCreateCaixa={() => onNavigate?.('caixas')}
+        />
+      ) : (
+        <>
 
       {/* Cards de Indicadores */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,7 +382,53 @@ export function IndicadoresView({ onNavigate }: { onNavigate?: (view: string) =>
           </div>
         </div>
       )}
+        </>
+      )}
     </div>
     </PaywallGate>
+  );
+}
+
+function IndicatorEmptyState({
+  onAskAI,
+  onCreateCaixa,
+}: {
+  onAskAI?: () => void;
+  onCreateCaixa?: () => void;
+}) {
+  return (
+    <div className="nexo-depth-3 flex min-h-[380px] flex-col items-center justify-center rounded-2xl border border-border px-6 py-10 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground">
+        <Zap size={22} />
+      </div>
+      <p className="text-lg font-semibold text-foreground">
+        Indicadores precisam de um primeiro mapa
+      </p>
+      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+        Crie caixas ou defina a receita do mês para o NEXO calcular disciplina,
+        risco, consistência e crescimento com mais precisão.
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {onCreateCaixa && (
+          <button
+            type="button"
+            onClick={onCreateCaixa}
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-foreground px-4 py-2 text-sm font-semibold text-background transition-transform hover:scale-[1.02]"
+          >
+            Criar primeira caixa
+          </button>
+        )}
+        {onAskAI && (
+          <button
+            type="button"
+            onClick={onAskAI}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+          >
+            <Sparkles size={15} />
+            Perguntar à IA
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

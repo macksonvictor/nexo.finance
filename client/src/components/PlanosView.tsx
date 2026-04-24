@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 type PlanId = "free" | "premium" | "pro" | "elite";
+type PaidPlanId = Exclude<PlanId, "free">;
 
 const PLANS = [
   {
@@ -126,6 +127,12 @@ const PLAN_PRICES: Record<PlanId, number> = {
   elite: 99.9,
 };
 
+const STRIPE_PAYMENT_LINKS: Partial<Record<PaidPlanId, string>> = {
+  premium: import.meta.env.VITE_STRIPE_PREMIUM_PAYMENT_LINK,
+  pro: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK,
+  elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK,
+};
+
 export function PlanosView() {
   const { data: planData, refetch } = trpc.finance.getPlan.useQuery();
   const { data: backups } = trpc.finance.listBackups.useQuery();
@@ -137,23 +144,39 @@ export function PlanosView() {
 
   const handleUpgrade = async (planId: PlanId) => {
     if (planId === currentPlan) return;
+    if (planId === "free") return;
+
     setUpgrading(planId);
-    toast.info(`Redirecionando para o checkout seguro do plano ${PLANS.find(p => p.id === planId)?.name}...`);
+    const planName = PLANS.find(p => p.id === planId)?.name ?? planId;
+    const paymentLink = STRIPE_PAYMENT_LINKS[planId]?.trim();
+    toast.info(`Redirecionando para o checkout seguro do plano ${planName}...`);
+
+    if (paymentLink) {
+      window.location.assign(paymentLink);
+      return;
+    }
     
     try {
       const result = await createCheckoutMutation.mutateAsync({
-        planTier: planId as 'premium' | 'pro' | 'elite',
+        planTier: planId,
       });
       
       if (result.url) {
-        window.location.href = result.url;
+        window.location.assign(result.url);
       } else {
         toast.error('Erro ao redirecionar para checkout. Tente novamente.');
         setUpgrading(null);
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Erro ao processar upgrade. Tente novamente.');
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("STRIPE_SETUP_REQUIRED")) {
+        toast.error(
+          "Checkout do Stripe ainda não está configurado. Preencha STRIPE_SECRET_KEY ou VITE_STRIPE_*_PAYMENT_LINK no .env."
+        );
+      } else {
+        toast.error('Erro ao processar upgrade. Tente novamente.');
+      }
       setUpgrading(null);
     }
   };

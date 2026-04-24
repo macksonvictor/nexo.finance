@@ -1110,6 +1110,15 @@ export const appRouter = router({
           };
         } catch (error) {
           console.error('Stripe checkout error:', error);
+          const message = error instanceof Error ? error.message : "";
+          if (
+            message.includes("STRIPE_SECRET_KEY") ||
+            message.includes("STRIPE_SETUP_REQUIRED")
+          ) {
+            throw new Error(
+              "STRIPE_SETUP_REQUIRED: configure STRIPE_SECRET_KEY or VITE_STRIPE_*_PAYMENT_LINK before using checkout."
+            );
+          }
           throw new Error('Failed to create checkout session');
         }
       }),

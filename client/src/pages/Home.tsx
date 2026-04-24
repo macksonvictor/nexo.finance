@@ -423,6 +423,7 @@ export default function Home() {
       case "dashboard":
         return (
           <DashboardView
+            onNavigate={handleViewChange}
             onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
@@ -471,10 +472,29 @@ export default function Home() {
           />
         );
       case "relatorios":
-        return <RelatoriosView monthId={currentMonthId} />;
+        return (
+          <RelatoriosView
+            monthId={currentMonthId}
+            onNavigate={handleViewChange}
+            onAskAI={() =>
+              openAIOverlay({
+                sourceView: "dashboard",
+                initialPrompt:
+                  "Analise meus relatórios do mês e destaque os pontos que merecem atenção.",
+              })
+            }
+          />
+        );
       case "indicadores":
         return (
           <IndicadoresView
+            onAskAI={() =>
+              openAIOverlay({
+                sourceView: "dashboard",
+                initialPrompt:
+                  "Leia meus indicadores financeiros e me diga qual ajuste faria mais diferença agora.",
+              })
+            }
             onNavigate={(view) => handleViewChange(view as ViewType)}
           />
         );
@@ -490,6 +510,7 @@ export default function Home() {
       case "configuracoes":
         return (
           <DashboardView
+            onNavigate={handleViewChange}
             onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
@@ -503,6 +524,7 @@ export default function Home() {
       case "ia":
         return (
           <DashboardView
+            onNavigate={handleViewChange}
             onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
@@ -516,6 +538,7 @@ export default function Home() {
       default:
         return (
           <DashboardView
+            onNavigate={handleViewChange}
             onOpenSettings={() => openSettings("receita")}
             onAskAI={() =>
               openAIOverlay({
@@ -556,7 +579,7 @@ export default function Home() {
       )}
 
       <div
-        className={`fixed left-0 top-14 z-40 h-[calc(100vh-56px)] w-[220px] transition-transform duration-300 md:hidden ${
+        className={`fixed left-0 top-14 z-40 h-[calc(100dvh-56px)] w-[min(88vw,300px)] transition-transform duration-300 md:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -664,6 +687,7 @@ export default function Home() {
                   sourceView={aiEntry.sourceView}
                   sourceEntityId={aiEntry.sourceEntityId}
                   storageScopeId={aiStorageScopeId}
+                  userName={user?.name ?? user?.email ?? null}
                   initialPrompt={aiEntry.initialPrompt}
                   initialMode={aiEntry.initialMode}
                   entryKey={aiEntry.nonce}
