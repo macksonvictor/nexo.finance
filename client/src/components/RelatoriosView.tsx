@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CategoryIcon } from "./CategoryIcon";
 import type { ViewType } from "@/types/finance";
+import { useFinanceStore } from "@/stores/useFinanceStore";
 
 interface RelatoriosViewProps {
   monthId: string;
@@ -30,12 +31,26 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewProps) {
-  const { data, isLoading } = trpc.finance.getMonth.useQuery({ monthId });
+  const localMonth = useFinanceStore((state) => state.months[monthId]);
+  const { data: serverData, isLoading } = trpc.finance.getMonth.useQuery(
+    { monthId },
+    { enabled: !localMonth }
+  );
   const { data: allMonths } = trpc.finance.getUserMonths.useQuery();
   const backupMutation = trpc.finance.createBackup.useMutation({
     onSuccess: () => toast.success("Backup criado com sucesso!"),
     onError: () => toast.error("Erro ao criar backup"),
   });
+  const data = useMemo(() => {
+    if (localMonth) {
+      return {
+        month: localMonth,
+        caixas: localMonth.caixas,
+      };
+    }
+
+    return serverData;
+  }, [localMonth, serverData]);
 
   const stats = useMemo(() => {
     if (!data) return null;

@@ -489,8 +489,8 @@ function PremiumEmptyState({
 }) {
   return (
     <div
-      className={`flex h-full min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/35 px-5 text-center ${
-        compact ? "min-h-0 py-4" : "max-w-xl py-10"
+      className={`flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/35 px-5 text-center ${
+        compact ? "min-h-0 max-h-full overflow-hidden py-4" : "min-h-[200px] max-w-xl py-10"
       }`}
     >
       <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-foreground">

@@ -712,6 +712,7 @@ export default function Home() {
         onExport={handleExport}
         onNavigate={handleViewChange}
         initialSection={settingsInitialSection}
+        aiStorageScopeId={aiStorageScopeId}
       />
     </div>
   );

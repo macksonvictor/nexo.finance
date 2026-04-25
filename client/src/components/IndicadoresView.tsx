@@ -120,14 +120,25 @@ export function IndicadoresView({
   onNavigate?: (view: string) => void;
 }) {
   const { currentMonthId, months } = useFinanceStore();
+  const localMonth = currentMonthId ? months[currentMonthId] : undefined;
   const { data: planData } = trpc.finance.getPlan.useQuery();
   const userPlan = (planData?.plan ?? 'free') as PlanTier;
   const isAdmin = planData?.isAdmin ?? false;
 
-  const { data: monthData, isLoading } = trpc.finance.getMonth.useQuery(
+  const { data: serverMonthData, isLoading } = trpc.finance.getMonth.useQuery(
     { monthId: currentMonthId ?? '' },
-    { enabled: !!currentMonthId }
+    { enabled: !!currentMonthId && !localMonth }
   );
+  const monthData = useMemo(() => {
+    if (localMonth) {
+      return {
+        month: localMonth,
+        caixas: localMonth.caixas,
+      };
+    }
+
+    return serverMonthData;
+  }, [localMonth, serverMonthData]);
 
   // Calcular indicadores baseado nos dados reais
   const indicators = useMemo((): Indicator[] => {

@@ -6,8 +6,10 @@ import type { ViewType } from "@/types/finance";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeHelp,
+  Bot,
   Building2,
   CircleDollarSign,
+  CreditCard,
   Download,
   History,
   LogOut,
@@ -15,17 +17,26 @@ import {
   Palette,
   Settings,
   Sun,
+  Trash2,
   UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  clearNexoAIHistory,
+  readNexoAIPreferences,
+  writeNexoAIPreferences,
+  type NexoAIUIPreferences,
+} from "@/lib/nexoAIHistory";
 import { OpenBankingView } from "./OpenBankingView";
 
 export type SettingsSection =
   | "geral"
   | "conta"
+  | "ia"
+  | "pagamento"
   | "receita"
   | "banco"
   | "historico"
@@ -47,6 +58,7 @@ interface SettingsModalProps {
   onExport: () => void;
   onNavigate: (view: ViewType) => void;
   initialSection?: SettingsSection;
+  aiStorageScopeId?: string;
 }
 
 const SETTINGS_SECTIONS: Array<{
@@ -56,6 +68,8 @@ const SETTINGS_SECTIONS: Array<{
 }> = [
   { id: "geral", label: "Geral", icon: Settings },
   { id: "conta", label: "Conta", icon: UserRound },
+  { id: "ia", label: "Nexo IA", icon: Bot },
+  { id: "pagamento", label: "Pagamentos", icon: CreditCard },
   { id: "receita", label: "Receita", icon: CircleDollarSign },
   { id: "banco", label: "Conexão com banco", icon: Building2 },
   { id: "historico", label: "Exportação e histórico", icon: History },
@@ -94,12 +108,16 @@ export function SettingsModal({
   onExport,
   onNavigate,
   initialSection = "geral",
+  aiStorageScopeId = "anonymous",
 }: SettingsModalProps) {
   const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { setIncome } = useFinanceStore();
   const [activeSection, setActiveSection] = useState<SettingsSection>("geral");
   const [incomeValue, setIncomeValue] = useState(String(currentIncome));
+  const [aiPreferences, setAIPreferences] = useState<NexoAIUIPreferences>(() =>
+    readNexoAIPreferences()
+  );
 
   const displayName = user?.name || "Minha conta";
   const email = user?.email || "Conta NEXO";
@@ -114,6 +132,7 @@ export function SettingsModal({
 
     setActiveSection(initialSection);
     setIncomeValue(String(currentIncome));
+    setAIPreferences(readNexoAIPreferences());
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -148,6 +167,21 @@ export function SettingsModal({
     toast.success("Receita atualizada");
   };
 
+  const handleToggleAIPreference = (key: keyof NexoAIUIPreferences) => {
+    const next = { ...aiPreferences, [key]: !aiPreferences[key] };
+    setAIPreferences(next);
+    writeNexoAIPreferences(next);
+  };
+
+  const handleClearAIHistory = () => {
+    const removed = clearNexoAIHistory(aiStorageScopeId);
+    toast.success(
+      removed > 0
+        ? "Histórico da IA limpo"
+        : "Histórico da IA já estava vazio"
+    );
+  };
+
   const handleLogout = () => {
     toast.success("Sessão encerrada com sucesso");
     void logout();
@@ -165,7 +199,8 @@ export function SettingsModal({
             </div>
             <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
               Use esta janela para ajustes que não precisam ocupar a navegação
-              principal: conta, receita, banco, exportação, aparência e ajuda.
+              principal: conta, IA, pagamentos, receita, banco, exportação,
+              aparência e ajuda.
             </p>
           </SettingsCard>
         );
@@ -199,6 +234,89 @@ export function SettingsModal({
               >
                 <LogOut size={17} />
                 Sair da conta
+              </button>
+            </div>
+          </SettingsCard>
+        );
+
+      case "ia":
+        return (
+          <SettingsCard title="Nexo IA" eyebrow="Inteligência">
+            <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+              Controle o visual da janela da IA e limpe conversas salvas quando
+              quiser começar do zero. Isso não altera seus dados financeiros.
+            </p>
+
+            <div className="space-y-3">
+              <SettingsSwitchRow
+                checked={aiPreferences.showStructuredInsights}
+                description="Mostra blocos analíticos quando a resposta tiver leitura mais rica."
+                label="Cartões analíticos"
+                onClick={() => handleToggleAIPreference("showStructuredInsights")}
+              />
+              <SettingsSwitchRow
+                checked={aiPreferences.showSuggestionChips}
+                description="Exibe sugestões rápidas abaixo da barra de conversa."
+                label="Sugestões rápidas"
+                onClick={() => handleToggleAIPreference("showSuggestionChips")}
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => handleNavigate("ia")}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
+              >
+                <Bot size={17} />
+                Abrir Nexo IA
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAIHistory}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/15"
+              >
+                <Trash2 size={17} />
+                Limpar histórico da IA
+              </button>
+            </div>
+          </SettingsCard>
+        );
+
+      case "pagamento":
+        return (
+          <SettingsCard title="Planos e pagamento" eyebrow="Stripe">
+            <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+              Os botões de assinatura usam links do Stripe no frontend ou a
+              sessão de checkout no backend. Se aparecer aviso de configuração,
+              revise o arquivo <span className="font-mono text-foreground">.env</span> e
+              reinicie o app.
+            </p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <SummaryTile label="Plano atual" value={planName} />
+              <SummaryTile
+                label="Checkout"
+                value="Payment Link ou Stripe Secret"
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => handleNavigate("planos")}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
+              >
+                <CreditCard size={17} />
+                Abrir planos
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSection("banco")}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:border-foreground/30"
+              >
+                <Building2 size={17} />
+                Conexão com banco
               </button>
             </div>
           </SettingsCard>
@@ -474,5 +592,48 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
       <p className="nexo-label mb-2">{label}</p>
       <p className="truncate font-semibold text-foreground">{value}</p>
     </div>
+  );
+}
+
+function SettingsSwitchRow({
+  checked,
+  description,
+  label,
+  onClick,
+}: {
+  checked: boolean;
+  description: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-border bg-secondary/60 p-4 text-left transition-colors hover:border-foreground/30"
+      aria-pressed={checked}
+    >
+      <span className="min-w-0">
+        <span className="block font-semibold text-foreground">{label}</span>
+        <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+          {description}
+        </span>
+      </span>
+      <span
+        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
+          checked
+            ? "border-foreground bg-foreground"
+            : "border-border bg-background"
+        }`}
+      >
+        <span
+          className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition-transform ${
+            checked
+              ? "translate-x-[22px] bg-background"
+              : "translate-x-1 bg-muted-foreground"
+          }`}
+        />
+      </span>
+    </button>
   );
 }

@@ -11,6 +11,13 @@ import {
   useState,
 } from "react";
 import { trpc } from "@/lib/trpc";
+import {
+  NEXO_AI_HISTORY_CLEARED_EVENT,
+  NEXO_AI_PREFERENCES_CHANGED_EVENT,
+  readNexoAIPreferences,
+  writeNexoAIPreferences,
+  type NexoAIUIPreferences,
+} from "@/lib/nexoAIHistory";
 import { NexoCubeAnimated } from "./NexoCubeAnimated";
 import { NexoCubeLogo } from "./NexoCubeLogo";
 import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
@@ -140,10 +147,7 @@ type AIConversationState = {
   conversations: AIConversation[];
 };
 
-type AIUIPreferences = {
-  showStructuredInsights: boolean;
-  showSuggestionChips: boolean;
-};
+type AIUIPreferences = NexoAIUIPreferences;
 
 type AISettingsAnchor = "rail" | "header";
 type AISettingsPanelPosition = Pick<CSSProperties, "top" | "left" | "right">;
@@ -163,11 +167,6 @@ interface ModeMeta {
 const AI_CONVERSATION_STORAGE_PREFIX = "nexo:ai:v2:conversations";
 const AI_LEGACY_SESSION_STORAGE_PREFIX = "nexo:ai:v2:session";
 const AI_HISTORY_VISIBILITY_STORAGE_KEY = "nexo:ai:history-visible";
-const AI_UI_PREFERENCES_STORAGE_KEY = "nexo:ai:ui-preferences";
-const DEFAULT_AI_UI_PREFERENCES: AIUIPreferences = {
-  showStructuredInsights: true,
-  showSuggestionChips: true,
-};
 
 const MODE_META: Record<AIVisibleMode, ModeMeta> = {
   chat: {
@@ -309,7 +308,7 @@ export function NexoAIView({
     return window.localStorage.getItem(AI_HISTORY_VISIBILITY_STORAGE_KEY) !== "false";
   });
   const [uiPreferences, setUiPreferences] = useState<AIUIPreferences>(() =>
-    readStoredAIPreferences()
+    readNexoAIPreferences()
   );
   const [usageOverride, setUsageOverride] = useState<AIUsageState | null>(null);
   const activeConversationIdRef = useRef<string | null>(null);
@@ -399,11 +398,58 @@ export function NexoAIView({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(
-      AI_UI_PREFERENCES_STORAGE_KEY,
-      JSON.stringify(uiPreferences)
-    );
+    writeNexoAIPreferences(uiPreferences);
   }, [uiPreferences]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleHistoryCleared = (event: Event) => {
+      const detail = (event as CustomEvent<{ storageScopeId?: string }>).detail;
+
+      if (
+        detail?.storageScopeId &&
+        detail.storageScopeId !== resolvedStorageScopeId
+      ) {
+        return;
+      }
+
+      setConversations([]);
+      activeConversationIdRef.current = null;
+      pendingConversationIdRef.current = null;
+      setActiveConversationId(null);
+      setMessages([]);
+      setActiveMode("chat");
+      setInput("");
+      setComposerAttachments([]);
+      setIsLoading(false);
+    };
+
+    const handlePreferencesChanged = (event: Event) => {
+      const preferences = (event as CustomEvent<AIUIPreferences>).detail;
+
+      if (preferences) {
+        setUiPreferences(preferences);
+      }
+    };
+
+    window.addEventListener(NEXO_AI_HISTORY_CLEARED_EVENT, handleHistoryCleared);
+    window.addEventListener(
+      NEXO_AI_PREFERENCES_CHANGED_EVENT,
+      handlePreferencesChanged
+    );
+
+    return () => {
+      window.removeEventListener(
+        NEXO_AI_HISTORY_CLEARED_EVENT,
+        handleHistoryCleared
+      );
+      window.removeEventListener(
+        NEXO_AI_PREFERENCES_CHANGED_EVENT,
+        handlePreferencesChanged
+      );
+    };
+  }, [resolvedStorageScopeId]);
 
   useEffect(() => {
     if (!selectedMonth) {
@@ -1249,7 +1295,7 @@ function AISettingsPanel({
       ref={panelRef}
       className={`nexo-ai-settings-panel fixed z-[240] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[28px] border border-[#222222] bg-[#111111] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
       style={{
-        width: "min(520px, calc(100vw - 32px))",
+        width: "min(420px, calc(100vw - 32px))",
         maxHeight: "calc(100dvh - 96px)",
         ...(position ?? { top: 88, right: 16 }),
       }}
@@ -2250,26 +2296,6 @@ function formatFileSize(sizeInBytes: number) {
   return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function readStoredAIPreferences(): AIUIPreferences {
-  if (typeof window === "undefined") {
-    return DEFAULT_AI_UI_PREFERENCES;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(AI_UI_PREFERENCES_STORAGE_KEY);
-    if (!raw) return DEFAULT_AI_UI_PREFERENCES;
-    const parsed = JSON.parse(raw) as Partial<AIUIPreferences>;
-    return {
-      showStructuredInsights:
-        parsed.showStructuredInsights ?? DEFAULT_AI_UI_PREFERENCES.showStructuredInsights,
-      showSuggestionChips:
-        parsed.showSuggestionChips ?? DEFAULT_AI_UI_PREFERENCES.showSuggestionChips,
-    };
-  } catch {
-    return DEFAULT_AI_UI_PREFERENCES;
-  }
-}
-
 function getEmptyStateTitle(
   activeMode: AIVisibleMode,
   sourceView: AISourceView,
@@ -2327,15 +2353,9 @@ function getSettingsPanelPosition(
   const rect = trigger.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const panelWidth = Math.min(520, Math.max(0, viewportWidth - 32));
-  const panelHeight = Math.min(560, Math.max(280, viewportHeight - 96));
-  const safeGap = 12;
-
-  const top = clampNumber(
-    rect.top,
-    16,
-    Math.max(16, viewportHeight - panelHeight - 16)
-  );
+  const panelWidth = Math.min(420, Math.max(0, viewportWidth - 32));
+  const panelHeight = Math.min(390, Math.max(280, viewportHeight - 64));
+  const safeGap = 6;
 
   if (anchor === "rail") {
     const preferredLeft = rect.right + safeGap;
@@ -2343,16 +2363,26 @@ function getSettingsPanelPosition(
       preferredLeft + panelWidth <= viewportWidth - 16
         ? preferredLeft
         : Math.max(16, rect.left - panelWidth - safeGap);
+    const top = clampNumber(
+      rect.bottom - panelHeight,
+      16,
+      viewportHeight - panelHeight - 16
+    );
 
     return { top, left };
   }
 
+  const preferredTop = rect.bottom + safeGap;
+  const top =
+    preferredTop + panelHeight <= viewportHeight - 16
+      ? preferredTop
+      : clampNumber(rect.top - panelHeight - safeGap, 16, viewportHeight - panelHeight - 16);
   const right = clampNumber(
     Math.max(16, viewportWidth - rect.right),
     16,
     viewportWidth - panelWidth - 16
   );
-  return { top: clampNumber(rect.bottom + safeGap, 16, viewportHeight - panelHeight - 16), right };
+  return { top, right };
 }
 
 function clampNumber(value: number, min: number, max: number) {
