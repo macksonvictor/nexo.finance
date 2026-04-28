@@ -29,10 +29,10 @@ export function formatDate(dateString: string): string {
   }).format(new Date(dateString));
 }
 
-export function formatMonthYear(monthId: string): string {
+export function formatMonthYear(monthId: string, locale = "pt-BR"): string {
   const [year, month] = monthId.split("-");
   const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1);
-  const formatted = new Intl.DateTimeFormat("pt-BR", {
+  const formatted = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
   }).format(date);

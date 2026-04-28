@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { CategoryIcon } from "./CategoryIcon";
 import type { ViewType } from "@/types/finance";
 import { useFinanceStore } from "@/stores/useFinanceStore";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import type { NexoLanguage } from "@/lib/language";
 
 interface RelatoriosViewProps {
   monthId: string;
@@ -30,7 +32,165 @@ const CATEGORY_LABELS: Record<string, string> = {
   outro: "Outro",
 };
 
+const REPORTS_COPY: Record<NexoLanguage, {
+  loading: string;
+  backupSuccess: string;
+  backupError: string;
+  emptyBaseTitle: string;
+  emptyBaseDescription: string;
+  goDashboard: string;
+  title: string;
+  subtitle: string;
+  askAI: string;
+  saving: string;
+  backup: string;
+  monthlyIncome: string;
+  totalSpent: string;
+  savingsRate: string;
+  financialScore: string;
+  byCategory: string;
+  categoriesWaitingTitle: string;
+  categoriesWaitingDescription: string;
+  openBoxes: string;
+  allocatedVsSpent: string;
+  noBarsTitle: string;
+  noBarsDescription: string;
+  createBox: string;
+  topTransactions: string;
+  noTransactionsTitle: string;
+  noTransactionsDescription: string;
+  seeHistory: string;
+  boxPerformance: string;
+  used: string;
+  performanceEmptyTitle: string;
+  performanceEmptyDescription: string;
+  categoryLabels: Record<string, string>;
+}> = {
+  "pt-BR": {
+    loading: "Carregando relatório...",
+    backupSuccess: "Backup criado com sucesso!",
+    backupError: "Erro ao criar backup",
+    emptyBaseTitle: "Relatório ainda sem base",
+    emptyBaseDescription: "Volte ao Dashboard para preparar o mês e liberar uma leitura mais completa.",
+    goDashboard: "Ir para Dashboard",
+    title: "Relatórios",
+    subtitle: "Análise detalhada do mês",
+    askAI: "Perguntar à IA",
+    saving: "Salvando...",
+    backup: "Fazer Backup",
+    monthlyIncome: "Receita Mensal",
+    totalSpent: "Total Gasto",
+    savingsRate: "Taxa de Poupança",
+    financialScore: "Score Financeiro",
+    byCategory: "Distribuição por Categoria",
+    categoriesWaitingTitle: "Categorias aguardando caixas",
+    categoriesWaitingDescription: "Crie caixas para o relatório separar sua receita por missão.",
+    openBoxes: "Abrir caixas",
+    allocatedVsSpent: "Alocado vs Gasto por Caixa",
+    noBarsTitle: "Sem barras para comparar",
+    noBarsDescription: "O gráfico aparece quando houver caixas planejadas e registros do mês.",
+    createBox: "Criar caixa",
+    topTransactions: "Maiores Transações do Mês",
+    noTransactionsTitle: "Nenhuma transação registrada",
+    noTransactionsDescription: "Assim que você lançar movimentações, as maiores transações aparecem aqui.",
+    seeHistory: "Ver histórico",
+    boxPerformance: "Desempenho das Caixas",
+    used: "utilizado",
+    performanceEmptyTitle: "Desempenho ainda sem caixas",
+    performanceEmptyDescription: "Crie caixas para acompanhar uso, pressão e sobra por categoria.",
+    categoryLabels: CATEGORY_LABELS,
+  },
+  "en-US": {
+    loading: "Loading report...",
+    backupSuccess: "Backup created successfully!",
+    backupError: "Could not create backup",
+    emptyBaseTitle: "Report has no base yet",
+    emptyBaseDescription: "Go back to the Dashboard to prepare the month and unlock a deeper reading.",
+    goDashboard: "Go to Dashboard",
+    title: "Reports",
+    subtitle: "Detailed monthly analysis",
+    askAI: "Ask AI",
+    saving: "Saving...",
+    backup: "Create Backup",
+    monthlyIncome: "Monthly Income",
+    totalSpent: "Total Spent",
+    savingsRate: "Savings Rate",
+    financialScore: "Financial Score",
+    byCategory: "Distribution by Category",
+    categoriesWaitingTitle: "Categories waiting for boxes",
+    categoriesWaitingDescription: "Create boxes so the report can split income by mission.",
+    openBoxes: "Open boxes",
+    allocatedVsSpent: "Allocated vs Spent by Box",
+    noBarsTitle: "No bars to compare",
+    noBarsDescription: "The chart appears when there are planned boxes and month records.",
+    createBox: "Create box",
+    topTransactions: "Top Transactions This Month",
+    noTransactionsTitle: "No transactions registered",
+    noTransactionsDescription: "Once you add movements, the biggest transactions will appear here.",
+    seeHistory: "See history",
+    boxPerformance: "Box Performance",
+    used: "used",
+    performanceEmptyTitle: "No box performance yet",
+    performanceEmptyDescription: "Create boxes to track usage, pressure, and remaining balance by category.",
+    categoryLabels: {
+      essencial: "Essential",
+      investimento: "Investment",
+      lazer: "Leisure",
+      reserva: "Reserve",
+      outro: "Other",
+    },
+  },
+  "es-ES": {
+    loading: "Cargando informe...",
+    backupSuccess: "Backup creado con éxito.",
+    backupError: "Error al crear backup",
+    emptyBaseTitle: "El informe aún no tiene base",
+    emptyBaseDescription: "Vuelve al Dashboard para preparar el mes y liberar una lectura más completa.",
+    goDashboard: "Ir al Dashboard",
+    title: "Informes",
+    subtitle: "Análisis detallado del mes",
+    askAI: "Preguntar a la IA",
+    saving: "Guardando...",
+    backup: "Crear Backup",
+    monthlyIncome: "Ingresos Mensuales",
+    totalSpent: "Total Gastado",
+    savingsRate: "Tasa de Ahorro",
+    financialScore: "Score Financiero",
+    byCategory: "Distribución por Categoría",
+    categoriesWaitingTitle: "Categorías esperando cajas",
+    categoriesWaitingDescription: "Crea cajas para que el informe separe tus ingresos por misión.",
+    openBoxes: "Abrir cajas",
+    allocatedVsSpent: "Asignado vs Gastado por Caja",
+    noBarsTitle: "Sin barras para comparar",
+    noBarsDescription: "El gráfico aparece cuando hay cajas planificadas y registros del mes.",
+    createBox: "Crear caja",
+    topTransactions: "Mayores Transacciones del Mes",
+    noTransactionsTitle: "Ninguna transacción registrada",
+    noTransactionsDescription: "Cuando registres movimientos, las mayores transacciones aparecerán aquí.",
+    seeHistory: "Ver historial",
+    boxPerformance: "Desempeño de las Cajas",
+    used: "utilizado",
+    performanceEmptyTitle: "Desempeño aún sin cajas",
+    performanceEmptyDescription: "Crea cajas para acompañar uso, presión y saldo por categoría.",
+    categoryLabels: {
+      essencial: "Esencial",
+      investimento: "Inversión",
+      lazer: "Ocio",
+      reserva: "Reserva",
+      outro: "Otro",
+    },
+  },
+};
+
 export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewProps) {
+  const { language } = useLanguagePreference();
+  const copy = REPORTS_COPY[language];
+  const formatMoney = (value: number, minimumFractionDigits = 2) =>
+    new Intl.NumberFormat(language, {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits,
+    }).format(value);
   const localMonth = useFinanceStore((state) => state.months[monthId]);
   const { data: serverData, isLoading } = trpc.finance.getMonth.useQuery(
     { monthId },
@@ -38,8 +198,8 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
   );
   const { data: allMonths } = trpc.finance.getUserMonths.useQuery();
   const backupMutation = trpc.finance.createBackup.useMutation({
-    onSuccess: () => toast.success("Backup criado com sucesso!"),
-    onError: () => toast.error("Erro ao criar backup"),
+    onSuccess: () => toast.success(copy.backupSuccess),
+    onError: () => toast.error(copy.backupError),
   });
   const data = useMemo(() => {
     if (localMonth) {
@@ -69,7 +229,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
         return acc;
       }, {} as Record<string, number>)
     ).map(([cat, val]) => ({
-      name: CATEGORY_LABELS[cat] || cat,
+      name: copy.categoryLabels[cat] || cat,
       value: val,
       color: CATEGORY_COLORS[cat] || "#888",
     }));
@@ -90,12 +250,12 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
     );
 
     return { totalAllocated, totalSpent, totalInvested, totalReserva, savingsRate, byCategory, allTx, score, utilizationRate };
-  }, [data]);
+  }, [copy.categoryLabels, data]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground text-sm">Carregando relatório...</div>
+        <div className="text-muted-foreground text-sm">{copy.loading}</div>
       </div>
     );
   }
@@ -104,9 +264,9 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
     return (
       <ReportEmptyState
         icon={<Target className="h-5 w-5" />}
-        title="Relatório ainda sem base"
-        description="Volte ao Dashboard para preparar o mês e liberar uma leitura mais completa."
-        actionLabel="Ir para Dashboard"
+        title={copy.emptyBaseTitle}
+        description={copy.emptyBaseDescription}
+        actionLabel={copy.goDashboard}
         onAction={() => onNavigate?.("dashboard")}
       />
     );
@@ -119,8 +279,8 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">Relatórios</h1>
-          <p className="text-muted-foreground text-sm mt-1">Análise detalhada do mês</p>
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">{copy.title}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{copy.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onAskAI && (
@@ -129,7 +289,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
               className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-all hover:bg-secondary"
             >
               <Sparkles size={14} />
-              Perguntar à IA
+              {copy.askAI}
             </button>
           )}
           <button
@@ -138,7 +298,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
             className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm text-foreground transition-all hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Download size={14} />
-            {backupMutation.isPending ? "Salvando..." : "Fazer Backup"}
+            {backupMutation.isPending ? copy.saving : copy.backup}
           </button>
         </div>
       </div>
@@ -146,10 +306,10 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Receita Mensal", value: `R$ ${month.income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-foreground" },
-          { label: "Total Gasto", value: `R$ ${stats.totalSpent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-destructive" },
-          { label: "Taxa de Poupança", value: `${stats.savingsRate.toFixed(1)}%`, icon: TrendingUp, color: "text-nexo-positive" },
-          { label: "Score Financeiro", value: `${stats.score}/100`, icon: Target, color: "text-muted-foreground" },
+          { label: copy.monthlyIncome, value: formatMoney(month.income), icon: DollarSign, color: "text-foreground" },
+          { label: copy.totalSpent, value: formatMoney(stats.totalSpent), icon: TrendingDown, color: "text-destructive" },
+          { label: copy.savingsRate, value: `${stats.savingsRate.toFixed(1)}%`, icon: TrendingUp, color: "text-nexo-positive" },
+          { label: copy.financialScore, value: `${stats.score}/100`, icon: Target, color: "text-muted-foreground" },
         ].map((item, i) => (
           <motion.div
             key={item.label}
@@ -171,7 +331,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie: By Category */}
         <div className="nexo-depth-2 border border-border rounded-xl p-5">
-          <h3 className="text-foreground font-medium mb-4">Distribuição por Categoria</h3>
+          <h3 className="text-foreground font-medium mb-4">{copy.byCategory}</h3>
           {stats.byCategory.length > 0 ? (
             <div className="flex items-center gap-4">
               <ResponsiveContainer width={160} height={160}>
@@ -191,7 +351,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
                       <span className="text-muted-foreground text-xs">{cat.name}</span>
                     </div>
                     <span className="text-foreground text-xs font-mono">
-                      R$ {cat.value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
+                      {formatMoney(cat.value, 0)}
                     </span>
                   </div>
                 ))}
@@ -201,9 +361,9 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
             <ReportEmptyState
               compact
               icon={<DollarSign className="h-4 w-4" />}
-              title="Categorias aguardando caixas"
-              description="Crie caixas para o relatório separar sua receita por missão."
-              actionLabel="Abrir caixas"
+              title={copy.categoriesWaitingTitle}
+              description={copy.categoriesWaitingDescription}
+              actionLabel={copy.openBoxes}
               onAction={() => onNavigate?.("caixas")}
             />
           )}
@@ -211,7 +371,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
 
         {/* Bar: Allocated vs Spent per Caixa */}
         <div className="nexo-depth-2 border border-border rounded-xl p-5">
-          <h3 className="text-foreground font-medium mb-4">Alocado vs Gasto por Caixa</h3>
+          <h3 className="text-foreground font-medium mb-4">{copy.allocatedVsSpent}</h3>
           {caixas.length > 0 ? (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={caixas.map(c => ({ name: c.name.slice(0, 8), alocado: c.allocated, gasto: c.spent }))}>
@@ -230,9 +390,9 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
             <ReportEmptyState
               compact
               icon={<TrendingUp className="h-4 w-4" />}
-              title="Sem barras para comparar"
-              description="O gráfico aparece quando houver caixas planejadas e registros do mês."
-              actionLabel="Criar caixa"
+              title={copy.noBarsTitle}
+              description={copy.noBarsDescription}
+              actionLabel={copy.createBox}
               onAction={() => onNavigate?.("caixas")}
             />
           )}
@@ -241,7 +401,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
 
       {/* Top Transactions */}
       <div className="nexo-depth-2 border border-border rounded-xl p-5">
-        <h3 className="text-foreground font-medium mb-4">Maiores Transações do Mês</h3>
+        <h3 className="text-foreground font-medium mb-4">{copy.topTransactions}</h3>
         {stats.allTx.length > 0 ? (
           <div className="space-y-2">
             {stats.allTx.map((tx, i) => (
@@ -257,7 +417,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
                   </div>
                 </div>
                 <div className={`font-mono font-semibold text-sm ${tx.type === "expense" ? "text-destructive" : "text-nexo-positive"}`}>
-                  {tx.type === "expense" ? "-" : "+"}R$ {tx.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {tx.type === "expense" ? "-" : "+"}{formatMoney(tx.amount)}
                 </div>
               </div>
             ))}
@@ -266,9 +426,9 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
           <ReportEmptyState
             compact
             icon={<Download className="h-4 w-4" />}
-            title="Nenhuma transação registrada"
-            description="Assim que você lançar movimentações, as maiores transações aparecem aqui."
-            actionLabel="Ver histórico"
+            title={copy.noTransactionsTitle}
+            description={copy.noTransactionsDescription}
+            actionLabel={copy.seeHistory}
             onAction={() => onNavigate?.("historico")}
           />
         )}
@@ -276,7 +436,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
 
       {/* Caixa Performance */}
       <div className="nexo-depth-2 border border-border rounded-xl p-5">
-        <h3 className="text-foreground font-medium mb-4">Desempenho das Caixas</h3>
+        <h3 className="text-foreground font-medium mb-4">{copy.boxPerformance}</h3>
         <div className="space-y-3">
           {caixas.map(c => {
             const pct = c.allocated > 0 ? (c.spent / c.allocated) * 100 : 0;
@@ -289,7 +449,7 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
                     {c.name}
                   </span>
                   <span className={`text-xs font-mono ${isOver ? "text-destructive" : "text-muted-foreground"}`}>
-                    {pct.toFixed(0)}% utilizado
+                    {pct.toFixed(0)}% {copy.used}
                   </span>
                 </div>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -307,9 +467,9 @@ export function RelatoriosView({ monthId, onAskAI, onNavigate }: RelatoriosViewP
             <ReportEmptyState
               compact
               icon={<Target className="h-4 w-4" />}
-              title="Desempenho ainda sem caixas"
-              description="Crie caixas para acompanhar uso, pressão e sobra por categoria."
-              actionLabel="Abrir caixas"
+              title={copy.performanceEmptyTitle}
+              description={copy.performanceEmptyDescription}
+              actionLabel={copy.openBoxes}
               onAction={() => onNavigate?.("caixas")}
             />
           )}
