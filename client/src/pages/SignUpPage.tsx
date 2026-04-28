@@ -16,8 +16,8 @@ export default function SignUpPage() {
   return (
     <EntryShell
       eyebrow="Criar conta"
-      title="Crie sua conta e comece seu mês do jeito certo."
-      description="Comece com seu mês atual, organize suas caixas com clareza e deixe o NEXO acompanhar sua evolução desde o início."
+      title="Comece seu controle financeiro com clareza."
+      description="Crie sua conta, defina a receita do mês e deixe o NEXO organizar caixas, metas e decisões em um só lugar."
       panelClassName="min-h-[420px] flex items-center"
     >
       <div className="w-full space-y-4">

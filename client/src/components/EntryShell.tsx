@@ -65,30 +65,33 @@ export function EntryShell({
               </div>
             ) : null}
 
-            <div className={cn("space-y-6", eyebrow ? "mt-8" : "mt-2")}>
-              <div className="grid gap-6 sm:grid-cols-[118px_minmax(0,1fr)] sm:items-start sm:gap-5 lg:gap-7">
-                <div className="flex shrink-0 flex-col items-center gap-0.5 text-center">
-                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden sm:h-28 sm:w-28">
-                    <BrandLogo className="h-[230%] w-[230%] max-w-none shrink-0 translate-y-[3%]" />
+            <div className={cn("space-y-6", eyebrow ? "mt-9" : "mt-3")}>
+              <div className="max-w-3xl">
+                <div className="mb-7 flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+                    <BrandLogo className="h-10 w-10" />
                   </div>
-                  <p className="-mt-3 text-[0.95rem] font-medium leading-tight text-[#D8D8D8]">
-                    {BRAND_NAME}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold leading-none tracking-tight text-[#F5F5F5]">
+                      {BRAND_NAME}
+                    </p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.28em] text-[#777]">
+                      Gestão financeira
+                    </p>
+                  </div>
                 </div>
 
-                <div className="min-w-0 max-w-3xl pt-1 sm:-ml-1 sm:pt-2 lg:-ml-2">
-                  <h1 className="text-4xl font-semibold tracking-tight text-[#FAFAF7] sm:text-5xl sm:leading-none lg:text-[56px] lg:leading-[0.98]">
-                    {title}
-                  </h1>
+                <h1 className="text-4xl font-semibold tracking-tight text-[#FAFAF7] sm:text-5xl sm:leading-none lg:text-[58px] lg:leading-[0.96]">
+                  {title}
+                </h1>
 
-                  <p className="mt-4 text-lg text-[#D8D8D8] sm:text-[1.75rem]">
-                    Todo real recebe uma missão.
-                  </p>
+                <p className="mt-5 text-lg text-[#D8D8D8] sm:text-[1.75rem]">
+                  Todo real recebe uma missão.
+                </p>
 
-                  <p className="mt-5 text-base leading-7 text-[#A3A3A3] sm:text-lg">
-                    {description}
-                  </p>
-                </div>
+                <p className="mt-5 text-base leading-7 text-[#A3A3A3] sm:text-lg">
+                  {description}
+                </p>
               </div>
             </div>
 
