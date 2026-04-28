@@ -524,6 +524,7 @@
     color: var(--shell-plan-upgrade-text);
   }
 
+  .light .nexo-brand-logo,
   .light .nexo-app-shell header .nexo-brand-logo,
   .light .nexo-app-shell aside .nexo-brand-logo {
     filter: brightness(0) saturate(100%);
@@ -1012,12 +1013,18 @@ a[href] {
 /* Better focus states for accessibility */
 button:focus-visible,
 [role="button"]:focus-visible,
-a[href]:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+a[href]:focus-visible {
   outline: 2px solid oklch(0.55 0 0);
   outline-offset: 2px;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
 }
 
 /* Reduce motion for users who prefer it */

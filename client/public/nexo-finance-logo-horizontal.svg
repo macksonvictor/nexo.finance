@@ -1,0 +1,9 @@
+<svg width="1660" height="420" viewBox="0 0 1660 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nexo Finance logo">
+  <g transform="translate(36 32) scale(0.345703125)">
+    <path d="M512 108L848 300V684L512 876L176 684V300L512 108Z" stroke="#F7F7F2" stroke-width="76" stroke-linejoin="round"/>
+    <path d="M512 492L176 300" stroke="#F7F7F2" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M512 492L848 300" stroke="#F7F7F2" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M512 492V876" stroke="#F7F7F2" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="410" y="258" fill="#F7F7F2" font-family="Space Grotesk, Sora, Avenir Next, Segoe UI, sans-serif" font-size="132" font-weight="650" letter-spacing="-4">Nexo Finance</text>
+</svg>

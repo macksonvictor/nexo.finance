@@ -48,7 +48,7 @@ import {
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
-import { createCheckoutSession, getOrCreateCustomer, createBillingPortalSession } from "./_core/stripe";
+import { createCheckoutSession, getConfiguredPaymentLink, getOrCreateCustomer, createBillingPortalSession } from "./_core/stripe";
 import {
   buildAISuggestions,
   buildAISystemPrompt,
@@ -1086,11 +1086,20 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const user = ctx.user;
-        if (!user.email) {
-          throw new Error('User email is required');
-        }
 
         try {
+          const paymentLink = getConfiguredPaymentLink(input.planTier);
+          if (paymentLink) {
+            return {
+              sessionId: null,
+              url: paymentLink,
+            };
+          }
+
+          if (!user.email) {
+            throw new Error('User email is required');
+          }
+
           // Get or create Stripe customer
           let customerId = user.stripeCustomerId;
           if (!customerId) {
@@ -1101,7 +1110,7 @@ export const appRouter = router({
           }
 
           // Create checkout session
-          const returnUrl = `${getAppBaseUrl(ctx.req)}/planos`;
+          const returnUrl = `${getAppBaseUrl(ctx.req)}/?view=planos`;
           const session = await createCheckoutSession(customerId, input.planTier, returnUrl);
 
           return {
@@ -1116,7 +1125,7 @@ export const appRouter = router({
             message.includes("STRIPE_SETUP_REQUIRED")
           ) {
             throw new Error(
-              "STRIPE_SETUP_REQUIRED: configure STRIPE_SECRET_KEY or VITE_STRIPE_*_PAYMENT_LINK before using checkout."
+              "STRIPE_SETUP_REQUIRED: configure STRIPE_SECRET_KEY, STRIPE_*_PAYMENT_LINK or VITE_STRIPE_*_PAYMENT_LINK before using checkout."
             );
           }
           throw new Error('Failed to create checkout session');

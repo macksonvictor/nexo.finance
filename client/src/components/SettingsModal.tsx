@@ -1,5 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useTheme, type Theme } from "@/contexts/ThemeContext";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { LANGUAGE_OPTIONS } from "@/lib/language";
+import { getAppCopy } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/formatters";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import type { ViewType } from "@/types/finance";
@@ -12,6 +15,7 @@ import {
   CreditCard,
   Download,
   History,
+  Languages,
   LogOut,
   Moon,
   Palette,
@@ -57,6 +61,7 @@ interface SettingsModalProps {
   currentIncome: number;
   onExport: () => void;
   onNavigate: (view: ViewType) => void;
+  onOpenPricing?: () => void;
   initialSection?: SettingsSection;
   aiStorageScopeId?: string;
 }
@@ -107,11 +112,15 @@ export function SettingsModal({
   currentIncome,
   onExport,
   onNavigate,
+  onOpenPricing,
   initialSection = "geral",
   aiStorageScopeId = "anonymous",
 }: SettingsModalProps) {
   const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguagePreference();
+  const copy = getAppCopy(language);
+  const settingsCopy = copy.settingsModal;
   const { setIncome } = useFinanceStore();
   const [activeSection, setActiveSection] = useState<SettingsSection>("geral");
   const [incomeValue, setIncomeValue] = useState(String(currentIncome));
@@ -125,7 +134,7 @@ export function SettingsModal({
     user?.name?.trim()?.charAt(0)?.toUpperCase() ??
     user?.email?.trim()?.charAt(0)?.toUpperCase() ??
     "U";
-  const planName = isAdmin ? "Criador" : isPremium ? "Premium" : "Grátis";
+  const planName = isAdmin ? copy.common.creator : isPremium ? copy.common.premium : copy.common.free;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -173,6 +182,21 @@ export function SettingsModal({
     writeNexoAIPreferences(next);
   };
 
+  const handleLanguageChange = (nextLanguage: string) => {
+    setLanguage(nextLanguage);
+    toast.success(settingsCopy.languageSaved);
+  };
+
+  const handleOpenPricing = () => {
+    onClose();
+    if (onOpenPricing) {
+      onOpenPricing();
+      return;
+    }
+
+    onNavigate("planos");
+  };
+
   const handleClearAIHistory = () => {
     const removed = clearNexoAIHistory(aiStorageScopeId);
     toast.success(
@@ -191,18 +215,134 @@ export function SettingsModal({
     switch (activeSection) {
       case "geral":
         return (
-          <SettingsCard title="Visão geral" eyebrow="Geral">
-            <div className="grid gap-3 md:grid-cols-3">
-              <SummaryTile label="Plano" value={planName} />
-              <SummaryTile label="Receita atual" value={formatCurrency(currentIncome)} />
-              <SummaryTile label="Período" value={monthId} />
-            </div>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-              Use esta janela para ajustes que não precisam ocupar a navegação
-              principal: conta, IA, pagamentos, receita, banco, exportação,
-              aparência e ajuda.
-            </p>
-          </SettingsCard>
+          <div className="space-y-5">
+            <SettingsCard title={settingsCopy.generalTitle} eyebrow={settingsCopy.preferencesEyebrow}>
+              <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Languages size={17} className="text-muted-foreground" />
+                    {copy.profilePanels.language}
+                  </div>
+                  <div className="grid gap-2">
+                    {LANGUAGE_OPTIONS.map((option) => {
+                      const active = language === option.id;
+
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => handleLanguageChange(option.id)}
+                          className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${
+                            active
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border bg-secondary/60 text-foreground hover:border-foreground/35"
+                          }`}
+                        >
+                          <span className="font-semibold">{option.label}</span>
+                          {active && (
+                            <span className="text-sm">{option.activeLabel}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {settingsCopy.languageNote}
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Palette size={17} className="text-muted-foreground" />
+                    {settingsCopy.appearance}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {THEME_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const active = theme === option.id;
+                      const optionTitle =
+                        option.id === "dark"
+                          ? settingsCopy.themeDark
+                          : settingsCopy.themeLight;
+                      const optionDescription =
+                        option.id === "dark"
+                          ? settingsCopy.themeDarkDescription
+                          : settingsCopy.themeLightDescription;
+
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setTheme?.(option.id)}
+                          className={`rounded-[22px] border p-4 text-left transition-all ${
+                            active
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border bg-secondary/60 text-foreground hover:border-foreground/35"
+                          }`}
+                        >
+                          <Icon size={19} />
+                          <p className="mt-3 font-semibold">{optionTitle}</p>
+                          <p
+                            className={`mt-1 text-xs leading-relaxed ${
+                              active ? "text-background/70" : "text-muted-foreground"
+                            }`}
+                          >
+                            {optionDescription}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              </div>
+            </SettingsCard>
+
+            <SettingsCard title="Preferências de comunicação" eyebrow="Produto">
+              <div className="space-y-3">
+                <SettingsSwitchRow
+                  checked
+                  description="Receba novidades importantes de produto e melhorias do NEXO."
+                  label="Receba atualizações de produto"
+                  onClick={() =>
+                    toast.info("Preferência visual nesta fase do protótipo.")
+                  }
+                />
+                <SettingsSwitchRow
+                  checked
+                  description="Avise quando tarefas e processos automáticos estiverem prontos."
+                  label="Envie-me um e-mail quando uma tarefa começar"
+                  onClick={() =>
+                    toast.info("Preferência visual nesta fase do protótipo.")
+                  }
+                />
+              </div>
+            </SettingsCard>
+
+            <SettingsCard title="Resumo da conta" eyebrow="NEXO">
+              <div className="grid gap-3 md:grid-cols-3">
+                <SummaryTile label="Plano" value={planName} />
+                <SummaryTile label="Receita atual" value={formatCurrency(currentIncome)} />
+                <SummaryTile label="Período" value={monthId} />
+              </div>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+                <div>
+                  <p className="font-semibold text-foreground">Gerenciar Cookies</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Controle preferências locais de experiência.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-2xl border border-border bg-secondary px-4 py-2 text-sm font-semibold text-foreground hover:border-foreground/30"
+                  onClick={() =>
+                    toast.info("Gerenciamento de cookies fica para a etapa de deploy.")
+                  }
+                >
+                  Gerenciar
+                </button>
+              </div>
+            </SettingsCard>
+          </div>
         );
 
       case "conta":
@@ -304,7 +444,7 @@ export function SettingsModal({
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => handleNavigate("planos")}
+                onClick={handleOpenPricing}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
               >
                 <CreditCard size={17} />
@@ -406,11 +546,19 @@ export function SettingsModal({
 
       case "aparencia":
         return (
-          <SettingsCard title="Aparência" eyebrow="Personalização">
+          <SettingsCard title={settingsCopy.appearance} eyebrow={copy.accountMenu.personalization}>
             <div className="grid gap-3 md:grid-cols-2">
               {THEME_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const active = theme === option.id;
+                const optionTitle =
+                  option.id === "dark"
+                    ? settingsCopy.themeDark
+                    : settingsCopy.themeLight;
+                const optionDescription =
+                  option.id === "dark"
+                    ? settingsCopy.themeDarkDescription
+                    : settingsCopy.themeLightDescription;
 
                 return (
                   <button
@@ -434,13 +582,13 @@ export function SettingsModal({
                         <Icon size={18} />
                       </span>
                       <div>
-                        <p className="font-semibold">{option.title}</p>
+                        <p className="font-semibold">{optionTitle}</p>
                         <p
                           className={`mt-1 text-xs leading-relaxed ${
                             active ? "text-background/70" : "text-muted-foreground"
                           }`}
                         >
-                          {option.description}
+                          {optionDescription}
                         </p>
                       </div>
                     </div>
@@ -455,16 +603,25 @@ export function SettingsModal({
         return (
           <SettingsCard title="Ajuda" eyebrow="Suporte">
             <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-              Use a Nexo IA para tirar dúvidas sobre caixas, metas, histórico e
-              decisões do mês atual.
+              Use a central de suporte para guias completos ou a Nexo IA para
+              tirar dúvidas sobre caixas, metas, histórico e decisões do mês
+              atual.
             </p>
-            <button
-              type="button"
-              onClick={() => handleNavigate("ia")}
-              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
-            >
-              Abrir Nexo IA
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/suporte"
+                className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
+              >
+                Abrir central de suporte
+              </a>
+              <button
+                type="button"
+                onClick={() => handleNavigate("ia")}
+                className="rounded-2xl border border-border bg-secondary px-5 py-3 text-sm font-bold text-foreground transition-transform hover:scale-[1.02]"
+              >
+                Abrir Nexo IA
+              </button>
+            </div>
           </SettingsCard>
         );
     }
@@ -473,10 +630,10 @@ export function SettingsModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 md:p-4">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 md:p-8">
           <motion.button
             type="button"
-            aria-label="Fechar configurações"
+            aria-label={`${copy.common.close} ${copy.common.settings}`}
             className="absolute inset-0 bg-black/70 backdrop-blur-[3px]"
             onClick={onClose}
             initial={{ opacity: 0 }}
@@ -487,8 +644,8 @@ export function SettingsModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Configurações"
-            className="nexo-shell-float relative flex h-[calc(100dvh-32px)] max-h-[860px] w-[calc(100vw-24px)] max-w-[1180px] flex-col overflow-hidden rounded-[30px] md:flex-row"
+            aria-label={copy.common.settings}
+            className="nexo-shell-float relative flex h-[min(780px,calc(100dvh-96px))] w-[min(1120px,calc(100vw-48px))] flex-col overflow-hidden rounded-[28px] md:flex-row"
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -517,6 +674,7 @@ export function SettingsModal({
                 {SETTINGS_SECTIONS.map((section) => {
                   const Icon = section.icon;
                   const active = activeSection === section.id;
+                  const label = settingsCopy.sections[section.id];
 
                   return (
                     <button
@@ -530,7 +688,7 @@ export function SettingsModal({
                       }`}
                     >
                       <Icon size={18} />
-                      <span className="min-w-0 truncate">{section.label}</span>
+                      <span className="min-w-0 truncate">{label}</span>
                     </button>
                   );
                 })}
@@ -542,14 +700,14 @@ export function SettingsModal({
                 <div>
                   <p className="nexo-label mb-1">NEXO</p>
                   <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                    Configurações
+                    {copy.common.settings}
                   </h2>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
                   className="nexo-shell-control flex h-10 w-10 items-center justify-center rounded-2xl text-muted-foreground hover:text-foreground"
-                  aria-label="Fechar configurações"
+                  aria-label={`${copy.common.close} ${copy.common.settings}`}
                 >
                   <X size={20} />
                 </button>

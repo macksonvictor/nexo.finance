@@ -26,13 +26,13 @@ export function useAuth(options?: UseAuthOptions) {
     refetchOnWindowFocus: false,
   });
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (redirectUrl = "/") => {
     try {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("nexo-runtime-user-info");
       }
       utils.auth.me.setData(undefined, null);
-      await signOut({ redirectUrl: "/" });
+      await signOut({ redirectUrl });
     } finally {
       await utils.auth.me.invalidate();
     }

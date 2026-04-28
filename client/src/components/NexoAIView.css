@@ -197,6 +197,14 @@
     0 26px 76px rgba(0, 0, 0, 0.5);
 }
 
+.nexo-ai-view input:focus,
+.nexo-ai-view input:focus-visible,
+.nexo-ai-view textarea:focus,
+.nexo-ai-view textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none;
+}
+
 .nexo-ai-floating-menu {
   background:
     radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.055), transparent 30%),

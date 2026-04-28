@@ -4,6 +4,8 @@ import {
   getCurrentCalendarMonthId,
 } from "@/lib/formatters";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { getAppCopy } from "@/lib/i18n";
 import { lottieAnimations, type NexoLottieAnimation } from "@/lib/lottieAnimations";
 import { BRAND_NAME } from "@/lib/branding";
 import { useFinanceStore } from "@/stores/useFinanceStore";
@@ -142,6 +144,8 @@ export function Sidebar({
   settingsOpen = false,
 }: SidebarProps) {
   const { theme } = useTheme();
+  const { language } = useLanguagePreference();
+  const copy = getAppCopy(language);
   const { currentMonthId, months, setCurrentMonth, initMonth } =
     useFinanceStore();
   const [monthOpen, setMonthOpen] = useState(false);
@@ -239,8 +243,8 @@ export function Sidebar({
             <button
               onClick={() => onViewChange("dashboard")}
               className="flex items-center justify-center rounded-2xl bg-transparent p-0 transition-transform duration-200 hover:scale-[1.02]"
-              aria-label="Voltar para o Dashboard"
-              title="Voltar para o Dashboard"
+              aria-label={copy.common.backToDashboard}
+              title={copy.common.backToDashboard}
             >
               <BrandLogo alt={BRAND_NAME} className="h-10 w-10 shrink-0" />
             </button>
@@ -248,8 +252,8 @@ export function Sidebar({
               <button
                 onClick={onToggleCollapse}
                 className="nexo-shell-control flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[13px] font-semibold tracking-tight text-muted-foreground hover:text-foreground"
-                title="Expandir barra lateral"
-                aria-label="Expandir barra lateral"
+                title={language === "en-US" ? "Expand sidebar" : language === "es-ES" ? "Expandir barra lateral" : "Expandir barra lateral"}
+                aria-label={language === "en-US" ? "Expand sidebar" : language === "es-ES" ? "Expandir barra lateral" : "Expandir barra lateral"}
               >
                 &gt;&gt;
               </button>
@@ -260,8 +264,8 @@ export function Sidebar({
             <button
               onClick={() => onViewChange("dashboard")}
               className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl bg-transparent p-0 text-left transition-transform duration-200 hover:scale-[1.01]"
-              aria-label="Voltar para o Dashboard"
-              title="Voltar para o Dashboard"
+              aria-label={copy.common.backToDashboard}
+              title={copy.common.backToDashboard}
             >
               <BrandLogo alt={BRAND_NAME} className="h-11 w-11 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -274,8 +278,8 @@ export function Sidebar({
               <button
                 onClick={onToggleCollapse}
                 className="nexo-shell-control flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[15px] font-semibold tracking-tight text-muted-foreground hover:text-foreground"
-                title="Recolher barra lateral"
-                aria-label="Recolher barra lateral"
+                title={language === "en-US" ? "Collapse sidebar" : language === "es-ES" ? "Contraer barra lateral" : "Recolher barra lateral"}
+                aria-label={language === "en-US" ? "Collapse sidebar" : language === "es-ES" ? "Contraer barra lateral" : "Recolher barra lateral"}
               >
                 &lt;&lt;
               </button>
@@ -364,6 +368,8 @@ export function Sidebar({
           const isActive = currentView === item.id;
           const Icon = item.icon;
           const locked = item.premiumOnly && !isPremium && !isAdmin;
+          const itemLabel =
+            copy.navigation[item.id as keyof typeof copy.navigation] ?? item.label;
 
           return (
             <button
@@ -385,7 +391,7 @@ export function Sidebar({
                   ? "nexo-shell-control-active text-foreground"
                   : "nexo-shell-ghost-control text-sidebar-foreground hover:text-foreground"
               }`}
-              title={item.label}
+              title={itemLabel}
             >
               {isActive && (
                 <motion.div
@@ -433,7 +439,7 @@ export function Sidebar({
                 null
               )}
               {!collapsed && (
-                <span className="flex-1 text-left">{item.label}</span>
+                <span className="flex-1 text-left">{itemLabel}</span>
               )}
               {collapsed && locked && (
                 <Shield className="absolute bottom-1 right-1 h-3 w-3 text-[#8F8F8F]" />
@@ -464,7 +470,7 @@ export function Sidebar({
               ? "nexo-shell-control-active text-foreground"
               : "nexo-shell-ghost-control text-sidebar-foreground hover:text-foreground"
           }`}
-          title={HISTORY_ITEM.label}
+          title={copy.navigation.historico}
         >
           {currentView === HISTORY_ITEM.id && (
             <motion.div
@@ -490,7 +496,7 @@ export function Sidebar({
             className={`${animatedNavIconClass} overflow-visible`}
             fallback={<Clock className="h-[16.5px] w-[16.5px] shrink-0" />}
           />
-          {!collapsed && <span className="flex-1 text-left">{HISTORY_ITEM.label}</span>}
+          {!collapsed && <span className="flex-1 text-left">{copy.navigation.historico}</span>}
         </button>
 
         <button
@@ -509,7 +515,7 @@ export function Sidebar({
               ? "nexo-shell-control-active text-foreground"
               : "nexo-shell-ghost-control"
           }`}
-          title="Configurações"
+          title={copy.common.settings}
         >
           <AnimatedLottieIcon
             animationData={lottieAnimations.settings}
@@ -523,7 +529,7 @@ export function Sidebar({
             className="text-current overflow-visible"
             fallback={<Settings className="h-4 w-4 shrink-0" />}
           />
-          {!collapsed && <span className="nexo-label">Configurações</span>}
+          {!collapsed && <span className="nexo-label">{copy.common.settings}</span>}
         </button>
       </div>
     </aside>

@@ -66,9 +66,9 @@ export function EntryShell({
             ) : null}
 
             <div className={cn("space-y-6", eyebrow ? "mt-8" : "mt-2")}>
-            <div className="grid gap-6 sm:grid-cols-[118px_minmax(0,1fr)] sm:items-start sm:gap-5 lg:gap-7">
-              <div className="flex shrink-0 flex-col items-center gap-0.5 text-center">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden sm:h-28 sm:w-28">
+              <div className="grid gap-6 sm:grid-cols-[118px_minmax(0,1fr)] sm:items-start sm:gap-5 lg:gap-7">
+                <div className="flex shrink-0 flex-col items-center gap-0.5 text-center">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden sm:h-28 sm:w-28">
                     <BrandLogo className="h-[230%] w-[230%] max-w-none shrink-0 translate-y-[3%]" />
                   </div>
                   <p className="-mt-3 text-[0.95rem] font-medium leading-tight text-[#D8D8D8]">

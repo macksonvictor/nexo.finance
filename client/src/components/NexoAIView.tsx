@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { trpc } from "@/lib/trpc";
 import {
   NEXO_AI_HISTORY_CLEARED_EVENT,
@@ -364,6 +365,19 @@ export function NexoAIView({
     input.trim().length > 0 ||
     composerAttachments.length > 0;
   const contentShellClass = overlayMode ? "max-w-none" : "max-w-[980px]";
+  const settingsPanel =
+    settingsOpen && !overlayMode ? (
+      <AISettingsPanel
+        panelRef={settingsPanelRef}
+        uiPreferences={uiPreferences}
+        position={settingsPanelPosition}
+        onTogglePreference={handleTogglePreference}
+      />
+    ) : null;
+  const settingsPanelPortal =
+    settingsPanel && typeof document !== "undefined"
+      ? createPortal(settingsPanel, document.body)
+      : settingsPanel;
   const filteredConversations = useMemo(() => {
     const normalizedQuery = historySearchQuery.trim().toLowerCase();
 
@@ -559,7 +573,7 @@ export function NexoAIView({
     const textarea = composerInputRef.current;
     if (!textarea) return;
     textarea.style.height = "0px";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 176)}px`;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 144)}px`;
   }, [input]);
 
   const analyzeMutation = trpc.ai.analyze.useMutation({
@@ -897,11 +911,12 @@ export function NexoAIView({
     anchor: AISettingsAnchor,
     event?: ReactMouseEvent<HTMLElement>
   ) {
+    event?.stopPropagation();
     setSettingsAnchor(anchor);
     setSettingsPanelPosition(
       getSettingsPanelPosition(anchor, event?.currentTarget ?? null)
     );
-    setSettingsOpen((open) => (settingsAnchor === anchor ? !open : true));
+    setSettingsOpen(!(settingsOpen && settingsAnchor === anchor));
   }
 
   function handleRenameConversation(conversationId: string, title: string) {
@@ -960,7 +975,8 @@ export function NexoAIView({
     : "nexo-ai-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] border border-[#171717] bg-[#070707]";
 
   return (
-    <div className={rootClassName}>
+    <>
+      <div className={rootClassName}>
       {!overlayMode && (
         <>
           {historyOpen && (
@@ -1021,14 +1037,6 @@ export function NexoAIView({
             )}
           </div>
 
-          {settingsOpen && settingsAnchor === "rail" && (
-            <AISettingsPanel
-              panelRef={settingsPanelRef}
-              uiPreferences={uiPreferences}
-              position={settingsPanelPosition}
-              onTogglePreference={handleTogglePreference}
-            />
-          )}
         </>
       )}
 
@@ -1080,19 +1088,22 @@ export function NexoAIView({
             </div>
 
             <div className="relative flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={(event) => handleToggleSettings("header", event)}
-                data-ai-settings-trigger="true"
-                className={`${overlayMode ? "inline-flex" : "inline-flex xl:hidden"} h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                  settingsOpen && settingsAnchor === "header"
-                    ? "border-[#2F2F2F] bg-[#151515] text-[#F5F5F5]"
-                    : "border-[#1F1F1F] bg-[#101010] text-[#BDBDBD] hover:border-[#343434] hover:text-[#F5F5F5]"
-                }`}
-                aria-label="Abrir configurações da IA"
-              >
-                <SlidersHorizontal size={15} />
-              </button>
+              {!overlayMode && (
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleToggleSettings("header", event)}
+                  data-ai-settings-trigger="true"
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors xl:hidden ${
+                    settingsOpen && settingsAnchor === "header"
+                      ? "border-[#2F2F2F] bg-[#151515] text-[#F5F5F5]"
+                      : "border-[#1F1F1F] bg-[#101010] text-[#BDBDBD] hover:border-[#343434] hover:text-[#F5F5F5]"
+                  }`}
+                  aria-label="Abrir configurações da IA"
+                >
+                  <SlidersHorizontal size={15} />
+                </button>
+              )}
 
               {currentUsage && <UsagePill usage={currentUsage} />}
 
@@ -1121,14 +1132,6 @@ export function NexoAIView({
                 </button>
               )}
 
-              {settingsOpen && settingsAnchor === "header" && (
-                <AISettingsPanel
-                  panelRef={settingsPanelRef}
-                  uiPreferences={uiPreferences}
-                  position={settingsPanelPosition}
-                  onTogglePreference={handleTogglePreference}
-                />
-              )}
             </div>
           </div>
         </div>
@@ -1274,6 +1277,8 @@ export function NexoAIView({
         </div>
       </div>
     </div>
+    {settingsPanelPortal}
+  </>
   );
 }
 
@@ -1293,11 +1298,11 @@ function AISettingsPanel({
   return (
     <div
       ref={panelRef}
-      className={`nexo-ai-settings-panel fixed z-[240] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[28px] border border-[#222222] bg-[#111111] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
+      className={`nexo-ai-settings-panel fixed z-[9999] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[28px] border border-[#222222] bg-[#111111] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] ${className}`}
       style={{
         width: "min(420px, calc(100vw - 32px))",
         maxHeight: "calc(100dvh - 96px)",
-        ...(position ?? { top: 88, right: 16 }),
+        ...(position ?? { top: 88, left: 16 }),
       }}
     >
       <div className="border-b border-[#242424] px-1 pb-4">
@@ -1411,6 +1416,7 @@ function DockIconButton({
     <div className="group relative">
       <button
         type="button"
+        onMouseDown={(event) => event.stopPropagation()}
         onClick={onClick}
         data-ai-settings-trigger={dataAttribute}
         className="nexo-ai-icon-button flex h-11 w-11 items-center justify-center rounded-2xl border border-[#202020] bg-[#0F0F0F] text-[#B7B7B7] transition-colors hover:text-[#F5F5F5]"
@@ -1731,10 +1737,10 @@ function Composer({
     <div className="space-y-3">
       <form
         onSubmit={onSubmit}
-        className="relative z-20"
+        className="relative z-[150]"
         ref={modeMenuRef}
       >
-        <div className="nexo-ai-composer-shell relative rounded-[32px] border border-[#1C1C1C] bg-[#101010]">
+        <div className="nexo-ai-composer-shell relative rounded-[28px] border border-[#1C1C1C] bg-[#101010]">
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 border-b border-[#1B1B1B] px-3 py-3">
               {attachments.map((attachment) => (
@@ -1748,7 +1754,7 @@ function Composer({
             </div>
           )}
 
-          <div className="flex items-end gap-2 px-3 py-3">
+          <div className="flex items-center gap-2 px-3 py-2">
             <input
               ref={mediaAttachmentInputRef}
               type="file"
@@ -1780,7 +1786,7 @@ function Composer({
                 onMouseDown={(event) => event.stopPropagation()}
                 onClick={() => setAttachmentMenuOpen((open) => !open)}
                 disabled={isLoading}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#252525] bg-[#181818] text-[#D0D0D0] transition-colors hover:border-[#3A3A3A] hover:bg-[#1D1D1D] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#252525] bg-[#181818] text-[#D0D0D0] transition-colors hover:border-[#3A3A3A] hover:bg-[#1D1D1D] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
                 title="Adicionar anexos"
                 aria-label="Adicionar anexos"
               >
@@ -1802,7 +1808,7 @@ function Composer({
                       ? "Pergunte algo com contexto real do seu mês..."
                       : activeModeMeta.starter
                 }
-                className="max-h-44 min-h-[44px] w-full resize-none bg-transparent py-2 text-sm leading-6 text-[#F5F5F5] outline-none placeholder:text-[#5C5C5C]"
+                className="block max-h-36 min-h-[34px] w-full resize-none bg-transparent py-[7px] text-sm leading-5 text-[#F5F5F5] outline-none ring-0 placeholder:text-[#5C5C5C] focus:border-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-0"
                 disabled={isLoading || isQuotaReached}
               />
             </div>
@@ -1810,7 +1816,7 @@ function Composer({
             <button
               type="button"
               onClick={onOpenModeMenu}
-              className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-sm transition-colors ${
+              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[18px] border px-3 text-sm transition-colors ${
                 modeMenuOpen || activeMode !== "chat"
                   ? "border-[#3A3A3A] bg-[#1B1B1B] text-[#F5F5F5]"
                   : "border-[#242424] bg-[#161616] text-[#BFBFBF] hover:border-[#353535] hover:text-[#F5F5F5]"
@@ -1839,7 +1845,7 @@ function Composer({
                   !input.trim() &&
                   attachments.length === 0)
               }
-              className="nexo-ai-send-button flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F5F5F5] text-[#0D0D0D] transition disabled:cursor-not-allowed disabled:opacity-40"
+              className="nexo-ai-send-button flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] bg-[#F5F5F5] text-[#0D0D0D] transition disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isLoading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border border-[#0D0D0D] border-t-transparent" />
@@ -1889,7 +1895,7 @@ function Composer({
         )}
 
         {modeMenuOpen && (
-          <div className="nexo-ai-floating-menu absolute bottom-[calc(100%+10px)] right-0 z-[90] w-[320px] rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2">
+          <div className="nexo-ai-floating-menu absolute bottom-[calc(100%+10px)] right-0 z-[220] max-h-[min(320px,calc(100dvh-220px))] w-[min(320px,calc(100vw-48px))] overflow-y-auto rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             <div className="mb-1 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#767676]">
               Ferramentas
             </div>
@@ -2347,7 +2353,7 @@ function getSettingsPanelPosition(
   trigger: HTMLElement | null
 ): AISettingsPanelPosition {
   if (typeof window === "undefined" || !trigger) {
-    return anchor === "rail" ? { top: 88, left: 96 } : { top: 88, right: 16 };
+    return { top: 88, left: 16 };
   }
 
   const rect = trigger.getBoundingClientRect();
@@ -2355,16 +2361,16 @@ function getSettingsPanelPosition(
   const viewportHeight = window.innerHeight;
   const panelWidth = Math.min(420, Math.max(0, viewportWidth - 32));
   const panelHeight = Math.min(390, Math.max(280, viewportHeight - 64));
-  const safeGap = 6;
+  const safeGap = 8;
 
   if (anchor === "rail") {
-    const preferredLeft = rect.right + safeGap;
-    const left =
-      preferredLeft + panelWidth <= viewportWidth - 16
-        ? preferredLeft
-        : Math.max(16, rect.left - panelWidth - safeGap);
+    const left = clampNumber(
+      rect.left + rect.width / 2 - panelWidth / 2,
+      16,
+      viewportWidth - panelWidth - 16
+    );
     const top = clampNumber(
-      rect.bottom - panelHeight,
+      rect.top - panelHeight - safeGap,
       16,
       viewportHeight - panelHeight - 16
     );
@@ -2372,17 +2378,17 @@ function getSettingsPanelPosition(
     return { top, left };
   }
 
-  const preferredTop = rect.bottom + safeGap;
-  const top =
-    preferredTop + panelHeight <= viewportHeight - 16
-      ? preferredTop
-      : clampNumber(rect.top - panelHeight - safeGap, 16, viewportHeight - panelHeight - 16);
-  const right = clampNumber(
-    Math.max(16, viewportWidth - rect.right),
+  const top = clampNumber(
+    rect.bottom + safeGap,
+    16,
+    viewportHeight - panelHeight - 16
+  );
+  const left = clampNumber(
+    rect.right - panelWidth,
     16,
     viewportWidth - panelWidth - 16
   );
-  return { top, right };
+  return { top, left };
 }
 
 function clampNumber(value: number, min: number, max: number) {

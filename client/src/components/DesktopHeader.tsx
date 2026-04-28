@@ -2,15 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Crown } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { BRAND_AI_NAME } from "@/lib/branding";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { getAppCopy } from "@/lib/i18n";
 import type { ViewType } from "@/types/finance";
 import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
 import { NexoRiveMascot } from "./NexoRiveMascot";
 import { AccountMenuPanel } from "./AccountMenuPanel";
+import type { ProfilePanelType } from "./ProfileActionPanel";
 
 interface DesktopHeaderProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   onOpenAIWindow?: () => void;
+  onOpenPricing?: () => void;
+  onOpenProfilePanel?: (panel: ProfilePanelType) => void;
   onOpenSettings?: () => void;
   isAIWindowOpen?: boolean;
   sidebarCollapsed?: boolean;
@@ -22,66 +27,32 @@ interface DesktopHeaderProps {
   } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  aiUsage?: {
+    limit: number;
+    used: number;
+  } | null;
   isPreviewMode?: boolean;
 }
-
-const VIEW_META: Record<ViewType, { title: string; subtitle: string }> = {
-  dashboard: {
-    title: "Dashboard",
-    subtitle: "Visão geral do mês, métricas e evolução financeira.",
-  },
-  caixas: {
-    title: "Caixas",
-    subtitle: "Distribua sua receita com clareza e acompanhe cada missão.",
-  },
-  metas: {
-    title: "Metas",
-    subtitle: "Objetivos financeiros com prazo, progresso e foco.",
-  },
-  historico: {
-    title: "Histórico",
-    subtitle: "Acompanhe sua trajetória mês a mês com mais contexto.",
-  },
-  relatorios: {
-    title: "Relatórios",
-    subtitle: "Exportação e leitura estratégica dos seus dados.",
-  },
-  openbanking: {
-    title: "Open Banking",
-    subtitle: "Conexões bancárias e dados financeiros ampliados.",
-  },
-  planos: {
-    title: "Planos",
-    subtitle: "Gerencie upgrades, benefícios e sua evolução no produto.",
-  },
-  ia: {
-    title: BRAND_AI_NAME,
-    subtitle: "Converse, analise e aprofunde sua leitura financeira quando quiser.",
-  },
-  indicadores: {
-    title: "Indicadores",
-    subtitle: "Leitura mais profunda da saúde financeira e da sua consistência.",
-  },
-  configuracoes: {
-    title: "Configurações",
-    subtitle: "Preferências do aplicativo, aparência e ajustes da experiência.",
-  },
-};
 
 export function DesktopHeader({
   currentView,
   onViewChange,
   onOpenAIWindow,
+  onOpenPricing,
+  onOpenProfilePanel,
   onOpenSettings,
   isAIWindowOpen = false,
   user,
   isPremium,
   isAdmin,
+  aiUsage,
   isPreviewMode = false,
 }: DesktopHeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const meta = VIEW_META[currentView];
+  const { language } = useLanguagePreference();
+  const copy = getAppCopy(language);
+  const meta = copy.viewMeta[currentView];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -105,6 +76,38 @@ export function DesktopHeader({
     user?.email?.trim()?.charAt(0)?.toUpperCase() ??
     "U";
 
+  const openPricing = () => {
+    if (onOpenPricing) {
+      onOpenPricing();
+      return;
+    }
+
+    onViewChange("planos");
+  };
+
+  const openSettings = () => {
+    if (onOpenSettings) {
+      onOpenSettings();
+      return;
+    }
+
+    onViewChange("configuracoes");
+  };
+
+  const openProfilePanel = (panel: ProfilePanelType) => {
+    if (onOpenProfilePanel) {
+      onOpenProfilePanel(panel);
+      return;
+    }
+
+    if (panel === "credits") {
+      onOpenAIWindow?.();
+      return;
+    }
+
+    openSettings();
+  };
+
   return (
     <header className="nexo-shell-panel relative z-30 hidden h-[76px] shrink-0 items-center justify-between border-b border-border/70 px-4 lg:px-6 md:flex">
       <div className="min-w-0 flex-1 pr-4">
@@ -119,7 +122,7 @@ export function DesktopHeader({
       <div className="flex shrink-0 items-center gap-2 xl:gap-3">
         <button
           onClick={() => onOpenAIWindow?.()}
-          aria-label={`Abrir ${BRAND_AI_NAME}`}
+          aria-label={language === "en-US" ? `Open ${BRAND_AI_NAME}` : language === "es-ES" ? `Abrir ${BRAND_AI_NAME}` : `Abrir ${BRAND_AI_NAME}`}
           aria-pressed={isAIWindowOpen}
           title={BRAND_AI_NAME}
           className={`flex h-14 w-14 items-center justify-center bg-transparent p-0 transition-opacity duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A] xl:h-16 xl:w-16 ${
@@ -143,7 +146,7 @@ export function DesktopHeader({
         </button>
 
         <button
-          onClick={() => onViewChange("planos")}
+          onClick={openPricing}
           className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors xl:px-4 ${
             isPremium || isAdmin
               ? "nexo-plan-chip-active"
@@ -151,7 +154,7 @@ export function DesktopHeader({
           }`}
         >
           <Crown size={16} />
-          <span className="hidden xl:inline">{isPremium || isAdmin ? "Plano ativo" : "Upgrade"}</span>
+          <span className="hidden xl:inline">{isPremium || isAdmin ? copy.common.active : copy.common.upgrade}</span>
         </button>
 
         {!isPreviewMode && <NotificationBell align="right" />}
@@ -175,10 +178,10 @@ export function DesktopHeader({
             )}
             <div className="hidden max-w-[112px] lg:block xl:max-w-[140px]">
               <p className="truncate text-sm font-medium text-foreground">
-                {user?.name || "Minha conta"}
+                {user?.name || copy.common.account}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {isAdmin ? "Criador" : isPremium ? "Premium" : "Free"}
+                {isAdmin ? copy.common.creator : isPremium ? copy.common.premium : copy.common.free}
               </p>
             </div>
             <ChevronDown size={14} className="text-muted-foreground" />
@@ -189,8 +192,14 @@ export function DesktopHeader({
               user={user}
               isPremium={isPremium}
               isAdmin={isAdmin}
-              onViewChange={onViewChange}
-              onOpenSettings={onOpenSettings ?? (() => onViewChange("configuracoes"))}
+              aiUsage={aiUsage}
+              onOpenAccount={() => openProfilePanel("account")}
+              onOpenAccountSwitcher={() => openProfilePanel("switcher")}
+              onOpenCredits={() => openProfilePanel("credits")}
+              onOpenHelp={() => openProfilePanel("help")}
+              onOpenPersonalization={() => openProfilePanel("personalizacao")}
+              onOpenPricing={openPricing}
+              onOpenSettings={openSettings}
               onClose={() => setProfileOpen(false)}
               className="fixed right-4 top-[72px] z-[100]"
             />

@@ -1,11 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { getAppCopy } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import type { ViewType } from "@/types/finance";
 import {
   BadgeHelp,
   ChevronRight,
   ChevronsUpDown,
-  Crown,
   LogOut,
   Palette,
   Settings,
@@ -23,7 +23,16 @@ interface AccountMenuPanelProps {
   } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
-  onViewChange: (view: ViewType) => void;
+  aiUsage?: {
+    limit: number;
+    used: number;
+  } | null;
+  onOpenAccount: () => void;
+  onOpenAccountSwitcher: () => void;
+  onOpenCredits: () => void;
+  onOpenHelp: () => void;
+  onOpenPersonalization: () => void;
+  onOpenPricing: () => void;
   onOpenSettings: () => void;
   onClose: () => void;
   className?: string;
@@ -66,37 +75,41 @@ function AccountMenuItem({
 }
 
 export function AccountMenuPanel({
+  aiUsage,
   user,
   isPremium,
   isAdmin,
-  onViewChange,
+  onOpenAccount,
+  onOpenAccountSwitcher,
+  onOpenCredits,
+  onOpenHelp,
+  onOpenPersonalization,
+  onOpenPricing,
   onOpenSettings,
   onClose,
   className,
 }: AccountMenuPanelProps) {
   const { logout } = useAuth();
-  const displayName = user?.name || "Minha conta";
+  const { language } = useLanguagePreference();
+  const copy = getAppCopy(language);
+  const displayName = user?.name || copy.accountMenu.currentAccount;
   const email = user?.email || "Conta NEXO";
   const initials =
     user?.name?.trim()?.charAt(0)?.toUpperCase() ??
     user?.email?.trim()?.charAt(0)?.toUpperCase() ??
     "U";
-  const planName = isAdmin ? "Criador" : isPremium ? "Premium" : "Grátis";
-  const planAction = isPremium || isAdmin ? "Gerenciar" : "Atualizar";
+  const planName = isAdmin ? copy.common.creator : isPremium ? copy.common.premium : copy.common.free;
+  const planAction = isPremium || isAdmin ? copy.accountMenu.manage : copy.common.upgrade;
+  const usageText = aiUsage ? `${aiUsage.used}/${aiUsage.limit}` : "0/3";
 
-  const navigateTo = (view: ViewType) => {
+  const runAction = (action: () => void) => {
     onClose();
-    onViewChange(view);
-  };
-
-  const openSettings = () => {
-    onClose();
-    onOpenSettings();
+    action();
   };
 
   const handleLogout = () => {
     onClose();
-    toast.success("Sessão encerrada com sucesso");
+    toast.success(copy.profilePanels.logoutSuccess);
     void logout();
   };
 
@@ -109,7 +122,7 @@ export function AccountMenuPanel({
     >
       <button
         type="button"
-        onClick={openSettings}
+        onClick={() => runAction(onOpenAccountSwitcher)}
         className="flex w-full items-center gap-3 rounded-[22px] p-1.5 text-left transition-colors hover:bg-sidebar-accent/30"
       >
         {user?.avatar ? (
@@ -139,7 +152,7 @@ export function AccountMenuPanel({
           </p>
           <button
             type="button"
-            onClick={() => navigateTo("planos")}
+            onClick={() => runAction(onOpenPricing)}
             className="shrink-0 rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background transition-transform hover:scale-[1.02]"
           >
             {planAction}
@@ -148,12 +161,12 @@ export function AccountMenuPanel({
 
         <button
           type="button"
-          onClick={() => navigateTo("ia")}
+          onClick={() => runAction(onOpenCredits)}
           className="flex w-full items-center gap-3 border-t border-border px-4 py-4 text-left text-sm font-semibold text-foreground transition-colors hover:bg-sidebar-accent/30"
         >
           <Sparkles size={20} className="shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1">Créditos NEXO IA</span>
-          <span className="text-foreground">0</span>
+          <span className="min-w-0 flex-1">{copy.accountMenu.aiCredits}</span>
+          <span className="text-foreground">{usageText}</span>
           <ChevronRight size={17} className="shrink-0 text-muted-foreground" />
         </button>
       </div>
@@ -161,18 +174,18 @@ export function AccountMenuPanel({
       <div className="mt-4 space-y-1">
         <AccountMenuItem
           icon={Palette}
-          label="Personalização"
-          onClick={openSettings}
+          label={copy.accountMenu.personalization}
+          onClick={() => runAction(onOpenPersonalization)}
         />
         <AccountMenuItem
           icon={UserRound}
-          label="Conta"
-          onClick={openSettings}
+          label={copy.accountMenu.account}
+          onClick={() => runAction(onOpenAccount)}
         />
         <AccountMenuItem
           icon={Settings}
-          label="Configurações"
-          onClick={openSettings}
+          label={copy.accountMenu.settings}
+          onClick={() => runAction(onOpenSettings)}
         />
       </div>
 
@@ -181,8 +194,8 @@ export function AccountMenuPanel({
       <div className="space-y-1">
         <AccountMenuItem
           icon={BadgeHelp}
-          label="Obter ajuda"
-          onClick={() => navigateTo("ia")}
+          label={copy.accountMenu.help}
+          onClick={() => runAction(onOpenHelp)}
         />
       </div>
 
@@ -190,7 +203,7 @@ export function AccountMenuPanel({
 
       <AccountMenuItem
         icon={LogOut}
-        label="Sair"
+        label={copy.accountMenu.logout}
         tone="danger"
         onClick={handleLogout}
       />

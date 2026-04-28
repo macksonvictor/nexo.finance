@@ -30,16 +30,33 @@ import { PlanosView } from "@/components/PlanosView";
 import { NexoAIView } from "@/components/NexoAIView";
 import { IndicadoresView } from "@/components/IndicadoresView";
 import { SettingsModal, type SettingsSection } from "@/components/SettingsModal";
+import { PricingModal } from "@/components/PricingModal";
+import {
+  ProfileActionPanel,
+  type ProfilePanelType,
+} from "@/components/ProfileActionPanel";
 import { exportToCSV } from "@/lib/exportService";
+import { buildAIExplicitContext } from "@/lib/aiExplicitContext";
 import { BRAND_AI_NAME } from "@/lib/branding";
 import type { ViewType } from "@/types/finance";
 import type { AISourceView, AIVisibleMode } from "@shared/ai";
 import { toast } from "sonner";
 import { getLoginUrl, getSignUpUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 
 const DESKTOP_SIDEBAR_EXPANDED = 264;
 const DESKTOP_SIDEBAR_COLLAPSED = 80;
+const URL_VIEW_TYPES = new Set<ViewType>([
+  "dashboard",
+  "caixas",
+  "metas",
+  "historico",
+  "relatorios",
+  "openbanking",
+  "planos",
+  "indicadores",
+]);
 
 function getInitialSidebarState() {
   if (typeof window === "undefined") return false;
@@ -68,6 +85,14 @@ function mapViewToAISource(view: ViewType): AISourceView {
   }
 }
 
+function getBrowserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
 function resolveUserStorageScope(user: unknown) {
   if (!user || typeof user !== "object") {
     return "anonymous";
@@ -90,11 +115,13 @@ function resolveUserStorageScope(user: unknown) {
 }
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const { user, loading, isAuthenticated } = useAuth();
   const {
     hasOnboarded,
     getCurrentMonth,
     currentMonthId,
+    months,
     syncCurrentMonth,
   } = useFinanceStore();
   const [currentView, setCurrentView] = useState<ViewType>("dashboard");
@@ -106,6 +133,9 @@ export default function Home() {
     getInitialSidebarState()
   );
   const [isFinanceStoreReady, setIsFinanceStoreReady] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [activeProfilePanel, setActiveProfilePanel] =
+    useState<ProfilePanelType | null>(null);
   const [aiWindowMode, setAIWindowMode] = useState<AIWindowMode | null>(null);
   const [aiEntry, setAIEntry] = useState<AIEntryState>({
     sourceView: "ia",
@@ -127,6 +157,29 @@ export default function Home() {
   const aiViewIdentityKey = useMemo(
     () => `${aiStorageScopeId}:${currentMonthId ?? "no-month"}`,
     [aiStorageScopeId, currentMonthId]
+  );
+  const aiTimeZone = useMemo(() => getBrowserTimeZone(), []);
+  const profileAIExplicitContext = useMemo(
+    () => buildAIExplicitContext(months, currentMonthId),
+    [currentMonthId, months]
+  );
+  const profileAISessionInput = useMemo(
+    () =>
+      currentMonthId
+        ? {
+            monthId: currentMonthId,
+            sourceView: "ia" as AISourceView,
+            timeZone: aiTimeZone,
+            explicitContext: profileAIExplicitContext,
+          }
+        : undefined,
+    [aiTimeZone, currentMonthId, profileAIExplicitContext]
+  );
+  const { data: profileAISessionData } = trpc.ai.session.useQuery(
+    profileAISessionInput!,
+    {
+      enabled: isAuthenticated && Boolean(profileAISessionInput),
+    }
   );
 
   useEffect(() => {
@@ -190,6 +243,44 @@ export default function Home() {
   }, [hasOnboarded, isAuthenticated, isFinanceStoreReady, syncCurrentMonth]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const viewParam = url.searchParams.get("view");
+    const shouldOpenPlanos = url.pathname === "/planos";
+    const checkoutStatus =
+      url.searchParams.get("checkout") ??
+      (url.searchParams.get("success") === "true"
+        ? "success"
+        : url.searchParams.get("canceled") === "true"
+          ? "canceled"
+          : null);
+
+    if (shouldOpenPlanos || viewParam === "planos") {
+      setPricingModalOpen(true);
+    } else if (viewParam && URL_VIEW_TYPES.has(viewParam as ViewType)) {
+      setCurrentView(viewParam as ViewType);
+    }
+
+    if (checkoutStatus === "success") {
+      toast.success("Checkout concluído. Estamos verificando sua assinatura.");
+    } else if (checkoutStatus === "canceled") {
+      toast.info("Checkout cancelado. Você voltou para os planos do NEXO.");
+    }
+
+    if (
+      shouldOpenPlanos ||
+      viewParam ||
+      checkoutStatus ||
+      url.searchParams.has("session_id") ||
+      url.searchParams.has("success") ||
+      url.searchParams.has("canceled")
+    ) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
+
+  useEffect(() => {
     if (!aiWindowMode) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -233,6 +324,8 @@ export default function Home() {
     updateAIEntry(entry);
     setAIWindowMode("contextual");
     setSettingsOpen(false);
+    setPricingModalOpen(false);
+    setActiveProfilePanel(null);
     setSidebarOpen(false);
   };
 
@@ -250,6 +343,8 @@ export default function Home() {
     });
     setAIWindowMode("official");
     setSettingsOpen(false);
+    setPricingModalOpen(false);
+    setActiveProfilePanel(null);
     setSidebarOpen(false);
   };
 
@@ -272,11 +367,51 @@ export default function Home() {
     setSettingsInitialSection(section);
     setSettingsOpen(true);
     setAIWindowMode(null);
+    setPricingModalOpen(false);
+    setActiveProfilePanel(null);
     setSidebarOpen(false);
   };
 
   const closeSettings = () => {
     setSettingsOpen(false);
+  };
+
+  const openPricingModal = () => {
+    setPricingModalOpen(true);
+    setSettingsOpen(false);
+    setAIWindowMode(null);
+    setActiveProfilePanel(null);
+    setSidebarOpen(false);
+  };
+
+  const closePricingModal = () => {
+    setPricingModalOpen(false);
+  };
+
+  const openProfilePanel = (panel: ProfilePanelType) => {
+    if (panel === "help") {
+      setActiveProfilePanel(null);
+      setPricingModalOpen(false);
+      setSettingsOpen(false);
+      setAIWindowMode(null);
+      setSidebarOpen(false);
+      if (typeof window !== "undefined") {
+        window.open("/suporte", "_blank", "noopener,noreferrer");
+      } else {
+        navigate("/suporte");
+      }
+      return;
+    }
+
+    setActiveProfilePanel(panel);
+    setPricingModalOpen(false);
+    setSettingsOpen(false);
+    setAIWindowMode(null);
+    setSidebarOpen(false);
+  };
+
+  const closeProfilePanel = () => {
+    setActiveProfilePanel(null);
   };
 
   const handleViewChange = (view: ViewType) => {
@@ -290,7 +425,14 @@ export default function Home() {
       return;
     }
 
+    if (view === "planos") {
+      openPricingModal();
+      return;
+    }
+
     setAIWindowMode(null);
+    setPricingModalOpen(false);
+    setActiveProfilePanel(null);
     setCurrentView(view);
     setSidebarOpen(false);
   };
@@ -563,11 +705,14 @@ export default function Home() {
         onViewChange={handleViewChange}
         onOpenAIWindow={toggleOfficialAIWindow}
         onOpenSettings={openSettings}
+        onOpenPricing={openPricingModal}
+        onOpenProfilePanel={openProfilePanel}
         onMenuToggle={setSidebarOpen}
         menuOpen={sidebarOpen}
         user={user}
         isPremium={isPremium}
         isAdmin={isAdmin}
+        aiUsage={profileAISessionData?.usage ?? null}
       />
 
       {sidebarOpen && (
@@ -626,10 +771,13 @@ export default function Home() {
           onViewChange={handleViewChange}
           onOpenAIWindow={toggleOfficialAIWindow}
           onOpenSettings={openSettings}
+          onOpenPricing={openPricingModal}
+          onOpenProfilePanel={openProfilePanel}
           isAIWindowOpen={aiWindowMode !== null}
           user={user}
           isPremium={isPremium}
           isAdmin={isAdmin}
+          aiUsage={profileAISessionData?.usage ?? null}
         />
 
         <main
@@ -668,8 +816,8 @@ export default function Home() {
                 aiWindowMode === "contextual"
                   ? undefined
                   : {
-                      width: "min(1320px, calc(100vw - 32px))",
-                      height: "min(860px, calc(100dvh - 32px))",
+                      width: "min(960px, calc(100vw - 48px))",
+                      height: "min(760px, calc(100dvh - 96px))",
                     }
               }
               onClick={(event) => event.stopPropagation()}
@@ -713,6 +861,26 @@ export default function Home() {
         onNavigate={handleViewChange}
         initialSection={settingsInitialSection}
         aiStorageScopeId={aiStorageScopeId}
+        onOpenPricing={openPricingModal}
+      />
+
+      <PricingModal
+        isOpen={pricingModalOpen}
+        onClose={closePricingModal}
+      />
+
+      <ProfileActionPanel
+        panel={activeProfilePanel}
+        onClose={closeProfilePanel}
+        user={user}
+        isPremium={isPremium}
+        isAdmin={isAdmin}
+        currentIncome={month?.income ?? 0}
+        monthId={currentMonthId}
+        aiUsage={profileAISessionData?.usage ?? null}
+        onOpenAI={() => openOfficialAIWindow({ sourceView: "ia" })}
+        onOpenPricing={openPricingModal}
+        onOpenSettings={() => openSettings()}
       />
     </div>
   );

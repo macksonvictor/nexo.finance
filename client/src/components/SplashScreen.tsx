@@ -37,57 +37,57 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
       <div className="relative flex min-h-screen w-full justify-center px-6">
         <div className="mt-[42vh] flex -translate-y-1/2 flex-col items-center justify-center gap-2 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.55, delay: 0.1 }}
-          className="flex h-44 w-44 items-center justify-center overflow-hidden md:h-48 md:w-48"
-        >
-          <BrandLogo
-            alt={BRAND_NAME}
-            className="h-[300%] w-[300%] max-w-none shrink-0"
-          />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : 10 }}
-          transition={{ duration: 0.42, ease: "easeOut" }}
-          className="space-y-2"
-        >
-          <h1 className="text-[32px] font-semibold tracking-tight text-[#FAFAF7] md:text-[38px]">
-            {BRAND_NAME}
-          </h1>
-          <p className="text-sm text-[#9C9C9C] md:text-base">
-            Todo real recebe uma missão.
-          </p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 6 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="text-sm text-[#7E7E7E]"
-          >
-            Organize o mês atual com clareza desde o primeiro acesso.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: stage >= 2 ? 1 : 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="mt-2 h-px w-36 overflow-hidden rounded-full bg-[#1B1B1B] md:w-40"
-        >
           <motion.div
-            className="h-full w-16 bg-gradient-to-r from-transparent via-white to-transparent opacity-75"
-            animate={{ x: ["-120%", "240%"] }}
-            transition={{
-              duration: 1.6,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </motion.div>
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.55, delay: 0.1 }}
+            className="flex h-44 w-44 items-center justify-center overflow-hidden md:h-48 md:w-48"
+          >
+            <BrandLogo
+              alt={BRAND_NAME}
+              className="h-[300%] w-[300%] max-w-none shrink-0"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : 10 }}
+            transition={{ duration: 0.42, ease: "easeOut" }}
+            className="space-y-2"
+          >
+            <h1 className="text-[32px] font-semibold tracking-tight text-[#FAFAF7] md:text-[38px]">
+              {BRAND_NAME}
+            </h1>
+            <p className="text-sm text-[#9C9C9C] md:text-base">
+              Todo real recebe uma missão.
+            </p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 6 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="text-sm text-[#7E7E7E]"
+            >
+              Organize o mês atual com clareza desde o primeiro acesso.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: stage >= 2 ? 1 : 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="mt-2 h-px w-36 overflow-hidden rounded-full bg-[#1B1B1B] md:w-40"
+          >
+            <motion.div
+              className="h-full w-16 bg-gradient-to-r from-transparent via-white to-transparent opacity-75"
+              animate={{ x: ["-120%", "240%"] }}
+              transition={{
+                duration: 1.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </motion.div>
         </div>
       </div>
     </motion.div>

@@ -9,17 +9,18 @@ import { SplashScreen } from "./components/SplashScreen";
 import Home from "./pages/Home";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
-import { PlanosView } from "./components/PlanosView";
+import SupportPage from "./pages/SupportPage";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/suporte"} component={SupportPage} />
       <Route path={"/sign-in"} component={SignInPage} />
       <Route path={"/sign-in/*?"} component={SignInPage} />
       <Route path={"/sign-up"} component={SignUpPage} />
       <Route path={"/sign-up/*?"} component={SignUpPage} />
-      <Route path={"/planos"} component={PlanosView} />
+      <Route path={"/planos"} component={Home} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
