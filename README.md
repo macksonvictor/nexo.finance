@@ -487,16 +487,15 @@ Detalhes:
 
 ## Autoria
 
-NEXO Finance é um projeto autoral de **Tesserakt**.
+Nexo Finance é um projeto da **Tesserakt ©**.
 
 Apresentação recomendada da marca:
 
 ```txt
-Criado por Mackson Gaspar e Bruno Souto
-Um projeto autoral Tesserakt
+Desenvolvedores_ Mackson Gaspar & Bruno Souto
 ```
 
-Essa formulação foi feito para fortalecer a marca e evita sugerir uma estrutura de equipe.
+Essa formulação foi feito para fortalecer a marca e evitar sugerir uma estrutura de equipe.
 
 ---
 
