@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Um app premium de gestão financeira pessoal baseado em Orçamento Base Zero,
+  Um app de gestão financeira pessoal baseado em Orçamento Base Zero,
   caixas, metas, histórico e IA contextual.
 </p>
 
