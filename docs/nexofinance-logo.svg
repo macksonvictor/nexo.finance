@@ -1,12 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1600" role="img" aria-labelledby="title desc">
-  <title id="title">NEXO Finance Logo</title>
-  <desc id="desc">Transparent NEXO Finance geometric cube logo.</desc>
-  <g fill="none" stroke="#ffffff" stroke-width="82" stroke-linejoin="miter" stroke-linecap="butt">
-    <path d="M521 607 L802 454 L1088 608" />
-    <path d="M1088 608 L1088 873 L1022 838 L1022 651" />
-    <path d="M521 607 L1058 912 L797 1065 L515 912" />
-    <path d="M515 912 L515 660 L580 699 L580 875" />
-    <path d="M580 699 L1022 951" />
-    <path d="M603 610 L802 501 L1050 641" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 668 743" role="img" aria-label="NEXO Finance logo">
+  <path fill="#fff" fill-rule="evenodd" transform="translate(30 30)" d="M 0 176 L 1 515 L 52 484 L 53 259 L 58 260 L 503 515 L 501 518 L 304 630 L 60 504 L 9 527 L 10 530 L 306 682 L 606 515 L 597 508 L 410 405 L 3 175 Z M 22 152 L 383 350 L 607 477 L 607 165 L 562 190 L 555 196 L 556 365 L 555 387 L 551 388 L 460 337 L 117 153 L 127 145 L 302 48 L 335 63 L 549 174 L 598 153 L 599 151 L 320 7 L 302 0 Z"/>
 </svg>
