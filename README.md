@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/nexofinance.png" alt="NEXO Finance" width="220" />
+  <img src="./docs/nexofinance-logo.svg" alt="NEXO Finance" width="220" />
 </p>
 
 <h1 align="center">NEXO Finance</h1>
