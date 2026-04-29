@@ -2,7 +2,7 @@
   <img src="./docs/nexofinance-logo.svg" alt="NEXO Finance" width="220" />
 </p>
 
-<h1 align="center">NEXO Finance</h1>
+<h1 align="center">Nexo Finance</h1>
 
 <p align="center">
   <strong>Todo real recebe uma missão.</strong>
