@@ -508,4 +508,4 @@ Licença atual do repositório: `MIT`.
 
 **Versão atual:** 1.0.0  
 **Branch principal:** `stable`  
-**Status atual:** base ativa em evolução, IA contextual em consolidação, README em evolução atualizado e app pronto para validação local.
+**Status atual:** base ativa em evolução, IA contextual em consolidação, README atualizado e app pronto para validação local.
