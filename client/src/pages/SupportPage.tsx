@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeHelp,
@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SupportWidget } from "@/components/SupportWidget";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { BRAND_NAME } from "@/lib/branding";
 import {
@@ -462,8 +463,10 @@ function getArticleDisplay(
 export default function SupportPage() {
   const { language, setLanguage } = useLanguagePreference();
   const copy = supportCopy[language];
+  const articleContentRef = useRef<HTMLElement | null>(null);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("todos");
+  const [supportWidgetOpen, setSupportWidgetOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState(
     supportArticles.find((article) => article.featured)?.id ??
       supportArticles[0]?.id
@@ -526,13 +529,43 @@ export default function SupportPage() {
 
   const featuredArticles = supportArticles.filter((article) => article.featured);
 
+  const handleSelectArticle = (
+    articleId: string,
+    nextCategory?: CategoryFilter
+  ) => {
+    const article = supportArticles.find((item) => item.id === articleId);
+    if (!article) return;
+
+    setSelectedArticleId(article.id);
+    setActiveCategory(nextCategory ?? article.categoryId);
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#${article.id}`);
+      window.requestAnimationFrame(() => {
+        articleContentRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
+  };
+
   const selectCategory = (categoryId: CategoryFilter) => {
     setActiveCategory(categoryId);
     const nextArticle = supportArticles.find((article) =>
       categoryId === "todos" ? article.featured : article.categoryId === categoryId
     );
-    if (nextArticle) setSelectedArticleId(nextArticle.id);
+    if (nextArticle) handleSelectArticle(nextArticle.id, categoryId);
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const articleId = window.location.hash.replace("#", "");
+    if (articleId && supportArticles.some((article) => article.id === articleId)) {
+      handleSelectArticle(articleId);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -603,15 +636,14 @@ export default function SupportPage() {
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
                 {SUPPORT_TEAM.hours}. {SUPPORT_TEAM.expectedResponse}.
               </p>
-              <a
-                href={SUPPORT_TEAM.githubIssuesUrl}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() => setSupportWidgetOpen(true)}
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-90"
               >
-                {copy.openIssue}
+                {copy.openSupportInApp}
                 <ArrowRight size={15} />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -687,7 +719,7 @@ export default function SupportPage() {
                       <button
                         key={article.id}
                         type="button"
-                        onClick={() => setSelectedArticleId(article.id)}
+                        onClick={() => handleSelectArticle(article.id)}
                         className={cn(
                           "w-full rounded-[20px] border p-4 text-left transition hover:border-foreground/35 hover:bg-secondary/70",
                           selectedArticle?.id === article.id
@@ -726,7 +758,7 @@ export default function SupportPage() {
                   <button
                     key={article.id}
                     type="button"
-                    onClick={() => setSelectedArticleId(article.id)}
+                    onClick={() => handleSelectArticle(article.id)}
                     className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-background/70 px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-secondary"
                   >
                     <span className="line-clamp-1">
@@ -739,7 +771,10 @@ export default function SupportPage() {
             </div>
           </aside>
 
-          <article className="rounded-[32px] border border-border bg-card p-6 shadow-[0_24px_80px_hsl(var(--foreground)/0.08)] sm:p-8">
+          <article
+            ref={articleContentRef}
+            className="rounded-[32px] border border-border bg-card p-6 shadow-[0_24px_80px_hsl(var(--foreground)/0.08)] sm:p-8"
+          >
             {selectedArticle ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -826,13 +861,14 @@ export default function SupportPage() {
                       {copy.helpfulDescription(selectedArticle.helpful)}
                     </p>
                   </div>
-                  <a
-                    href={SUPPORT_TEAM.supportMailto}
+                  <button
+                    type="button"
+                    onClick={() => setSupportWidgetOpen(true)}
                     className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-90"
                   >
                     {copy.openTicket}
                     <ArrowRight size={15} />
-                  </a>
+                  </button>
                 </div>
               </>
             ) : (
@@ -867,6 +903,13 @@ export default function SupportPage() {
           />
         </section>
       </main>
+
+      <SupportWidget
+        isOpen={supportWidgetOpen}
+        language={language}
+        onOpenChange={setSupportWidgetOpen}
+        onSelectArticle={handleSelectArticle}
+      />
     </div>
   );
 }

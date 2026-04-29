@@ -1,0 +1,60 @@
+name: Bug no NEXO
+description: Reporte algo que quebrou ou nao funcionou como esperado.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar o NEXO. Nao cole senhas, chaves Stripe, tokens Clerk ou dados sensiveis aqui.
+  - type: textarea
+    id: resumo
+    attributes:
+      label: O que aconteceu?
+      description: Explique o bug de forma objetiva.
+      placeholder: Ex. Ao voltar do checkout, a tela de planos abriu sem o shell completo do app.
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como reproduzir?
+      description: Liste os passos ate o problema aparecer.
+      placeholder: |
+        1. Abri o app
+        2. Cliquei em Atualizar
+        3. Voltei do Stripe
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area afetada
+      options:
+        - Dashboard
+        - Caixas
+        - Metas
+        - Historico
+        - Relatorios
+        - Indicadores
+        - Nexo IA
+        - Pagamentos
+        - Conta/Perfil
+        - Suporte
+        - Outro
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que voce esperava?
+      placeholder: Ex. O app deveria voltar para o Dashboard com o modal de planos fechado.
+    validations:
+      required: true
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto adicional
+      description: Cole prints sem dados sensiveis, navegador, tamanho de tela e qualquer detalhe util.
+    validations:
+      required: false

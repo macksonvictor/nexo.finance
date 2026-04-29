@@ -1,0 +1,37 @@
+name: Suporte NEXO
+description: Peça ajuda sem expor dados sensiveis.
+title: "[suporte] "
+labels: ["suporte"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Para assunto privado, prefira WhatsApp ou e-mail pelo suporte do app. Nao publique chaves, senhas, tokens, dados bancarios ou prints com informacoes sensiveis.
+  - type: textarea
+    id: duvida
+    attributes:
+      label: Como podemos ajudar?
+      placeholder: Descreva a duvida ou dificuldade.
+    validations:
+      required: true
+  - type: dropdown
+    id: tema
+    attributes:
+      label: Tema
+      options:
+        - Pagamento
+        - Conta
+        - Caixas
+        - Nexo IA
+        - Bug
+        - Sugestao
+        - Outro
+    validations:
+      required: true
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto seguro
+      description: Inclua apenas informacoes que podem ser publicas.
+    validations:
+      required: false

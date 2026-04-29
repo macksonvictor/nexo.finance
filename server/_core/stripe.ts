@@ -5,6 +5,12 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 let stripeClient: Stripe | null = null;
 type PaidPlanTier = 'premium' | 'pro' | 'elite';
 
+const DEFAULT_PLAN_PRICE_IDS: Record<PaidPlanTier, string> = {
+  premium: 'price_1TC89MLKoRkR9SJROKQ9JlbD',
+  pro: 'price_1TC8D6LKoRkR9SJRJlBWu4JV',
+  elite: 'price_1TC8G9LKoRkR9SJRIKLOrAQl',
+};
+
 function getStripeClient() {
   if (!stripeSecretKey) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
@@ -25,21 +31,21 @@ function getStripeClient() {
 export const PLAN_PRICES = {
   premium: {
     name: 'Premium',
-    priceId: process.env.STRIPE_PREMIUM_PRICE_ID?.trim(),
+    priceId: process.env.STRIPE_PREMIUM_PRICE_ID?.trim() || DEFAULT_PLAN_PRICE_IDS.premium,
     productId: process.env.STRIPE_PREMIUM_PRODUCT_ID?.trim(),
     amount: 1990,
     currency: 'brl',
   },
   pro: {
     name: 'Pro',
-    priceId: process.env.STRIPE_PRO_PRICE_ID?.trim(),
+    priceId: process.env.STRIPE_PRO_PRICE_ID?.trim() || DEFAULT_PLAN_PRICE_IDS.pro,
     productId: process.env.STRIPE_PRO_PRODUCT_ID?.trim(),
     amount: 4990,
     currency: 'brl',
   },
   elite: {
     name: 'Elite',
-    priceId: process.env.STRIPE_ELITE_PRICE_ID?.trim(),
+    priceId: process.env.STRIPE_ELITE_PRICE_ID?.trim() || DEFAULT_PLAN_PRICE_IDS.elite,
     productId: process.env.STRIPE_ELITE_PRODUCT_ID?.trim(),
     amount: 9990,
     currency: 'brl',
