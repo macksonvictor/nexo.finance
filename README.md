@@ -496,7 +496,7 @@ Criado por Mackson Gaspar e Bruno Souto
 Um projeto autoral Tesserakt
 ```
 
-Essa formulação preserva a verdade, fortalece a marca e evita sugerir uma estrutura de equipe que ainda não existe.
+Essa formulação foi feito para fortalecer a marca e evita sugerir uma estrutura de equipe.
 
 ---
 
@@ -508,4 +508,4 @@ Licença atual do repositório: `MIT`.
 
 **Versão atual:** 1.0.0  
 **Branch principal:** `stable`  
-**Status atual:** base ativa em evolução, IA contextual em consolidação, README premium atualizado e app pronto para validação local.
+**Status atual:** base ativa em evolução, IA contextual em consolidação, README em evolução atualizado e app pronto para validação local.
