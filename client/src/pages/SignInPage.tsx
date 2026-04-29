@@ -16,8 +16,8 @@ export default function SignInPage() {
   return (
     <EntryShell
       eyebrow="Entrar"
-      title="Entre no NEXO e retome seu mês com clareza."
-      description="Suas caixas, metas, histórico e a Nexo IA ficam prontos assim que você voltar para a sua conta."
+      title="Entre e retome seu mês com clareza."
+      description="Suas caixas, metas, histórico e Nexo IA voltam exatamente de onde você parou."
       panelClassName="min-h-[420px] flex items-center"
     >
       <div className="w-full space-y-4">

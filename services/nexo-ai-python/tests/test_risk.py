@@ -9,4 +9,7 @@ def test_risk_returns_consistent_score(client, base_payload):
     assert data["status"] == "ok"
     assert data["result"]["score0to100"] >= 60
     assert data["result"]["negativeBalanceRisk"] in {"medio", "alto"}
+    assert data["result"]["runwayDays"] >= 0
+    assert data["result"]["stabilityScore"] <= 100
+    assert data["result"]["historyPressure"] in {"baixo", "medio", "alto"}
     assert len(data["result"]["drivers"]) >= 1

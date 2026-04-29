@@ -108,6 +108,7 @@ temp/
 
 # Workspace artifacts
 .webdev/
+docs/NEXO_PRIVATE_SECRETS_LOCAL.md
 
 # Python
 __pycache__/

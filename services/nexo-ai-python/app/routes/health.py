@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+
 from fastapi import APIRouter
 
 from app.config import settings
@@ -23,4 +25,10 @@ def get_health() -> HealthResponse:
         },
         prophetEnabled=settings.enable_prophet,
         prophetAvailable=PROPHET_AVAILABLE,
+        runtime={
+            "platform": platform.platform(),
+            "pythonVersion": platform.python_version(),
+        },
+        recommendedEnvironment="WSL",
+        recommendedPython="3.12",
     )

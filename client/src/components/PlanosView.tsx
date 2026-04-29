@@ -3,8 +3,11 @@ import { motion } from "framer-motion";
 import { Check, Crown, Zap, Shield, Sparkles, Gem, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import type { NexoLanguage } from "@/lib/language";
 
 type PlanId = "free" | "premium" | "pro" | "elite";
+type PaidPlanId = Exclude<PlanId, "free">;
 
 const PLANS = [
   {
@@ -14,10 +17,10 @@ const PLANS = [
     period: "/mês",
     description: "Para começar sua jornada financeira",
     icon: Zap,
-    iconColor: "text-[#BFBFBF]",
-    iconBg: "bg-[#2E2E2E]",
-    borderColor: "border-white/10",
-    activeBorder: "border-white/30",
+    iconColor: "text-muted-foreground",
+    iconBg: "bg-muted",
+    borderColor: "border-border",
+    activeBorder: "border-foreground/30",
     badgeColor: "",
     badge: "",
     features: [
@@ -43,7 +46,7 @@ const PLANS = [
     icon: Crown,
     iconColor: "text-yellow-400",
     iconBg: "bg-yellow-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-yellow-500/40",
     badgeColor: "text-yellow-400",
     badge: "Popular",
@@ -71,7 +74,7 @@ const PLANS = [
     icon: Sparkles,
     iconColor: "text-blue-400",
     iconBg: "bg-blue-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-blue-500/40",
     badgeColor: "text-blue-400",
     badge: "Recomendado",
@@ -99,7 +102,7 @@ const PLANS = [
     icon: Gem,
     iconColor: "text-purple-400",
     iconBg: "bg-purple-500/10",
-    borderColor: "border-white/10",
+    borderColor: "border-border",
     activeBorder: "border-purple-500/40",
     badgeColor: "text-purple-400",
     badge: "Elite",
@@ -126,7 +129,374 @@ const PLAN_PRICES: Record<PlanId, number> = {
   elite: 99.9,
 };
 
+const STRIPE_PAYMENT_LINKS: Partial<Record<PaidPlanId, string>> = {
+  premium: import.meta.env.VITE_STRIPE_PREMIUM_PAYMENT_LINK,
+  pro: import.meta.env.VITE_STRIPE_PRO_PAYMENT_LINK,
+  elite: import.meta.env.VITE_STRIPE_ELITE_PAYMENT_LINK,
+};
+
+const PLAN_COPY: Record<
+  NexoLanguage,
+  {
+    title: string;
+    description: string;
+    currentPlan: string;
+    processing: string;
+    subscribe: string;
+    downgrade: string;
+    comparison: string;
+    featureColumn: string;
+    savedBackups: string;
+    securityTitle: string;
+    securityDescription: string;
+    creatorBanner: string;
+    creatorBannerDescription: string;
+    activePlanMessage: (plan: string) => string;
+    renewsAt: (date: string) => string;
+    activeSubscription: string;
+    checkoutRedirect: (plan: string) => string;
+    checkoutMissing: string;
+    checkoutError: string;
+    cancelSupport: string;
+    plans: Record<PlanId, { name: string; description: string; badge: string; features: string[] }>;
+    comparisonRows: Array<{ feature: string; free: string; premium: string; pro: string; elite: string }>;
+  }
+> = {
+  "pt-BR": {
+    title: "Planos",
+    description: "Escolha o plano ideal para sua jornada financeira",
+    currentPlan: "Plano Atual",
+    processing: "Processando...",
+    subscribe: "Assinar",
+    downgrade: "Fazer Downgrade",
+    comparison: "Comparativo Completo",
+    featureColumn: "Funcionalidade",
+    savedBackups: "Backups Salvos",
+    securityTitle: "Pagamento Seguro via Stripe",
+    securityDescription:
+      "Todos os pagamentos são processados com criptografia SSL/TLS. Seus dados financeiros nunca são compartilhados. Cancele a qualquer momento sem taxas adicionais.",
+    creatorBanner: "Conta do Criador - Acesso Elite Permanente",
+    creatorBannerDescription:
+      "Todas as funcionalidades liberadas gratuitamente para a conta macksongaspar@gmail.com",
+    activePlanMessage: (plan) => `Você está no plano ${plan}!`,
+    renewsAt: (date) => `Renova em ${date}`,
+    activeSubscription: "Assinatura ativa",
+    checkoutRedirect: (plan) => `Abrindo checkout do plano ${plan}...`,
+    checkoutMissing:
+      "Checkout do Stripe ainda não está configurado. Preencha STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK ou STRIPE_SECRET_KEY no .env e reinicie o app.",
+    checkoutError: "Erro ao processar upgrade. Tente novamente.",
+    cancelSupport: "Para cancelar sua assinatura, entre em contato com o suporte.",
+    plans: {
+      free: {
+        name: "Free",
+        description: "Para começar sua jornada financeira",
+        badge: "",
+        features: [
+          "Até 5 caixas por mês",
+          "Sistema de metas",
+          "Histórico mensal",
+          "Dashboard básico",
+          "Exportação CSV/PDF",
+          "IA Nexo",
+          "Transferências entre caixas",
+          "Open Banking",
+          "Relatórios avançados",
+          "Backup automático",
+        ],
+      },
+      premium: {
+        name: "Premium",
+        description: "Para quem quer mais controle",
+        badge: "Popular",
+        features: [
+          "Caixas ilimitadas",
+          "Sistema de metas",
+          "Histórico mensal",
+          "Dashboard completo",
+          "Exportação CSV/PDF",
+          "IA Nexo básica",
+          "Transferências entre caixas",
+          "Open Banking",
+          "Relatórios avançados",
+          "Backup automático",
+        ],
+      },
+      pro: {
+        name: "Pro",
+        description: "Para quem leva finanças a sério",
+        badge: "Recomendado",
+        features: [
+          "Caixas ilimitadas",
+          "Sistema de metas",
+          "Histórico mensal",
+          "Dashboard completo",
+          "Exportação CSV/PDF",
+          "IA Nexo Preditiva completa",
+          "Transferências entre caixas",
+          "Open Banking",
+          "Relatórios avançados",
+          "Backup automático",
+        ],
+      },
+      elite: {
+        name: "Elite",
+        description: "Para quem quer o máximo",
+        badge: "Elite",
+        features: [
+          "Tudo do Pro",
+          "Consultoria financeira mensal",
+          "Alertas prioritários 24/7",
+          "IA Nexo com análise personalizada",
+          "Relatórios com insights exclusivos",
+          "Suporte VIP dedicado",
+          "Acesso antecipado a novas features",
+          "Onboarding financeiro personalizado",
+          "Integração contábil avançada",
+          "Dashboard executivo",
+        ],
+      },
+    },
+    comparisonRows: [
+      { feature: "Caixas por mês", free: "Até 5", premium: "∞", pro: "∞", elite: "∞" },
+      { feature: "Metas financeiras", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Histórico mensal", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Exportação CSV/PDF", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Transferências entre caixas", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "IA Nexo básica", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "IA Nexo Preditiva", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Open Banking", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Relatórios avançados", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Backup automático", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Consultoria mensal", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "Alertas prioritários 24/7", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "Suporte VIP", free: "—", premium: "—", pro: "—", elite: "✓" },
+    ],
+  },
+  "en-US": {
+    title: "Plans",
+    description: "Choose the best plan for your financial journey",
+    currentPlan: "Current Plan",
+    processing: "Processing...",
+    subscribe: "Subscribe to",
+    downgrade: "Downgrade",
+    comparison: "Full Comparison",
+    featureColumn: "Feature",
+    savedBackups: "Saved Backups",
+    securityTitle: "Stripe Payments",
+    securityDescription:
+      "Payments are processed with SSL/TLS encryption. Your financial data is never shared. Cancel anytime with no extra fees.",
+    creatorBanner: "Creator Account - Permanent Elite Access",
+    creatorBannerDescription:
+      "All features are unlocked for macksongaspar@gmail.com",
+    activePlanMessage: (plan) => `You are on the ${plan} plan!`,
+    renewsAt: (date) => `Renews on ${date}`,
+    activeSubscription: "Active subscription",
+    checkoutRedirect: (plan) => `Opening ${plan} checkout...`,
+    checkoutMissing:
+      "Stripe Checkout is not configured yet. Fill STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK, or STRIPE_SECRET_KEY in .env and restart the app.",
+    checkoutError: "Could not process the upgrade. Try again.",
+    cancelSupport: "To cancel your subscription, contact support.",
+    plans: {
+      free: {
+        name: "Free",
+        description: "For starting your financial journey",
+        badge: "",
+        features: [
+          "Up to 5 boxes per month",
+          "Goal system",
+          "Monthly history",
+          "Basic dashboard",
+          "CSV/PDF export",
+          "Nexo AI",
+          "Transfers between boxes",
+          "Open Banking",
+          "Advanced reports",
+          "Automatic backup",
+        ],
+      },
+      premium: {
+        name: "Premium",
+        description: "For more control",
+        badge: "Popular",
+        features: [
+          "Unlimited boxes",
+          "Goal system",
+          "Monthly history",
+          "Complete dashboard",
+          "CSV/PDF export",
+          "Basic Nexo AI",
+          "Transfers between boxes",
+          "Open Banking",
+          "Advanced reports",
+          "Automatic backup",
+        ],
+      },
+      pro: {
+        name: "Pro",
+        description: "For serious financial control",
+        badge: "Recommended",
+        features: [
+          "Unlimited boxes",
+          "Goal system",
+          "Monthly history",
+          "Complete dashboard",
+          "CSV/PDF export",
+          "Full predictive Nexo AI",
+          "Transfers between boxes",
+          "Open Banking",
+          "Advanced reports",
+          "Automatic backup",
+        ],
+      },
+      elite: {
+        name: "Elite",
+        description: "For maximum power",
+        badge: "Elite",
+        features: [
+          "Everything in Pro",
+          "Monthly financial consulting",
+          "Priority alerts 24/7",
+          "Nexo AI with personalized analysis",
+          "Reports with exclusive insights",
+          "Dedicated VIP support",
+          "Early access to new features",
+          "Personalized financial onboarding",
+          "Advanced accounting integration",
+          "Executive dashboard",
+        ],
+      },
+    },
+    comparisonRows: [
+      { feature: "Boxes per month", free: "Up to 5", premium: "∞", pro: "∞", elite: "∞" },
+      { feature: "Financial goals", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Monthly history", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "CSV/PDF export", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Transfers between boxes", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Basic Nexo AI", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Predictive Nexo AI", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Open Banking", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Advanced reports", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Automatic backup", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Monthly consulting", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "Priority alerts 24/7", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "VIP support", free: "—", premium: "—", pro: "—", elite: "✓" },
+    ],
+  },
+  "es-ES": {
+    title: "Planes",
+    description: "Elige el mejor plan para tu jornada financiera",
+    currentPlan: "Plan Actual",
+    processing: "Procesando...",
+    subscribe: "Suscribirse a",
+    downgrade: "Bajar de plan",
+    comparison: "Comparativo Completo",
+    featureColumn: "Funcionalidad",
+    savedBackups: "Backups Guardados",
+    securityTitle: "Pagos por Stripe",
+    securityDescription:
+      "Los pagos se procesan con cifrado SSL/TLS. Tus datos financieros nunca se comparten. Cancela cuando quieras sin tarifas adicionales.",
+    creatorBanner: "Cuenta del Creador - Acceso Elite Permanente",
+    creatorBannerDescription:
+      "Todas las funcionalidades están liberadas para macksongaspar@gmail.com",
+    activePlanMessage: (plan) => `Estás en el plan ${plan}!`,
+    renewsAt: (date) => `Renueva el ${date}`,
+    activeSubscription: "Suscripción activa",
+    checkoutRedirect: (plan) => `Abriendo checkout del plan ${plan}...`,
+    checkoutMissing:
+      "Stripe Checkout aún no está configurado. Completa STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK o STRIPE_SECRET_KEY en .env y reinicia la app.",
+    checkoutError: "Error al procesar la mejora. Inténtalo de nuevo.",
+    cancelSupport: "Para cancelar tu suscripción, contacta con soporte.",
+    plans: {
+      free: {
+        name: "Free",
+        description: "Para empezar tu jornada financiera",
+        badge: "",
+        features: [
+          "Hasta 5 cajas por mes",
+          "Sistema de metas",
+          "Historial mensual",
+          "Dashboard básico",
+          "Exportación CSV/PDF",
+          "Nexo IA",
+          "Transferencias entre cajas",
+          "Open Banking",
+          "Informes avanzados",
+          "Backup automático",
+        ],
+      },
+      premium: {
+        name: "Premium",
+        description: "Para tener más control",
+        badge: "Popular",
+        features: [
+          "Cajas ilimitadas",
+          "Sistema de metas",
+          "Historial mensual",
+          "Dashboard completo",
+          "Exportación CSV/PDF",
+          "Nexo IA básica",
+          "Transferencias entre cajas",
+          "Open Banking",
+          "Informes avanzados",
+          "Backup automático",
+        ],
+      },
+      pro: {
+        name: "Pro",
+        description: "Para quien toma las finanzas en serio",
+        badge: "Recomendado",
+        features: [
+          "Cajas ilimitadas",
+          "Sistema de metas",
+          "Historial mensual",
+          "Dashboard completo",
+          "Exportación CSV/PDF",
+          "Nexo IA predictiva completa",
+          "Transferencias entre cajas",
+          "Open Banking",
+          "Informes avanzados",
+          "Backup automático",
+        ],
+      },
+      elite: {
+        name: "Elite",
+        description: "Para quien quiere lo máximo",
+        badge: "Elite",
+        features: [
+          "Todo lo de Pro",
+          "Consultoría financiera mensual",
+          "Alertas prioritarias 24/7",
+          "Nexo IA con análisis personalizado",
+          "Informes con insights exclusivos",
+          "Soporte VIP dedicado",
+          "Acceso anticipado a nuevas funciones",
+          "Onboarding financiero personalizado",
+          "Integración contable avanzada",
+          "Dashboard ejecutivo",
+        ],
+      },
+    },
+    comparisonRows: [
+      { feature: "Cajas por mes", free: "Hasta 5", premium: "∞", pro: "∞", elite: "∞" },
+      { feature: "Metas financieras", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Historial mensual", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Exportación CSV/PDF", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Transferencias entre cajas", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Nexo IA básica", free: "—", premium: "✓", pro: "✓", elite: "✓" },
+      { feature: "Nexo IA predictiva", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Open Banking", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Informes avanzados", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Backup automático", free: "—", premium: "—", pro: "✓", elite: "✓" },
+      { feature: "Consultoría mensual", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "Alertas prioritarias 24/7", free: "—", premium: "—", pro: "—", elite: "✓" },
+      { feature: "Soporte VIP", free: "—", premium: "—", pro: "—", elite: "✓" },
+    ],
+  },
+};
+
 export function PlanosView() {
+  const { language } = useLanguagePreference();
+  const planCopy = PLAN_COPY[language];
   const { data: planData, refetch } = trpc.finance.getPlan.useQuery();
   const { data: backups } = trpc.finance.listBackups.useQuery();
   const [upgrading, setUpgrading] = useState<PlanId | null>(null);
@@ -137,29 +507,45 @@ export function PlanosView() {
 
   const handleUpgrade = async (planId: PlanId) => {
     if (planId === currentPlan) return;
+    if (planId === "free") return;
+
     setUpgrading(planId);
-    toast.info(`Redirecionando para o checkout seguro do plano ${PLANS.find(p => p.id === planId)?.name}...`);
+    const planName = PLANS.find(p => p.id === planId)?.name ?? planId;
+    const paymentLink = STRIPE_PAYMENT_LINKS[planId]?.trim();
+    toast.info(planCopy.checkoutRedirect(planName));
+
+    if (paymentLink) {
+      window.location.assign(paymentLink);
+      return;
+    }
     
     try {
       const result = await createCheckoutMutation.mutateAsync({
-        planTier: planId as 'premium' | 'pro' | 'elite',
+        planTier: planId,
       });
       
       if (result.url) {
-        window.location.href = result.url;
+        window.location.assign(result.url);
       } else {
         toast.error('Erro ao redirecionar para checkout. Tente novamente.');
         setUpgrading(null);
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      toast.error('Erro ao processar upgrade. Tente novamente.');
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("STRIPE_SETUP_REQUIRED")) {
+        toast.error(
+          planCopy.checkoutMissing
+        );
+      } else {
+        toast.error(planCopy.checkoutError);
+      }
       setUpgrading(null);
     }
   };
 
   const handleDowngrade = () => {
-    toast.info("Para cancelar sua assinatura, entre em contato com o suporte.");
+    toast.info(planCopy.cancelSupport);
   };
 
   const getPlanRank = (planId: PlanId) => ["free", "premium", "pro", "elite"].indexOf(planId);
@@ -168,8 +554,8 @@ export function PlanosView() {
   return (
     <div className="space-y-4 md:space-y-6 w-full">
       <div>
-        <h1 className="text-white text-xl md:text-2xl font-semibold tracking-tight">Planos</h1>
-        <p className="text-[#BFBFBF] text-xs md:text-sm mt-1">Escolha o plano ideal para sua jornada financeira</p>
+        <h1 className="text-foreground text-xl md:text-2xl font-semibold tracking-tight">{planCopy.title}</h1>
+        <p className="text-muted-foreground text-xs md:text-sm mt-1">{planCopy.description}</p>
       </div>
 
       {/* Admin Banner */}
@@ -177,12 +563,12 @@ export function PlanosView() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border rounded-xl p-4 flex items-center gap-3 bg-[#F5F5F5]/5 border-[#F5F5F5]/20"
+          className="border rounded-xl p-4 flex items-center gap-3 bg-foreground text-background border-foreground/20 dark:bg-[#F5F5F5]/5 dark:text-foreground dark:border-[#F5F5F5]/20"
         >
-          <Shield size={20} className="text-[#F5F5F5]" />
+          <Shield size={20} className="text-background dark:text-[#F5F5F5]" />
           <div className="flex-1">
-            <div className="text-white font-medium">Conta do Criador – Acesso Elite Permanente</div>
-            <div className="text-[#BFBFBF] text-xs">Todas as funcionalidades liberadas gratuitamente para a conta macksongaspar@gmail.com</div>
+            <div className="font-medium">{planCopy.creatorBanner}</div>
+            <div className="text-background/70 text-xs dark:text-muted-foreground">{planCopy.creatorBannerDescription}</div>
           </div>
         </motion.div>
       )}
@@ -208,13 +594,13 @@ export function PlanosView() {
             <Crown size={20} className="text-yellow-400" />
           )}
           <div className="flex-1">
-            <div className="text-white font-medium">
-              Você está no plano {PLANS.find(p => p.id === currentPlan)?.name}!
+            <div className="text-foreground font-medium">
+              {planCopy.activePlanMessage(planCopy.plans[currentPlan]?.name ?? currentPlan)}
             </div>
-            <div className="text-[#BFBFBF] text-xs">
+            <div className="text-muted-foreground text-xs">
               {planData?.planExpiresAt
-                ? `Renova em ${new Date(planData.planExpiresAt).toLocaleDateString("pt-BR")}`
-                : "Assinatura ativa"}
+                ? planCopy.renewsAt(new Date(planData.planExpiresAt).toLocaleDateString(language))
+                : planCopy.activeSubscription}
             </div>
           </div>
         </motion.div>
@@ -226,6 +612,7 @@ export function PlanosView() {
           const Icon = plan.icon;
           const isActive = currentPlan === plan.id;
           const isUpgrade = getPlanRank(plan.id) > getPlanRank(currentPlan);
+          const planText = planCopy.plans[plan.id];
 
           return (
             <motion.div
@@ -233,7 +620,7 @@ export function PlanosView() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
-              className={`bg-[#1A1A1A] border rounded-xl md:rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full ${
+              className={`nexo-depth-2 border rounded-xl md:rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full ${
                 isActive ? plan.activeBorder : plan.borderColor
               }`}
             >
@@ -246,13 +633,13 @@ export function PlanosView() {
               {plan.badge && (
                 <div className={`text-xs font-medium ${plan.badgeColor} uppercase tracking-wider mb-3 flex items-center gap-1`}>
                   <Icon size={10} />
-                  {plan.badge}
+                  {planText.badge}
                 </div>
               )}
 
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl font-bold">{plan.name}</h2>
+                <h2 className="text-foreground text-xl font-bold">{planText.name}</h2>
                 <div className={`w-9 h-9 ${plan.iconBg} rounded-xl flex items-center justify-center`}>
                   <Icon size={16} className={plan.iconColor} />
                 </div>
@@ -260,25 +647,25 @@ export function PlanosView() {
 
               {/* Price */}
               <div className="mb-1">
-                <span className="text-white text-3xl font-bold font-mono">{plan.price}</span>
+                <span className="text-foreground text-3xl font-bold font-mono">{plan.price}</span>
                 {plan.priceDecimal && (
-                  <span className="text-[#BFBFBF] text-base font-mono">{plan.priceDecimal}</span>
+                  <span className="text-muted-foreground text-base font-mono">{plan.priceDecimal}</span>
                 )}
-                <span className="text-[#BFBFBF] text-sm">{plan.period}</span>
+                <span className="text-muted-foreground text-sm">{plan.period}</span>
               </div>
-              <p className="text-[#BFBFBF] text-xs mb-5">{plan.description}</p>
+              <p className="text-muted-foreground text-xs mb-5">{planText.description}</p>
 
               {/* Features */}
               <div className="space-y-2 mb-6 flex-1">
-                {plan.features.map(f => (
+                {plan.features.map((f, featureIndex) => (
                   <div key={f.text} className="flex items-center gap-2">
                     {f.included ? (
                       <Check size={13} className={plan.iconColor} />
                     ) : (
-                      <X size={13} className="text-white/20" />
+                      <X size={13} className="text-muted-foreground/35" />
                     )}
-                    <span className={`text-xs ${f.included ? "text-[#BFBFBF]" : "text-white/30"}`}>
-                      {f.text}
+                    <span className={`text-xs ${f.included ? "text-foreground/80" : "text-muted-foreground/45"}`}>
+                      {planText.features[featureIndex] ?? f.text}
                     </span>
                   </div>
                 ))}
@@ -288,10 +675,10 @@ export function PlanosView() {
               {isActive ? (
                 <div className={`w-full py-2.5 rounded-lg text-xs text-center font-medium border ${
                   plan.id === "free"
-                    ? "bg-[#2E2E2E] text-white border-white/10"
+                    ? "bg-secondary text-foreground border-border"
                     : `bg-transparent border-current ${plan.iconColor}`
                 }`}>
-                  Plano Atual
+                  {planCopy.currentPlan}
                 </div>
               ) : isUpgrade ? (
                 <button
@@ -305,14 +692,14 @@ export function PlanosView() {
                       : "bg-purple-500 text-white hover:bg-purple-400"
                   }`}
                 >
-                  {upgrading === plan.id ? "Processando..." : `Assinar ${plan.name}`}
+                  {upgrading === plan.id ? planCopy.processing : `${planCopy.subscribe} ${planText.name}`}
                 </button>
               ) : (
                 <button
                   onClick={handleDowngrade}
-                  className="w-full py-2.5 border border-white/10 text-[#BFBFBF] rounded-lg text-xs hover:text-white hover:border-white/20 transition-all"
+                  className="w-full py-2.5 border border-border text-muted-foreground rounded-lg text-xs hover:text-foreground hover:border-foreground/30 transition-all"
                 >
-                  Fazer Downgrade
+                  {planCopy.downgrade}
                 </button>
               )}
             </motion.div>
@@ -321,40 +708,26 @@ export function PlanosView() {
       </div>
 
       {/* Comparison Table */}
-      <div className="nexo-depth-2 border border-white/10 rounded-xl p-5 overflow-x-auto">
-        <h3 className="text-white font-medium mb-4">Comparativo Completo</h3>
+      <div className="nexo-depth-2 border border-border rounded-xl p-5 overflow-x-auto">
+        <h3 className="text-foreground font-medium mb-4">{planCopy.comparison}</h3>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
-              <th className="text-left text-[#BFBFBF] font-normal py-2 pr-4">Funcionalidade</th>
-              <th className="text-center text-[#BFBFBF] font-normal py-2 px-3">Free</th>
+            <tr className="border-b border-border">
+              <th className="text-left text-muted-foreground font-normal py-2 pr-4">{planCopy.featureColumn}</th>
+              <th className="text-center text-muted-foreground font-normal py-2 px-3">Free</th>
               <th className="text-center text-yellow-400 font-medium py-2 px-3">Premium</th>
               <th className="text-center text-blue-400 font-medium py-2 px-3">Pro</th>
               <th className="text-center text-purple-400 font-medium py-2 px-3">Elite</th>
             </tr>
           </thead>
           <tbody>
-            {[
-              { feature: "Caixas por mês", free: "Até 5", premium: "∞", pro: "∞", elite: "∞" },
-              { feature: "Metas financeiras", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
-              { feature: "Histórico mensal", free: "✓", premium: "✓", pro: "✓", elite: "✓" },
-              { feature: "Exportação CSV/PDF", free: "—", premium: "✓", pro: "✓", elite: "✓" },
-              { feature: "Transferências entre caixas", free: "—", premium: "✓", pro: "✓", elite: "✓" },
-              { feature: "IA Nexo básica", free: "—", premium: "✓", pro: "✓", elite: "✓" },
-              { feature: "IA Nexo Preditiva", free: "—", premium: "—", pro: "✓", elite: "✓" },
-              { feature: "Open Banking", free: "—", premium: "—", pro: "✓", elite: "✓" },
-              { feature: "Relatórios avançados", free: "—", premium: "—", pro: "✓", elite: "✓" },
-              { feature: "Backup automático", free: "—", premium: "—", pro: "✓", elite: "✓" },
-              { feature: "Consultoria mensal", free: "—", premium: "—", pro: "—", elite: "✓" },
-              { feature: "Alertas prioritários 24/7", free: "—", premium: "—", pro: "—", elite: "✓" },
-              { feature: "Suporte VIP", free: "—", premium: "—", pro: "—", elite: "✓" },
-            ].map((row, i, arr) => (
-              <tr key={row.feature} className={i < arr.length - 1 ? "border-b border-white/5" : ""}>
-                <td className="text-[#BFBFBF] py-2.5 pr-4">{row.feature}</td>
-                <td className="text-center py-2.5 px-3 text-[#BFBFBF]">{row.free}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.premium === "✓" || row.premium === "∞" ? "text-yellow-400" : "text-white/20"}`}>{row.premium}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.pro === "✓" || row.pro === "∞" ? "text-blue-400" : "text-white/20"}`}>{row.pro}</td>
-                <td className={`text-center py-2.5 px-3 font-medium ${row.elite === "✓" || row.elite === "∞" ? "text-purple-400" : "text-white/20"}`}>{row.elite}</td>
+            {planCopy.comparisonRows.map((row, i, arr) => (
+              <tr key={row.feature} className={i < arr.length - 1 ? "border-b border-border/60" : ""}>
+                <td className="text-muted-foreground py-2.5 pr-4">{row.feature}</td>
+                <td className="text-center py-2.5 px-3 text-muted-foreground">{row.free}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.premium === "✓" || row.premium === "∞" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground/35"}`}>{row.premium}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.pro === "✓" || row.pro === "∞" ? "text-blue-500 dark:text-blue-400" : "text-muted-foreground/35"}`}>{row.pro}</td>
+                <td className={`text-center py-2.5 px-3 font-medium ${row.elite === "✓" || row.elite === "∞" ? "text-purple-500 dark:text-purple-400" : "text-muted-foreground/35"}`}>{row.elite}</td>
               </tr>
             ))}
           </tbody>
@@ -363,16 +736,16 @@ export function PlanosView() {
 
       {/* Backups */}
       {backups && backups.length > 0 && (
-        <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-          <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-            <Shield size={16} className="text-[#BFBFBF]" />
-            Backups Salvos
+        <div className="nexo-depth-2 border border-border rounded-xl p-5">
+          <h3 className="text-foreground font-medium mb-4 flex items-center gap-2">
+            <Shield size={16} className="text-muted-foreground" />
+            {planCopy.savedBackups}
           </h3>
           <div className="space-y-2">
             {backups.map(b => (
-              <div key={b.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                <div className="text-white text-sm">{b.monthId}</div>
-                <div className="text-[#BFBFBF] text-xs">{new Date(b.createdAt).toLocaleDateString("pt-BR")}</div>
+              <div key={b.id} className="flex items-center justify-between py-2 border-b border-border/60 last:border-0">
+                <div className="text-foreground text-sm">{b.monthId}</div>
+                <div className="text-muted-foreground text-xs">{new Date(b.createdAt).toLocaleDateString(language)}</div>
               </div>
             ))}
           </div>
@@ -380,13 +753,12 @@ export function PlanosView() {
       )}
 
       {/* Security Note */}
-      <div className="flex items-start gap-3 p-4 nexo-depth-2 border border-white/10 rounded-xl">
-        <Shield size={16} className="text-[#BFBFBF] mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 nexo-depth-2 border border-border rounded-xl">
+        <Shield size={16} className="text-muted-foreground mt-0.5 shrink-0" />
         <div>
-          <div className="text-white text-sm font-medium mb-1">Pagamento Seguro via Stripe</div>
-          <div className="text-[#BFBFBF] text-xs">
-            Todos os pagamentos são processados com criptografia SSL/TLS. Seus dados financeiros nunca são compartilhados.
-            Cancele a qualquer momento sem taxas adicionais.
+          <div className="text-foreground text-sm font-medium mb-1">{planCopy.securityTitle}</div>
+          <div className="text-muted-foreground text-xs">
+            {planCopy.securityDescription}
           </div>
         </div>
       </div>

@@ -182,18 +182,18 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white text-2xl font-semibold tracking-tight">Open Banking</h1>
-            <p className="text-[#BFBFBF] text-sm mt-1">Gerencie suas conexões bancárias</p>
+            <h1 className="text-foreground text-2xl font-semibold tracking-tight">Open Banking</h1>
+            <p className="text-muted-foreground text-sm mt-1">Gerencie suas conexões bancárias</p>
           </div>
           <div className="flex gap-2">
-            <label className="flex items-center gap-2 px-4 py-2 bg-[#2E2E2E] border border-white/10 text-white rounded-lg text-sm hover:bg-[#3E3E3E] transition-all cursor-pointer">
+            <label className="flex items-center gap-2 px-4 py-2 bg-secondary border border-border text-foreground rounded-lg text-sm hover:bg-accent transition-all cursor-pointer">
               <Upload size={14} />
               Importar CSV
               <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
             </label>
             <button
               onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-semibold hover:bg-[#F5F5F5] transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg text-sm font-semibold hover:bg-foreground/90 transition-all"
             >
               <Plus size={14} />
               Conectar Banco
@@ -211,7 +211,7 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                   key={conn.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="nexo-depth-2 border border-white/10 rounded-xl p-5"
+                  className="nexo-depth-2 border border-border rounded-xl p-5"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -231,8 +231,8 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                         )}
                       </div>
                       <div>
-                        <div className="text-white font-medium">{conn.bankName}</div>
-                        <div className="text-[#BFBFBF] text-xs">
+                        <div className="text-foreground font-medium">{conn.bankName}</div>
+                        <div className="text-muted-foreground text-xs">
                           {conn.maskedAccount} · {conn.accountType === "checking" ? "Corrente" : conn.accountType === "savings" ? "Poupança" : "Investimento"}
                         </div>
                       </div>
@@ -243,20 +243,20 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-[#BFBFBF] text-xs">
+                    <div className="text-muted-foreground text-xs">
                       Última sync: {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleDateString("pt-BR") : "Nunca"}
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleSync(conn.id)}
                         disabled={syncing === conn.id}
-                        className="p-1.5 text-[#BFBFBF] hover:text-white transition-colors"
+                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <RefreshCw size={14} className={syncing === conn.id ? "animate-spin" : ""} />
                       </button>
                       <button
                         onClick={() => disconnectMutation.mutate({ id: conn.id })}
-                        className="p-1.5 text-[#BFBFBF] hover:text-red-400 transition-colors"
+                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -267,16 +267,16 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
             })}
           </div>
         ) : (
-          <div className="nexo-depth-2 border border-white/10 rounded-xl p-8 text-center">
-            <Building2 size={32} className="text-[#BFBFBF] mx-auto mb-3" />
-            <p className="text-white font-medium mb-1">Nenhum banco conectado</p>
-            <p className="text-[#BFBFBF] text-sm">Conecte sua conta bancária para sincronizar automaticamente</p>
+          <div className="nexo-depth-2 border border-border rounded-xl p-8 text-center">
+            <Building2 size={32} className="text-foreground mx-auto mb-3" />
+            <p className="text-foreground font-medium mb-1">Nenhum banco conectado</p>
+            <p className="text-muted-foreground text-sm">Conecte sua conta bancária para sincronizar automaticamente</p>
           </div>
         )}
 
         {/* Available Banks */}
-        <div className="nexo-depth-2 border border-white/10 rounded-xl p-5">
-          <h3 className="text-white font-medium mb-4">Bancos Disponíveis</h3>
+        <div className="nexo-depth-2 border border-border rounded-xl p-5">
+          <h3 className="text-foreground font-medium mb-4">Bancos Disponíveis</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {BANKS.map(bank => {
               const isConnected = connections?.some(c => c.bankCode === bank.code);
@@ -288,7 +288,7 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                   className={`flex items-center gap-2 p-3 rounded-lg border transition-all text-left ${
                     isConnected
                       ? "border-green-500/30 bg-green-500/5 cursor-default"
-                      : "border-white/10 bg-[#2E2E2E] hover:border-white/20 hover:bg-[#3E3E3E]"
+                      : "border-border bg-secondary hover:border-foreground/30 hover:bg-accent"
                   }`}
                 >
                   <div
@@ -303,7 +303,7 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                     />
                   </div>
                   <div>
-                    <div className="text-white text-xs font-medium">{bank.name}</div>
+                    <div className="text-foreground text-xs font-medium">{bank.name}</div>
                     {isConnected && <div className="text-green-400 text-xs">Conectado</div>}
                   </div>
                 </button>
@@ -326,14 +326,14 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                 onClick={() => setShowConnectModal(false)}
               />
               <motion.div
-                className="relative w-full max-w-sm nexo-depth-2 border border-white/10 rounded-2xl p-6"
+                className="relative w-full max-w-sm nexo-depth-2 border border-border rounded-2xl p-6"
                 initial={{ scale: 0.95, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 20 }}
               >
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-white font-semibold">Conectar Banco</h2>
-                  <button onClick={() => setShowConnectModal(false)} className="text-[#BFBFBF] hover:text-white">
+                  <h2 className="text-foreground font-semibold">Conectar Banco</h2>
+                  <button onClick={() => setShowConnectModal(false)} className="text-muted-foreground hover:text-foreground">
                     <X size={18} />
                   </button>
                 </div>
@@ -344,7 +344,7 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                       <button
                         key={bank.code}
                         onClick={() => setSelectedBank(bank)}
-                        className="flex items-center gap-2 p-3 bg-[#2E2E2E] border border-white/10 rounded-lg hover:border-white/20 transition-all"
+                        className="flex items-center gap-2 p-3 bg-secondary border border-border rounded-lg hover:border-foreground/30 transition-all"
                       >
                         <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -357,13 +357,13 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       </div>
-                        <span className="text-white text-xs">{bank.name}</span>
+                        <span className="text-foreground text-xs">{bank.name}</span>
                       </button>
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-[#2E2E2E] rounded-lg">
+                    <div className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
                         style={{ background: selectedBank.bg }}
@@ -376,19 +376,19 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                         />
                       </div>
                       <div>
-                        <div className="text-white font-medium">{selectedBank.name}</div>
-                        <button onClick={() => setSelectedBank(null)} className="text-[#BFBFBF] text-xs hover:text-white">
+                        <div className="text-foreground font-medium">{selectedBank.name}</div>
+                        <button onClick={() => setSelectedBank(null)} className="text-muted-foreground text-xs hover:text-foreground">
                           Trocar banco
                         </button>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[#BFBFBF] text-xs uppercase tracking-wider mb-1.5 block">Tipo de Conta</label>
+                      <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Tipo de Conta</label>
                       <select
                         value={accountType}
                         onChange={e => setAccountType(e.target.value as "checking" | "savings" | "investment")}
-                        className="w-full bg-[#2E2E2E] border border-white/10 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-white/30"
+                        className="w-full bg-secondary border border-border text-foreground rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-foreground/30"
                       >
                         <option value="checking">Conta Corrente</option>
                         <option value="savings">Poupança</option>
@@ -397,18 +397,18 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                     </div>
 
                     <div>
-                      <label className="text-[#BFBFBF] text-xs uppercase tracking-wider mb-1.5 block">Últimos 4 dígitos (opcional)</label>
+                      <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Últimos 4 dígitos (opcional)</label>
                       <input
                         type="text"
                         maxLength={4}
                         value={maskedAccount}
                         onChange={e => setMaskedAccount(e.target.value)}
                         placeholder="1234"
-                        className="w-full bg-[#2E2E2E] border border-white/10 text-white rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-white/30"
+                        className="w-full bg-secondary border border-border text-foreground rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-foreground/30"
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 text-[#BFBFBF] text-xs bg-[#2E2E2E] rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs bg-secondary rounded-lg p-3">
                       <Lock size={12} />
                       <span>Conexão segura via Open Banking. Apenas leitura.</span>
                     </div>
@@ -416,7 +416,7 @@ export function OpenBankingView({ monthId, onNavigate }: OpenBankingViewProps) {
                     <button
                       onClick={handleConnect}
                       disabled={connecting}
-                      className="w-full py-2.5 bg-white text-black font-semibold rounded-lg text-sm hover:bg-[#F5F5F5] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-foreground text-background font-semibold rounded-lg text-sm hover:bg-foreground/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {connecting ? (
                         <>

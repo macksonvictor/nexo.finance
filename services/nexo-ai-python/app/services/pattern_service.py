@@ -64,6 +64,11 @@ def analyze_patterns(payload: AnalysisRequest) -> PatternsResponse:
     non_essential_ratio = float(non_essential["amount"].sum() / total_spent)
     early_spend_ratio = float(early_spend["amount"].sum() / total_spent)
     fragile_spend_ratio = float(fragile_spend["amount"].sum() / total_spent)
+    weekend_spend_ratio = _calculate_weekend_spend_ratio(expense_frame, total_spent)
+    concentration_score = _calculate_concentration_score(expense_frame)
+    burst_days_count = _count_burst_days(expense_frame)
+    dominant_category = _resolve_dominant_category(expense_frame)
+    dominant_caixa = _resolve_dominant_caixa(expense_frame)
     avg_transactions_per_day = float(
         len(expense_frame) / max(expense_frame["day"].nunique(), 1)
     )
@@ -103,6 +108,16 @@ def analyze_patterns(payload: AnalysisRequest) -> PatternsResponse:
             label="Gasto concentrado em caixas frageis",
             value=round(fragile_spend_ratio * 100, 2),
         ),
+        SpendingSignal(
+            name="weekend_spend_ratio",
+            label="Peso de gasto no fim de semana",
+            value=round(weekend_spend_ratio * 100, 2),
+        ),
+        SpendingSignal(
+            name="concentration_score",
+            label="Concentracao em poucas categorias",
+            value=round(concentration_score, 2),
+        ),
     ]
 
     if small_spend_ratio >= 0.22:
@@ -141,6 +156,24 @@ def analyze_patterns(payload: AnalysisRequest) -> PatternsResponse:
             )
         )
 
+    if weekend_spend_ratio >= 0.38:
+        flags.append(
+            BehaviorFlag(
+                code="weekend_overload",
+                label="Os gastos estao concentrados demais em finais de semana",
+                severity="medium",
+            )
+        )
+
+    if burst_days_count >= 3:
+        flags.append(
+            BehaviorFlag(
+                code="burst_days",
+                label="Existem varios dias com explosoes de transacoes",
+                severity="medium",
+            )
+        )
+
     anomalies = _detect_anomalies(expense_frame) if len(expense_frame) >= 20 else []
 
     if anomalies:
@@ -161,8 +194,9 @@ def analyze_patterns(payload: AnalysisRequest) -> PatternsResponse:
         f"O mes mostra impulsividade em {round(impulsivity_score)}/100 e sabotagem em "
         f"{round(sabotage_score)}/100. O padrao dominante combina gasto medio de "
         f"R$ {avg_spend:,.2f} com peso de nao essenciais em "
-        f"{round(non_essential_ratio * 100)}% e consumo antecipado em "
-        f"{round(early_spend_ratio * 100)}% do total."
+        f"{round(non_essential_ratio * 100)}%, consumo antecipado em "
+        f"{round(early_spend_ratio * 100)}% do total e concentracao mais forte em "
+        f"{dominant_category}."
     ).replace(",", "X").replace(".", ",").replace("X", ".")
 
     return PatternsResponse(
@@ -172,6 +206,11 @@ def analyze_patterns(payload: AnalysisRequest) -> PatternsResponse:
             behaviorFlags=flags,
             impulsivityScore=round(impulsivity_score, 2),
             sabotageScore=round(sabotage_score, 2),
+            concentrationScore=round(concentration_score, 2),
+            weekendSpendRatio=round(weekend_spend_ratio * 100, 2),
+            burstDaysCount=burst_days_count,
+            dominantCategory=dominant_category,
+            dominantCaixa=dominant_caixa,
             spendingSignals=signals,
             anomalies=anomalies,
             summary=summary,
@@ -217,3 +256,58 @@ def _detect_anomalies(expense_frame) -> list[Anomaly]:
 
 def _clamp_score(value: float) -> float:
     return max(0.0, min(100.0, value))
+
+
+def _calculate_weekend_spend_ratio(expense_frame, total_spent: float) -> float:
+    weekend_amount = float(expense_frame[expense_frame["weekday"] >= 5]["amount"].sum())
+    return weekend_amount / total_spent
+
+
+def _calculate_concentration_score(expense_frame) -> float:
+    category_totals = expense_frame.groupby("categoria")["amount"].sum()
+    total = float(category_totals.sum())
+    if total <= 0:
+        return 0.0
+
+    shares = (category_totals / total).to_numpy(dtype=np.float64)
+    return float(np.square(shares).sum() * 100)
+
+
+def _count_burst_days(expense_frame) -> int:
+    if expense_frame.empty:
+        return 0
+
+    grouped = expense_frame.groupby("day").agg(
+        tx_count=("amount", "size"),
+        day_total=("amount", "sum"),
+    )
+    threshold = max(float(expense_frame["amount"].mean()) * 2.2, 180.0)
+    return int(
+        (
+            (grouped["tx_count"] >= 3)
+            | (grouped["day_total"] >= threshold)
+        ).sum()
+    )
+
+
+def _resolve_dominant_category(expense_frame) -> str:
+    if expense_frame.empty:
+        return "sem categoria dominante"
+
+    category_totals = expense_frame.groupby("categoria")["amount"].sum().sort_values(
+        ascending=False
+    )
+    return str(category_totals.index[0])
+
+
+def _resolve_dominant_caixa(expense_frame) -> str | None:
+    if expense_frame.empty or expense_frame["caixa_nome"].dropna().empty:
+        return None
+
+    caixa_totals = expense_frame.groupby("caixa_nome")["amount"].sum().sort_values(
+        ascending=False
+    )
+    if caixa_totals.empty:
+        return None
+
+    return str(caixa_totals.index[0])

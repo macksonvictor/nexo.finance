@@ -41,11 +41,32 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
     meta_medium_count = sum(1 for meta in payload.metas if meta.risco == "medio")
     high_risk_history_ratio = _calculate_high_risk_history_ratio(historical_frame)
     volatility = _coefficient_of_variation(expense_frame["amount"].to_list())
+    average_daily_expense = _average_daily_expense(expense_frame)
+    runway_days = _calculate_runway_days(payload.month.balance, average_daily_expense)
+    stability_score = _calculate_stability_score(
+        volatility,
+        burn_rate,
+        high_risk_history_ratio,
+        early_burn=0.0,
+    )
     early_burn = (
         float(expense_frame[expense_frame["month_progress"] <= (10 / 31)]["amount"].sum())
         / max(float(expense_frame["amount"].sum()), 1)
         if not expense_frame.empty
         else 0.0
+    )
+    stability_score = _calculate_stability_score(
+        volatility,
+        burn_rate,
+        high_risk_history_ratio,
+        early_burn=early_burn,
+    )
+    history_pressure = (
+        "alto"
+        if high_risk_history_ratio >= 0.5
+        else "medio"
+        if high_risk_history_ratio >= 0.25
+        else "baixo"
     )
 
     score = (
@@ -56,6 +77,7 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
         + min(volatility * 18, 10)
         + min(early_burn * 18, 8)
         + min(high_risk_history_ratio * 20, 10)
+        + (8 if runway_days <= 10 else 4 if runway_days <= 20 else 0)
     )
     score = round(max(0.0, min(100.0, score)), 2)
 
@@ -82,6 +104,8 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
         drivers.append("O padrao de gasto esta volatil")
     if high_risk_history_ratio >= 0.34:
         drivers.append("O historico recente mostra repeticao de meses pressionados")
+    if 0 < runway_days <= 15:
+        drivers.append("A folga atual aguenta poucos dias no ritmo de gasto observado")
     if not drivers:
         drivers.append(
             "O risco atual esta controlado, mas ainda precisa de acompanhamento"
@@ -98,8 +122,8 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
     summary = (
         f"O score de risco ficou em {round(score)}/100, classificado como {level}. "
         f"O peso maior veio de burn rate em {round(burn_rate * 100)}%, "
-        f"{critical_caixa_count} caixas em criticidade alta e pressao de metas "
-        f"{meta_pressure_overall}."
+        f"{critical_caixa_count} caixas em criticidade alta, pressao de metas "
+        f"{meta_pressure_overall} e runway de {round(runway_days)} dias."
     )
 
     confidence = round(
@@ -113,6 +137,9 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
             score0to100=score,
             level=level,
             negativeBalanceRisk=negative_balance_risk,
+            runwayDays=round(runway_days, 1),
+            stabilityScore=round(stability_score, 2),
+            historyPressure=history_pressure,
             drivers=drivers,
             vulnerableCaixas=vulnerable_caixas,
             metaPressure={
@@ -152,6 +179,40 @@ def _coefficient_of_variation(values: list[float]) -> float:
         return 0.0
 
     return float(np.std(values) / mean_value)
+
+
+def _average_daily_expense(expense_frame) -> float:
+    if expense_frame.empty:
+        return 0.0
+
+    daily_totals = expense_frame.groupby("day")["amount"].sum()
+    if daily_totals.empty:
+        return 0.0
+
+    return float(daily_totals.mean())
+
+
+def _calculate_runway_days(balance: float, average_daily_expense: float) -> float:
+    if balance <= 0:
+        return 0.0
+    if math.isclose(average_daily_expense, 0.0):
+        return 365.0
+    return float(min(balance / average_daily_expense, 365.0))
+
+
+def _calculate_stability_score(
+    volatility: float,
+    burn_rate: float,
+    high_risk_history_ratio: float,
+    early_burn: float,
+) -> float:
+    penalty = (
+        min(volatility * 38, 35)
+        + min(max(burn_rate - 0.75, 0) * 45, 25)
+        + min(high_risk_history_ratio * 24, 20)
+        + min(early_burn * 18, 12)
+    )
+    return max(0.0, min(100.0, 100.0 - penalty))
 
 
 def _resolve_level(score: float) -> str:

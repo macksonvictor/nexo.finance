@@ -21,4 +21,7 @@ def test_patterns_detects_behavior_signals(client, base_payload):
     assert data["status"] == "ok"
     assert data["result"]["impulsivityScore"] > 20
     assert data["result"]["sabotageScore"] > 20
+    assert data["result"]["concentrationScore"] > 0
+    assert data["result"]["burstDaysCount"] >= 1
+    assert data["result"]["dominantCategory"]
     assert len(data["result"]["behaviorFlags"]) >= 1

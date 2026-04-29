@@ -1,11 +1,18 @@
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
+import mascotAssetUrl from "@/assets/nexo-ai-mascot.svg";
+import brandAssetUrl from "@/assets/nexo-ai-brand.svg";
+import "./NexoCubeLogo.css";
+
+export type NexoCubeVariant = "mascot" | "brand";
 
 interface NexoCubeLogoProps {
   size?: number;
   className?: string;
   decorative?: boolean;
   ariaLabel?: string;
+  variant?: NexoCubeVariant;
+  glow?: boolean;
 }
 
 export function NexoCubeLogo({
@@ -13,51 +20,37 @@ export function NexoCubeLogo({
   className,
   decorative = true,
   ariaLabel = "Nexo IA",
+  variant = "mascot",
+  glow = false,
 }: NexoCubeLogoProps) {
   const style = {
-    width: size,
-    height: size,
-    display: "inline-block",
-    flexShrink: 0,
-  } satisfies CSSProperties;
+    "--cube-size": `${size}px`,
+  } as CSSProperties & Record<"--cube-size", string>;
+  const imageUrl = variant === "brand" ? brandAssetUrl : mascotAssetUrl;
+  const variantClass =
+    variant === "brand" ? "nexo-cube-asset--brand" : "nexo-cube-asset--mascot";
 
   return (
     <span
-      className={cn("inline-flex items-center justify-center", className)}
+      className={cn(
+        "nexo-cube-asset",
+        variantClass,
+        glow && "nexo-cube-asset--glow",
+        className
+      )}
       style={style}
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : ariaLabel}
       role={decorative ? undefined : "img"}
     >
-      <svg
-        viewBox="0 0 100 100"
-        fill="none"
-        aria-hidden={decorative || undefined}
-        focusable="false"
-        className="block h-full w-full select-none"
-      >
-        <path
-          d="M50 10 80 27.5 50 45 20 27.5 50 10Z"
-          stroke="#F7F7F7"
-          strokeWidth="7.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <span className="nexo-cube-asset__shell">
+        <img
+          src={imageUrl}
+          alt=""
+          aria-hidden="true"
+          className="nexo-cube-asset__image"
         />
-        <path
-          d="M20 27.5V66L50 84V45"
-          stroke="#F7F7F7"
-          strokeWidth="7.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M80 27.5V66L50 84"
-          stroke="#F7F7F7"
-          strokeWidth="7.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      </span>
     </span>
   );
 }

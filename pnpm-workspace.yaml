@@ -1,0 +1,10 @@
+packages:
+  - .
+
+supportedArchitectures:
+  os:
+    - current
+    - win32
+    - linux
+  cpu:
+    - x64

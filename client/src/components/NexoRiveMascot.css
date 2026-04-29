@@ -1,0 +1,32 @@
+.nexo-rive-mascot {
+  position: relative;
+  display: inline-flex;
+  width: var(--cube-size, 32px);
+  height: var(--cube-size, 32px);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexo-rive-mascot__fallback,
+.nexo-rive-mascot__canvas {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.nexo-rive-mascot__canvas {
+  opacity: 0;
+}
+
+.nexo-rive-mascot--ready .nexo-rive-mascot__canvas {
+  opacity: 1;
+}
+
+.nexo-rive-mascot--ready .nexo-rive-mascot__fallback {
+  opacity: 0;
+}

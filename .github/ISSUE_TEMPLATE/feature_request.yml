@@ -1,0 +1,41 @@
+name: Sugestao de melhoria
+description: Sugira uma melhoria para o NEXO Finance.
+title: "[sugestao] "
+labels: ["sugestao"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use este formulario para ideias de produto, UX, IA, suporte ou integracoes.
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema essa ideia resolve?
+      placeholder: Ex. Quero que o suporte sugira artigos antes de abrir WhatsApp.
+    validations:
+      required: true
+  - type: textarea
+    id: solucao
+    attributes:
+      label: Como voce imagina a solucao?
+      placeholder: Descreva o comportamento ideal para o usuario.
+    validations:
+      required: true
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade percebida
+      options:
+        - Baixa
+        - Media
+        - Alta
+        - Critica para lancamento
+    validations:
+      required: false
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referencias ou exemplos
+      description: Links, prints ou produtos que inspiram a sugestao.
+    validations:
+      required: false

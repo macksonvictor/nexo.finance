@@ -1,22 +1,31 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { BRAND_AI_NAME, BRAND_NAME } from "@/lib/branding";
+import { BRAND_NAME } from "@/lib/branding";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { getAppCopy } from "@/lib/i18n";
 import type { ViewType } from "@/types/finance";
 import { AnimatePresence, motion } from "framer-motion";
-import { Crown, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { Crown, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { AccountMenuPanel } from "./AccountMenuPanel";
 import { BrandLogo } from "./BrandLogo";
 import { NotificationBell } from "./NotificationBell";
+import type { ProfilePanelType } from "./ProfileActionPanel";
 
 interface MobileHeaderProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   onOpenAIWindow?: () => void;
+  onOpenPricing?: () => void;
+  onOpenProfilePanel?: (panel: ProfilePanelType) => void;
+  onOpenSettings?: () => void;
   onMenuToggle: (open: boolean) => void;
   menuOpen: boolean;
   user?: { name?: string | null; email?: string | null; avatar?: string | null } | null;
   isPremium?: boolean;
   isAdmin?: boolean;
+  aiUsage?: {
+    limit: number;
+    used: number;
+  } | null;
   isPreviewMode?: boolean;
 }
 
@@ -24,16 +33,21 @@ export function MobileHeader({
   currentView,
   onViewChange,
   onOpenAIWindow,
+  onOpenPricing,
+  onOpenProfilePanel,
+  onOpenSettings,
   onMenuToggle,
   menuOpen,
   user,
   isPremium,
   isAdmin,
+  aiUsage,
   isPreviewMode = false,
 }: MobileHeaderProps) {
   const [showProfile, setShowProfile] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const { logout } = useAuth();
+  const { language } = useLanguagePreference();
+  const copy = getAppCopy(language);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,43 +63,74 @@ export function MobileHeader({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showProfile]);
 
-  const handleLogout = () => {
-    toast.success("Sessão encerrada com sucesso");
-    void logout();
-    setShowProfile(false);
+  const openPricing = () => {
+    if (onOpenPricing) {
+      onOpenPricing();
+      return;
+    }
+
+    onViewChange("planos");
+  };
+
+  const openSettings = () => {
+    if (onOpenSettings) {
+      onOpenSettings();
+      return;
+    }
+
+    onViewChange("configuracoes");
+  };
+
+  const openProfilePanel = (panel: ProfilePanelType) => {
+    if (onOpenProfilePanel) {
+      onOpenProfilePanel(panel);
+      return;
+    }
+
+    if (panel === "credits") {
+      onOpenAIWindow?.();
+      return;
+    }
+
+    openSettings();
   };
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-[#2E2E2E] bg-[#0D0D0D] px-4 md:hidden">
-        <div className="flex items-center gap-2">
+      <header className="nexo-shell-panel fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border/70 px-3 md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={() => onMenuToggle(!menuOpen)}
-            className="rounded-lg p-2 transition-colors hover:bg-[#1A1A1A]"
+            className="nexo-shell-control rounded-xl p-2"
             aria-label="Menu"
           >
             {menuOpen ? (
-              <X size={20} className="text-[#F5F5F5]" />
+              <X size={20} className="text-foreground" />
             ) : (
-              <Menu size={20} className="text-[#F5F5F5]" />
+              <Menu size={20} className="text-foreground" />
             )}
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <BrandLogo alt={BRAND_NAME} className="h-7 w-7" />
-            <span className="text-[15px] font-semibold leading-none text-[#F5F5F5]">
+          <button
+            onClick={() => onViewChange("dashboard")}
+            className="flex min-w-0 items-center gap-2 rounded-2xl bg-transparent p-0 text-left transition-transform duration-200 hover:scale-[1.01]"
+            aria-label={copy.common.backToDashboard}
+            title={copy.common.backToDashboard}
+          >
+            <BrandLogo alt={BRAND_NAME} className="h-9 w-9 shrink-0" />
+            <span className="max-w-[calc(100vw-190px)] truncate text-[15px] font-semibold leading-none text-foreground max-[380px]:hidden">
               {BRAND_NAME}
             </span>
-          </div>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1" ref={panelRef}>
+        <div className="flex shrink-0 items-center gap-1" ref={panelRef}>
           {!isPremium && !isAdmin && (
             <button
-              onClick={() => onViewChange("planos")}
-              className="rounded-lg border border-[#2D3D8A] bg-[#11182E] px-2.5 py-1.5 text-[11px] font-semibold text-[#D9E3FF]"
+              onClick={openPricing}
+              className="nexo-plan-chip-upgrade rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
             >
-              Upgrade
+              {copy.common.upgrade}
             </button>
           )}
 
@@ -94,17 +139,18 @@ export function MobileHeader({
           <div className="relative">
             <button
               onClick={() => setShowProfile((value) => !value)}
-              className="rounded-lg p-1 transition-colors hover:bg-[#1A1A1A]"
-              aria-label="Perfil"
+              aria-expanded={showProfile}
+              className="nexo-shell-control rounded-xl p-1"
+              aria-label={language === "en-US" ? "Profile" : language === "es-ES" ? "Perfil" : "Perfil"}
             >
               {user?.avatar ? (
                 <img
                   src={user.avatar}
-                  alt={user.name || "Perfil"}
+                  alt={user.name || (language === "en-US" ? "Profile" : "Perfil")}
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2E2E2E] text-xs font-semibold text-[#BFBFBF]">
+                <div className="nexo-shell-control-inset flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-foreground">
                   {user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}
                 </div>
               )}
@@ -116,50 +162,24 @@ export function MobileHeader({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 top-12 z-50 w-72 rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] shadow-lg"
+                  className="fixed right-3 top-16 z-[100]"
                 >
-                  <div className="space-y-4 p-5">
-                    <div className="border-b border-[#2E2E2E] pb-4">
-                      <p className="truncate text-base font-bold leading-tight text-[#F5F5F5]">
-                        {user?.name || user?.email || "Usuário"}
-                      </p>
-                      <p className="mt-2 truncate text-sm text-[#BFBFBF]">
-                        {user?.email}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setShowProfile(false);
-                        onOpenAIWindow?.();
-                      }}
-                      className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#2A2A2A]"
-                    >
-                      <Sparkles size={18} />
-                      {BRAND_AI_NAME}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setShowProfile(false);
-                        onViewChange("planos");
-                      }}
-                      className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#2A2A2A]"
-                    >
-                      <Crown size={18} />
-                      Ver planos
-                    </button>
-
-                    {!isPreviewMode && (
-                      <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-lg bg-[#2E2E2E] px-4 py-3 text-left text-sm font-semibold text-[#F5F5F5] transition-colors hover:bg-[#3E3E3E]"
-                      >
-                        <LogOut size={18} />
-                        Sair
-                      </button>
-                    )}
-                  </div>
+                  <AccountMenuPanel
+                    user={user}
+                    isPremium={isPremium}
+                    isAdmin={isAdmin}
+                    aiUsage={aiUsage}
+                    onOpenAccount={() => openProfilePanel("account")}
+                    onOpenAccountSwitcher={() => openProfilePanel("switcher")}
+                    onOpenCredits={() => openProfilePanel("credits")}
+                    onOpenHelp={() => openProfilePanel("help")}
+                    onOpenPersonalization={() =>
+                      openProfilePanel("personalizacao")
+                    }
+                    onOpenPricing={openPricing}
+                    onOpenSettings={openSettings}
+                    onClose={() => setShowProfile(false)}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

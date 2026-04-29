@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bell, CheckCheck, Clock, Info, X } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
+import { lottieAnimations } from "@/lib/lottieAnimations";
 import { toast } from "sonner";
+import { AnimatedLottieIcon } from "./AnimatedLottieIcon";
 
 type NotifType =
   | "meta_expiring"
@@ -68,6 +71,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ align = "left" }: NotificationBellProps) {
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const announcedUnreadRef = useRef<number | null>(null);
@@ -154,19 +158,30 @@ export function NotificationBell({ align = "left" }: NotificationBellProps) {
     [notifications]
   );
 
+  const bellAnimation =
+    theme === "light"
+      ? lottieAnimations.notificationBellBlack
+      : lottieAnimations.notificationBellWhite;
+
   return (
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-[#BFBFBF] transition-all hover:bg-[#2E2E2E] hover:text-white"
+        className="nexo-shell-control relative flex h-10 w-10 items-center justify-center rounded-xl text-foreground"
         title="Notificações"
+        aria-expanded={open}
       >
-        <Bell className="h-4 w-4" />
+        <AnimatedLottieIcon
+          animationData={bellAnimation}
+          size={32}
+          active={open || unread > 0}
+          tintMode="none"
+        />
         {unread > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
+            className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
           >
             {unread > 9 ? "9+" : unread}
           </motion.span>
@@ -181,14 +196,14 @@ export function NotificationBell({ align = "left" }: NotificationBellProps) {
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             style={{ width: "22rem", maxWidth: "calc(100vw - 1rem)" }}
-            className={`absolute top-10 z-50 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#1A1A1A] shadow-2xl ${
+            className={`nexo-shell-float absolute top-10 z-50 overflow-hidden rounded-xl ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >
-            <div className="flex items-center justify-between border-b border-[#2E2E2E] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
               <div className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-[#BFBFBF]" />
-                <span className="text-sm font-semibold text-[#F5F5F5]">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">
                   Notificações
                 </span>
                 {unread > 0 && (
@@ -201,7 +216,7 @@ export function NotificationBell({ align = "left" }: NotificationBellProps) {
                 {unread > 0 && (
                   <button
                     onClick={() => markAllRead.mutate()}
-                    className="rounded-md px-2 py-1 text-[#BFBFBF] transition-colors hover:bg-[#2E2E2E] hover:text-white"
+                    className="nexo-shell-ghost-control rounded-md px-2 py-1 text-muted-foreground hover:text-foreground"
                     title="Marcar todas como lidas"
                   >
                     <CheckCheck className="h-3.5 w-3.5" />
@@ -209,7 +224,7 @@ export function NotificationBell({ align = "left" }: NotificationBellProps) {
                 )}
                 <button
                   onClick={() => setOpen(false)}
-                  className="rounded-md p-1 text-[#BFBFBF] transition-colors hover:bg-[#2E2E2E] hover:text-white"
+                  className="nexo-shell-ghost-control rounded-md p-1 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

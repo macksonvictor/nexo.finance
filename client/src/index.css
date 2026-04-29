@@ -88,9 +88,71 @@
   --sidebar-accent-foreground: oklch(0.93 0 0);
   --sidebar-border: oklch(0.2 0 0);
   --sidebar-ring: oklch(0.55 0 0);
+  --sidebar-shadow:
+    4px 0 24px oklch(0 0 0 / 0.5),
+    1px 0 0 oklch(0.18 0 0 / 0.24);
+  --sidebar-control-shadow:
+    0 1px 0 0 oklch(0.2 0 0) inset,
+    0 -1px 0 0 oklch(0.06 0 0) inset,
+    0 3px 8px oklch(0 0 0 / 0.4);
+  --popover-shadow:
+    0 16px 40px -8px oklch(0 0 0 / 0.8),
+    0 6px 16px oklch(0 0 0 / 0.5);
+  --shell-panel-bg: oklch(0.11 0 0 / 0.92);
+  --shell-panel-border: oklch(0.2 0 0 / 0.92);
+  --shell-panel-shadow:
+    0 1px 0 0 oklch(0.2 0 0 / 0.82) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.72) inset,
+    0 18px 40px -22px oklch(0 0 0 / 0.85),
+    0 8px 18px -10px oklch(0 0 0 / 0.46);
+  --shell-floating-bg: oklch(0.13 0 0 / 0.98);
+  --shell-floating-border: oklch(0.22 0 0 / 0.96);
+  --shell-floating-shadow:
+    0 1px 0 0 oklch(0.24 0 0 / 0.84) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.76) inset,
+    0 26px 64px -28px oklch(0 0 0 / 0.82),
+    0 12px 24px -10px oklch(0 0 0 / 0.52);
+  --shell-control-bg: oklch(0.14 0 0 / 0.96);
+  --shell-control-border: oklch(0.22 0 0 / 0.92);
+  --shell-control-border-hover: oklch(0.28 0 0 / 0.96);
+  --shell-control-shadow:
+    0 1px 0 0 oklch(0.22 0 0 / 0.82) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.74) inset,
+    0 10px 18px -14px oklch(0 0 0 / 0.72),
+    0 3px 6px -4px oklch(0 0 0 / 0.34);
+  --shell-control-shadow-hover:
+    0 1px 0 0 oklch(0.28 0 0 / 0.84) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.76) inset,
+    0 16px 28px -18px oklch(0 0 0 / 0.82),
+    0 6px 12px -8px oklch(0 0 0 / 0.42);
+  --shell-control-shadow-pressed:
+    0 1px 0 0 oklch(0.16 0 0 / 0.86) inset,
+    0 2px 8px oklch(0 0 0 / 0.48) inset,
+    0 3px 10px -8px oklch(0 0 0 / 0.26);
+  --shell-control-active-bg: oklch(0.17 0 0 / 0.98);
+  --shell-control-active-border: oklch(0.3 0 0 / 0.98);
+  --shell-control-active-shadow:
+    0 1px 0 0 oklch(0.28 0 0 / 0.86) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.78) inset,
+    0 18px 30px -20px oklch(0 0 0 / 0.8),
+    0 6px 14px -10px oklch(0 0 0 / 0.44);
+  --shell-inset-bg: oklch(0.09 0 0 / 0.98);
+  --shell-inset-border: oklch(0.18 0 0 / 0.92);
+  --shell-inset-shadow:
+    0 1px 0 0 oklch(0.16 0 0 / 0.74) inset,
+    0 6px 16px -10px oklch(0 0 0 / 0.58) inset,
+    0 -1px 0 0 oklch(0.04 0 0 / 0.76) inset;
+  --shell-plan-active-bg: oklch(0.16 0.03 85 / 0.98);
+  --shell-plan-active-border: oklch(0.34 0.06 82 / 0.72);
+  --shell-plan-active-text: oklch(0.79 0.1 82);
+  --shell-plan-upgrade-bg: oklch(0.16 0.04 260 / 0.98);
+  --shell-plan-upgrade-border: oklch(0.42 0.08 260 / 0.7);
+  --shell-plan-upgrade-text: oklch(0.84 0.05 255);
+  --canvas-glow-1: oklch(0.24 0 0 / 0.16);
+  --canvas-glow-2: oklch(0.14 0 0 / 0.12);
 }
 
-/* Dark theme is the default and only theme for NEXO */
+/* Dark theme is the default visual identity for NEXO. */
 .dark {
   --background: oklch(0.07 0 0);
   --foreground: oklch(0.93 0 0);
@@ -124,6 +186,213 @@
   --sidebar-accent-foreground: oklch(0.93 0 0);
   --sidebar-border: oklch(0.2 0 0);
   --sidebar-ring: oklch(0.55 0 0);
+  --sidebar-shadow:
+    4px 0 24px oklch(0 0 0 / 0.5),
+    1px 0 0 oklch(0.18 0 0 / 0.24);
+  --sidebar-control-shadow:
+    0 1px 0 0 oklch(0.2 0 0) inset,
+    0 -1px 0 0 oklch(0.06 0 0) inset,
+    0 3px 8px oklch(0 0 0 / 0.4);
+  --popover-shadow:
+    0 16px 40px -8px oklch(0 0 0 / 0.8),
+    0 6px 16px oklch(0 0 0 / 0.5);
+  --shell-panel-bg: oklch(0.11 0 0 / 0.92);
+  --shell-panel-border: oklch(0.2 0 0 / 0.92);
+  --shell-panel-shadow:
+    0 1px 0 0 oklch(0.2 0 0 / 0.82) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.72) inset,
+    0 18px 40px -22px oklch(0 0 0 / 0.85),
+    0 8px 18px -10px oklch(0 0 0 / 0.46);
+  --shell-floating-bg: oklch(0.13 0 0 / 0.98);
+  --shell-floating-border: oklch(0.22 0 0 / 0.96);
+  --shell-floating-shadow:
+    0 1px 0 0 oklch(0.24 0 0 / 0.84) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.76) inset,
+    0 26px 64px -28px oklch(0 0 0 / 0.82),
+    0 12px 24px -10px oklch(0 0 0 / 0.52);
+  --shell-control-bg: oklch(0.14 0 0 / 0.96);
+  --shell-control-border: oklch(0.22 0 0 / 0.92);
+  --shell-control-border-hover: oklch(0.28 0 0 / 0.96);
+  --shell-control-shadow:
+    0 1px 0 0 oklch(0.22 0 0 / 0.82) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.74) inset,
+    0 10px 18px -14px oklch(0 0 0 / 0.72),
+    0 3px 6px -4px oklch(0 0 0 / 0.34);
+  --shell-control-shadow-hover:
+    0 1px 0 0 oklch(0.28 0 0 / 0.84) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.76) inset,
+    0 16px 28px -18px oklch(0 0 0 / 0.82),
+    0 6px 12px -8px oklch(0 0 0 / 0.42);
+  --shell-control-shadow-pressed:
+    0 1px 0 0 oklch(0.16 0 0 / 0.86) inset,
+    0 2px 8px oklch(0 0 0 / 0.48) inset,
+    0 3px 10px -8px oklch(0 0 0 / 0.26);
+  --shell-control-active-bg: oklch(0.17 0 0 / 0.98);
+  --shell-control-active-border: oklch(0.3 0 0 / 0.98);
+  --shell-control-active-shadow:
+    0 1px 0 0 oklch(0.28 0 0 / 0.86) inset,
+    0 -1px 0 0 oklch(0.05 0 0 / 0.78) inset,
+    0 18px 30px -20px oklch(0 0 0 / 0.8),
+    0 6px 14px -10px oklch(0 0 0 / 0.44);
+  --shell-inset-bg: oklch(0.09 0 0 / 0.98);
+  --shell-inset-border: oklch(0.18 0 0 / 0.92);
+  --shell-inset-shadow:
+    0 1px 0 0 oklch(0.16 0 0 / 0.74) inset,
+    0 6px 16px -10px oklch(0 0 0 / 0.58) inset,
+    0 -1px 0 0 oklch(0.04 0 0 / 0.76) inset;
+  --shell-plan-active-bg: oklch(0.16 0.03 85 / 0.98);
+  --shell-plan-active-border: oklch(0.34 0.06 82 / 0.72);
+  --shell-plan-active-text: oklch(0.79 0.1 82);
+  --shell-plan-upgrade-bg: oklch(0.16 0.04 260 / 0.98);
+  --shell-plan-upgrade-border: oklch(0.42 0.08 260 / 0.7);
+  --shell-plan-upgrade-text: oklch(0.84 0.05 255);
+  --canvas-glow-1: oklch(0.24 0 0 / 0.16);
+  --canvas-glow-2: oklch(0.14 0 0 / 0.12);
+}
+
+.light {
+  --background: oklch(0.96 0.012 82);
+  --foreground: oklch(0.19 0.01 82);
+  --card: oklch(0.99 0.006 82);
+  --card-foreground: oklch(0.19 0.01 82);
+  --popover: oklch(0.99 0.006 82);
+  --popover-foreground: oklch(0.19 0.01 82);
+  --primary: oklch(0.19 0.01 82);
+  --primary-foreground: oklch(0.98 0.006 82);
+  --secondary: oklch(0.91 0.012 82);
+  --secondary-foreground: oklch(0.28 0.01 82);
+  --muted: oklch(0.9 0.012 82);
+  --muted-foreground: oklch(0.47 0.01 82);
+  --accent: oklch(0.87 0.014 82);
+  --accent-foreground: oklch(0.2 0.01 82);
+  --destructive: oklch(0.52 0.16 25);
+  --destructive-foreground: oklch(0.98 0.006 82);
+  --border: oklch(0.82 0.012 82);
+  --input: oklch(0.86 0.012 82);
+  --ring: oklch(0.48 0.02 82);
+  --chart-1: oklch(0.42 0.08 145);
+  --chart-2: oklch(0.52 0.08 220);
+  --chart-3: oklch(0.62 0.08 75);
+  --chart-4: oklch(0.5 0.1 25);
+  --chart-5: oklch(0.48 0.05 310);
+  --sidebar: oklch(0.92 0.014 82);
+  --sidebar-foreground: oklch(0.34 0.01 82);
+  --sidebar-primary: oklch(0.19 0.01 82);
+  --sidebar-primary-foreground: oklch(0.98 0.006 82);
+  --sidebar-accent: oklch(0.86 0.014 82);
+  --sidebar-accent-foreground: oklch(0.2 0.01 82);
+  --sidebar-border: oklch(0.8 0.012 82);
+  --sidebar-ring: oklch(0.48 0.02 82);
+  --sidebar-shadow:
+    2px 0 18px oklch(0.35 0.02 82 / 0.12),
+    1px 0 0 oklch(1 0 0 / 0.75) inset;
+  --sidebar-control-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.78) inset,
+    0 -1px 0 0 oklch(0.74 0.012 82 / 0.45) inset,
+    0 6px 16px oklch(0.4 0.02 82 / 0.12);
+  --popover-shadow:
+    0 20px 48px -18px oklch(0.32 0.02 82 / 0.28),
+    0 8px 20px oklch(0.32 0.02 82 / 0.12);
+  --shell-panel-bg: oklch(0.985 0.008 82 / 0.92);
+  --shell-panel-border: oklch(0.85 0.012 82 / 0.95);
+  --shell-panel-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.96) inset,
+    0 -1px 0 0 oklch(0.84 0.012 82 / 0.52) inset,
+    0 24px 48px -30px oklch(0.38 0.02 82 / 0.24),
+    0 10px 22px -16px oklch(0.38 0.02 82 / 0.16);
+  --shell-floating-bg: oklch(0.99 0.008 82 / 0.98);
+  --shell-floating-border: oklch(0.84 0.012 82 / 0.98);
+  --shell-floating-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.98) inset,
+    0 -1px 0 0 oklch(0.82 0.012 82 / 0.55) inset,
+    0 26px 54px -28px oklch(0.38 0.02 82 / 0.28),
+    0 12px 24px -14px oklch(0.38 0.02 82 / 0.18);
+  --shell-control-bg: oklch(0.976 0.008 82 / 0.98);
+  --shell-control-border: oklch(0.84 0.012 82 / 0.96);
+  --shell-control-border-hover: oklch(0.78 0.014 82 / 0.98);
+  --shell-control-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.98) inset,
+    0 -1px 0 0 oklch(0.82 0.012 82 / 0.55) inset,
+    0 14px 22px -20px oklch(0.38 0.02 82 / 0.24),
+    0 4px 8px -6px oklch(0.38 0.02 82 / 0.14);
+  --shell-control-shadow-hover:
+    0 1px 0 0 oklch(1 0 0 / 1) inset,
+    0 -1px 0 0 oklch(0.8 0.012 82 / 0.6) inset,
+    0 18px 30px -22px oklch(0.38 0.02 82 / 0.26),
+    0 6px 12px -8px oklch(0.38 0.02 82 / 0.16);
+  --shell-control-shadow-pressed:
+    0 1px 0 0 oklch(1 0 0 / 0.7) inset,
+    0 2px 8px oklch(0.64 0.015 82 / 0.14) inset,
+    0 3px 10px -8px oklch(0.38 0.02 82 / 0.08);
+  --shell-control-active-bg: oklch(0.95 0.01 82 / 0.99);
+  --shell-control-active-border: oklch(0.78 0.014 82 / 0.98);
+  --shell-control-active-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.98) inset,
+    0 -1px 0 0 oklch(0.79 0.012 82 / 0.62) inset,
+    0 18px 30px -22px oklch(0.38 0.02 82 / 0.24),
+    0 6px 12px -8px oklch(0.38 0.02 82 / 0.16);
+  --shell-inset-bg: oklch(0.94 0.01 82 / 0.98);
+  --shell-inset-border: oklch(0.84 0.012 82 / 0.94);
+  --shell-inset-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.82) inset,
+    0 3px 10px -6px oklch(0.64 0.015 82 / 0.12) inset,
+    0 -1px 0 0 oklch(0.8 0.012 82 / 0.52) inset;
+  --shell-plan-active-bg: oklch(0.94 0.03 86 / 0.98);
+  --shell-plan-active-border: oklch(0.79 0.05 84 / 0.88);
+  --shell-plan-active-text: oklch(0.46 0.08 84);
+  --shell-plan-upgrade-bg: oklch(0.93 0.022 250 / 0.98);
+  --shell-plan-upgrade-border: oklch(0.76 0.05 250 / 0.86);
+  --shell-plan-upgrade-text: oklch(0.42 0.05 250);
+  --canvas-glow-1: oklch(0.93 0.015 84 / 0.82);
+  --canvas-glow-2: oklch(0.9 0.012 70 / 0.54);
+}
+
+.light .nexo-app-shell [class*="bg-[#0"],
+.light .nexo-app-shell [class*="bg-[#1"],
+.light .nexo-app-shell [class*="bg-[#2"] {
+  background-color: oklch(0.98 0.008 82) !important;
+}
+
+.light .nexo-app-shell [class*="bg-[#F5F5F5]"] {
+  background-color: oklch(0.2 0.01 82) !important;
+}
+
+.light .nexo-app-shell [class*="border-[#"] {
+  border-color: oklch(0.82 0.012 82) !important;
+}
+
+.light .nexo-app-shell [class*="text-[#F"],
+.light .nexo-app-shell [class*="text-[#E"],
+.light .nexo-app-shell [class*="text-[#D"],
+.light .nexo-app-shell [class*="text-[#B"],
+.light .nexo-app-shell [class*="text-[#C"] {
+  color: oklch(0.2 0.01 82) !important;
+}
+
+.light .nexo-app-shell [class*="text-[#5"],
+.light .nexo-app-shell [class*="text-[#6"],
+.light .nexo-app-shell [class*="text-[#7"],
+.light .nexo-app-shell [class*="text-[#8"],
+.light .nexo-app-shell [class*="text-[#9"],
+.light .nexo-app-shell [class*="text-[#A"] {
+  color: oklch(0.48 0.01 82) !important;
+}
+
+.light .nexo-app-shell [class*="text-[#DABF74]"] {
+  color: oklch(0.52 0.11 78) !important;
+}
+
+.light .nexo-app-shell [class*="text-[#0D0D0D]"] {
+  color: oklch(0.98 0.006 82) !important;
+}
+
+.light .nexo-app-shell [class*="text-[#8B2500]"] {
+  color: oklch(0.45 0.14 35) !important;
+}
+
+.light .nexo-app-shell input::placeholder,
+.light .nexo-app-shell textarea::placeholder {
+  color: oklch(0.55 0.01 82) !important;
 }
 
 @layer base {
@@ -133,6 +402,10 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Space Grotesk', system-ui, sans-serif;
+    background-image:
+      radial-gradient(900px 520px at 0% 0%, var(--canvas-glow-1), transparent 58%),
+      radial-gradient(760px 440px at 100% 0%, var(--canvas-glow-2), transparent 60%);
+    background-attachment: fixed;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -154,6 +427,107 @@
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  .nexo-shell-panel {
+    background: var(--shell-panel-bg);
+    border: 1px solid var(--shell-panel-border);
+    box-shadow: var(--shell-panel-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .nexo-shell-float {
+    background: var(--shell-floating-bg);
+    border: 1px solid var(--shell-floating-border);
+    box-shadow: var(--shell-floating-shadow);
+    backdrop-filter: blur(20px);
+  }
+
+  .nexo-shell-control,
+  .nexo-shell-ghost-control,
+  .nexo-shell-control-active,
+  .nexo-shell-control-inset {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .nexo-shell-control {
+    background: var(--shell-control-bg);
+    border: 1px solid var(--shell-control-border);
+    box-shadow: var(--shell-control-shadow);
+  }
+
+  .nexo-shell-control:hover,
+  .nexo-shell-control[aria-expanded="true"],
+  .nexo-shell-control[aria-pressed="true"] {
+    transform: translateY(-1px);
+    border-color: var(--shell-control-border-hover);
+    box-shadow: var(--shell-control-shadow-hover);
+  }
+
+  .nexo-shell-control:active {
+    transform: translateY(1px);
+    box-shadow: var(--shell-control-shadow-pressed);
+  }
+
+  .nexo-shell-control-active {
+    background: var(--shell-control-active-bg);
+    border: 1px solid var(--shell-control-active-border);
+    box-shadow: var(--shell-control-active-shadow);
+  }
+
+  .nexo-shell-control-inset {
+    background: var(--shell-inset-bg);
+    border: 1px solid var(--shell-inset-border);
+    box-shadow: var(--shell-inset-shadow);
+  }
+
+  .nexo-shell-ghost-control {
+    border: 1px solid transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .nexo-shell-ghost-control:hover,
+  .nexo-shell-ghost-control:focus-visible {
+    transform: translateY(-1px);
+    background: var(--shell-control-bg);
+    border-color: var(--shell-control-border);
+    box-shadow: var(--shell-control-shadow);
+  }
+
+  .nexo-shell-ghost-control:active {
+    transform: translateY(1px);
+    background: var(--shell-control-bg);
+    border-color: var(--shell-control-border);
+    box-shadow: var(--shell-control-shadow-pressed);
+  }
+
+  .nexo-plan-chip-active,
+  .nexo-plan-chip-upgrade {
+    box-shadow: var(--shell-control-shadow);
+  }
+
+  .nexo-plan-chip-active {
+    background: var(--shell-plan-active-bg);
+    border: 1px solid var(--shell-plan-active-border);
+    color: var(--shell-plan-active-text);
+  }
+
+  .nexo-plan-chip-upgrade {
+    background: var(--shell-plan-upgrade-bg);
+    border: 1px solid var(--shell-plan-upgrade-border);
+    color: var(--shell-plan-upgrade-text);
+  }
+
+  .light .nexo-brand-logo,
+  .light .nexo-app-shell header .nexo-brand-logo,
+  .light .nexo-app-shell aside .nexo-brand-logo {
+    filter: brightness(0) saturate(100%);
   }
 
   .flex {
@@ -334,11 +708,11 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: oklch(0.55 0 0);
+    color: var(--muted-foreground);
   }
 
   .nexo-grid-line {
-    border-color: oklch(0.15 0 0);
+    border-color: var(--border);
   }
 
   /* Scrollbar styling */
@@ -358,6 +732,124 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.35 0 0);
+  }
+
+  .light .nexo-depth-0 {
+    background: oklch(0.97 0.008 82);
+    box-shadow: none;
+  }
+
+  .light .nexo-depth-1 {
+    background: oklch(0.985 0.006 82);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.88) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.5) inset,
+      0 10px 24px -10px oklch(0.35 0.02 82 / 0.18),
+      0 2px 8px oklch(0.35 0.02 82 / 0.08);
+    border: 1px solid oklch(0.84 0.012 82);
+  }
+
+  .light .nexo-depth-2 {
+    background: oklch(0.985 0.006 82);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.92) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.48) inset,
+      0 14px 34px -14px oklch(0.34 0.02 82 / 0.2),
+      0 4px 14px oklch(0.34 0.02 82 / 0.09),
+      0 1px 2px oklch(0.34 0.02 82 / 0.08);
+    border: 1px solid oklch(0.84 0.012 82);
+  }
+
+  .light .nexo-depth-3 {
+    background: oklch(0.99 0.006 82);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.96) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.44) inset,
+      1px 0 0 0 oklch(1 0 0 / 0.72) inset,
+      0 20px 44px -18px oklch(0.32 0.02 82 / 0.22),
+      0 8px 18px -6px oklch(0.32 0.02 82 / 0.12),
+      0 2px 4px oklch(0.32 0.02 82 / 0.08);
+    border: 1px solid oklch(0.84 0.012 82);
+  }
+
+  .light .nexo-depth-4 {
+    background: oklch(0.995 0.005 82);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.98) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.4) inset,
+      1px 0 0 0 oklch(1 0 0 / 0.78) inset,
+      0 26px 60px -24px oklch(0.32 0.02 82 / 0.24),
+      0 10px 24px -8px oklch(0.32 0.02 82 / 0.14),
+      0 4px 10px oklch(0.32 0.02 82 / 0.08);
+    border: 1px solid oklch(0.84 0.012 82);
+  }
+
+  .light .nexo-depth-1:hover,
+  .light .nexo-depth-2:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.96) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.42) inset,
+      1px 0 0 0 oklch(1 0 0 / 0.72) inset,
+      0 22px 48px -20px oklch(0.32 0.02 82 / 0.26),
+      0 10px 20px -8px oklch(0.32 0.02 82 / 0.14),
+      0 2px 4px oklch(0.32 0.02 82 / 0.08);
+    border-color: oklch(0.78 0.014 82);
+    transition: all 0.2s ease;
+  }
+
+  .light .nexo-depth-2:active {
+    transform: translateY(1px);
+    box-shadow:
+      0 1px 0 0 oklch(0.86 0.012 82) inset,
+      0 2px 8px oklch(0.5 0.02 82 / 0.1) inset,
+      0 3px 10px oklch(0.35 0.02 82 / 0.08);
+    transition: all 0.1s ease;
+  }
+
+  .light .nexo-glow-top::before {
+    background: linear-gradient(90deg, transparent, oklch(0.82 0.018 82 / 0.9), transparent);
+  }
+
+  .light .nexo-card-premium {
+    background: oklch(0.99 0.006 82);
+  }
+
+  .light .nexo-card-premium::before {
+    background: linear-gradient(
+      135deg,
+      oklch(0.84 0.02 82 / 0.9) 0%,
+      oklch(0.92 0.01 82 / 0.6) 50%,
+      oklch(0.78 0.014 82 / 0.55) 100%
+    );
+  }
+
+  .light .nexo-card {
+    background: oklch(0.985 0.006 82);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.9) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.44) inset,
+      0 12px 28px -12px oklch(0.34 0.02 82 / 0.18),
+      0 3px 10px oklch(0.34 0.02 82 / 0.08);
+    border: 1px solid oklch(0.84 0.012 82);
+  }
+
+  .light .nexo-card:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.96) inset,
+      0 -1px 0 0 oklch(0.8 0.012 82 / 0.42) inset,
+      0 18px 36px -16px oklch(0.34 0.02 82 / 0.22),
+      0 5px 12px oklch(0.34 0.02 82 / 0.1);
+    border-color: oklch(0.78 0.014 82);
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    background: oklch(0.75 0.012 82);
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.65 0.014 82);
   }
 }
 
@@ -521,12 +1013,18 @@ a[href] {
 /* Better focus states for accessibility */
 button:focus-visible,
 [role="button"]:focus-visible,
-a[href]:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+a[href]:focus-visible {
   outline: 2px solid oklch(0.55 0 0);
   outline-offset: 2px;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
 }
 
 /* Reduce motion for users who prefer it */
