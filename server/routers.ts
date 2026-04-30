@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Request } from "express";
 import { randomUUID } from "crypto";
 import { systemRouter } from "./_core/systemRouter";
+import { supportRouter } from "./support";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getPlanLimits, type PlanTier } from "@shared/plans";
 import {
@@ -555,6 +556,7 @@ async function getAIUsageForUser(params: {
 
 export const appRouter = router({
   system: systemRouter,
+  support: supportRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: WhatsApp do suporte NEXO
-    url: https://wa.me/559885786601
-    about: Use para assuntos privados ou urgentes sem expor dados no GitHub.
-  - name: E-mail do suporte NEXO
-    url: mailto:macksongaspar@gmail.com?subject=Suporte%20NEXO%20Finance
-    about: Use para enviar contexto privado com seguranca.
+  - name: Central de suporte NEXO
+    url: https://github.com/macksongaspar/nexo.finance#suporte-nexo
+    about: Use a central do app para conta, pagamento ou dados privados. GitHub fica so para bug e sugestao publica.

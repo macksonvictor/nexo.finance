@@ -172,7 +172,7 @@ const PLAN_COPY: Record<
     comparison: "Comparativo Completo",
     featureColumn: "Funcionalidade",
     savedBackups: "Backups Salvos",
-    securityTitle: "Pagamento Seguro via Stripe",
+    securityTitle: "Pagamento seguro",
     securityDescription:
       "Todos os pagamentos são processados com criptografia SSL/TLS. Seus dados financeiros nunca são compartilhados. Cancele a qualquer momento sem taxas adicionais.",
     creatorBanner: "Conta do Criador - Acesso Elite Permanente",
@@ -181,9 +181,9 @@ const PLAN_COPY: Record<
     activePlanMessage: (plan) => `Você está no plano ${plan}!`,
     renewsAt: (date) => `Renova em ${date}`,
     activeSubscription: "Assinatura ativa",
-    checkoutRedirect: (plan) => `Abrindo checkout do plano ${plan}...`,
+    checkoutRedirect: (plan) => `Abrindo pagamento do plano ${plan}...`,
     checkoutMissing:
-      "Checkout do Stripe ainda não está configurado. Preencha STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK ou STRIPE_SECRET_KEY no .env e reinicie o app.",
+      "Pagamento ainda não está configurado. Revise as variáveis de pagamento no ambiente e reinicie o app.",
     checkoutError: "Erro ao processar upgrade. Tente novamente.",
     cancelSupport: "Para cancelar sua assinatura, entre em contato com o suporte.",
     plans: {
@@ -282,7 +282,7 @@ const PLAN_COPY: Record<
     comparison: "Full Comparison",
     featureColumn: "Feature",
     savedBackups: "Saved Backups",
-    securityTitle: "Stripe Payments",
+    securityTitle: "Secure payments",
     securityDescription:
       "Payments are processed with SSL/TLS encryption. Your financial data is never shared. Cancel anytime with no extra fees.",
     creatorBanner: "Creator Account - Permanent Elite Access",
@@ -291,9 +291,9 @@ const PLAN_COPY: Record<
     activePlanMessage: (plan) => `You are on the ${plan} plan!`,
     renewsAt: (date) => `Renews on ${date}`,
     activeSubscription: "Active subscription",
-    checkoutRedirect: (plan) => `Opening ${plan} checkout...`,
+    checkoutRedirect: (plan) => `Opening ${plan} payment...`,
     checkoutMissing:
-      "Stripe Checkout is not configured yet. Fill STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK, or STRIPE_SECRET_KEY in .env and restart the app.",
+      "Payment is not configured yet. Review payment environment variables and restart the app.",
     checkoutError: "Could not process the upgrade. Try again.",
     cancelSupport: "To cancel your subscription, contact support.",
     plans: {
@@ -392,7 +392,7 @@ const PLAN_COPY: Record<
     comparison: "Comparativo Completo",
     featureColumn: "Funcionalidad",
     savedBackups: "Backups Guardados",
-    securityTitle: "Pagos por Stripe",
+    securityTitle: "Pagos seguros",
     securityDescription:
       "Los pagos se procesan con cifrado SSL/TLS. Tus datos financieros nunca se comparten. Cancela cuando quieras sin tarifas adicionales.",
     creatorBanner: "Cuenta del Creador - Acceso Elite Permanente",
@@ -401,9 +401,9 @@ const PLAN_COPY: Record<
     activePlanMessage: (plan) => `Estás en el plan ${plan}!`,
     renewsAt: (date) => `Renueva el ${date}`,
     activeSubscription: "Suscripción activa",
-    checkoutRedirect: (plan) => `Abriendo checkout del plan ${plan}...`,
+    checkoutRedirect: (plan) => `Abriendo pago del plan ${plan}...`,
     checkoutMissing:
-      "Stripe Checkout aún no está configurado. Completa STRIPE_*_PAYMENT_LINK, VITE_STRIPE_*_PAYMENT_LINK o STRIPE_SECRET_KEY en .env y reinicia la app.",
+      "El pago aún no está configurado. Revisa las variables de pago del entorno y reinicia la app.",
     checkoutError: "Error al procesar la mejora. Inténtalo de nuevo.",
     cancelSupport: "Para cancelar tu suscripción, contacta con soporte.",
     plans: {
@@ -527,7 +527,7 @@ export function PlanosView() {
       if (result.url) {
         window.location.assign(result.url);
       } else {
-        toast.error('Erro ao redirecionar para checkout. Tente novamente.');
+        toast.error('Erro ao abrir pagamento. Tente novamente.');
         setUpgrading(null);
       }
     } catch (error) {
