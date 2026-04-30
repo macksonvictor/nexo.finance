@@ -461,6 +461,8 @@ pnpm exec vite build
 
 - [NEXO_DOCUMENTATION.md](./NEXO_DOCUMENTATION.md)
 - [SUPPORT.md](./SUPPORT.md)
+- [docs/GITHUB_MAINTENANCE.md](./docs/GITHUB_MAINTENANCE.md)
+- [SECURITY.md](./SECURITY.md)
 - [client/public/rive/README.md](./client/public/rive/README.md)
 - [Dockerfile](./Dockerfile)
 
@@ -470,14 +472,17 @@ pnpm exec vite build
 
 Canal atual:
 
-- `macksongaspar@gmail.com`
+- central de suporte dentro do app NEXO
+- GitHub Issues apenas para bugs e sugestões públicas, sem dados pessoais
 
-Ao pedir suporte, envie:
+Ao pedir suporte privado pelo app, envie:
 
 - e-mail da conta usada
 - descrição objetiva do problema
 - print ou vídeo curto, se possível
 - horário aproximado e dispositivo usado
+
+Não publique e-mail, telefone, chaves, dados financeiros ou prints sensíveis em issues públicas.
 
 Detalhes:
 

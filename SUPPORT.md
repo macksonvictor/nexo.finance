@@ -2,32 +2,32 @@
 
 ## Canal principal
 
-Suporte atual por e-mail:
+Use a central de suporte dentro do app NEXO. Ela começa pela IA de suporte, tenta responder com base nos artigos e só escala quando o caso realmente precisa de acompanhamento humano.
 
-- `macksongaspar@gmail.com`
+Não publique e-mail, telefone, chaves, tokens, dados financeiros ou prints sensíveis em issues públicas.
 
 ## Quando entrar em contato
 
-Use esse canal para:
+Use a central para:
 
 - problemas de acesso
 - erros no app
-- duvidas sobre planos
-- falhas em cobranca
-- sugestoes de melhoria
+- dúvidas sobre planos
+- falhas em cobrança
+- sugestões de melhoria
 
 ## Como enviar um pedido de suporte melhor
 
 Para agilizar o atendimento, envie:
 
 - e-mail da conta usada no produto
-- descricao objetiva do problema
+- descrição objetiva do problema
 - passo a passo do que aconteceu
-- print ou video curto
-- horario aproximado do erro
+- print ou vídeo curto, sem dados sensíveis
+- horário aproximado do erro
 - navegador, celular ou sistema usado
 
-## Modelo rapido
+## Modelo rápido
 
 ```txt
 Assunto: NEXO - problema ao [entrar / pagar / usar]
@@ -36,13 +36,17 @@ Nome:
 E-mail da conta:
 O que aconteceu:
 Como reproduzir:
-Horario aproximado:
+Horário aproximado:
 Dispositivo / navegador:
 Anexos:
 ```
 
-## Observacao
+## GitHub
 
-Neste momento, o suporte e operado diretamente por Mackson Gaspar.
+Use GitHub apenas para bugs e sugestões públicas, sem dados pessoais.
 
-Com a evolucao do produto, esse canal pode migrar para um dominio proprio da marca.
+Problemas de conta, pagamento e segurança devem ficar no suporte privado do app.
+
+## Observação
+
+O suporte humano profissional será conectado por ferramenta dedicada quando a operação estiver pronta. Até lá, o app usa alerta interno configurado por ambiente.

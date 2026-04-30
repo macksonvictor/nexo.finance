@@ -1,18 +1,18 @@
-name: Pergunta publica sobre o NEXO
-description: Use somente para duvidas publicas sem dados pessoais. Para conta, pagamento ou dados sensiveis, use a central do app.
+name: Pergunta pública sobre o NEXO
+description: Use somente para dúvidas públicas sem dados pessoais. Para conta, pagamento ou dados sensíveis, use a central do app.
 title: "[pergunta-publica] "
 labels: ["pergunta"]
 body:
   - type: markdown
     attributes:
       value: |
-        GitHub e publico. Nao use este formulario para conta, pagamento, dados financeiros, e-mail, telefone, chaves, senhas, tokens ou prints com informacoes sensiveis.
-        Para assunto privado, use a central de suporte dentro do app. O suporte humano profissional sera conectado por uma ferramenta dedicada futuramente.
+        GitHub é público. Não use este formulário para conta, pagamento, dados financeiros, e-mail, telefone, chaves, senhas, tokens ou prints com informações sensíveis.
+        Para assunto privado, use a central de suporte dentro do app. O suporte humano profissional será conectado por uma ferramenta dedicada futuramente.
   - type: textarea
     id: duvida
     attributes:
-      label: Qual e a pergunta publica?
-      placeholder: Descreva a duvida sem dados pessoais ou financeiros.
+      label: Qual é a pergunta pública?
+      placeholder: Descreva a dúvida sem dados pessoais ou financeiros.
     validations:
       required: true
   - type: dropdown
@@ -25,8 +25,8 @@ body:
         - Caixas
         - Nexo IA
         - Bug
-        - Sugestao
-        - Documentacao
+        - Sugestão
+        - Documentação
         - Outro
     validations:
       required: true
@@ -34,6 +34,6 @@ body:
     id: contexto
     attributes:
       label: Contexto seguro
-      description: Inclua apenas informacoes que podem ser publicas.
+      description: Inclua apenas informações que podem ser públicas.
     validations:
       required: false
