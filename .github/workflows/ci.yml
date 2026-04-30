@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - stable
-      - "codex/**"
   pull_request:
     branches:
       - stable

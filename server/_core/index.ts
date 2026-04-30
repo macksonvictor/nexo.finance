@@ -78,9 +78,9 @@ async function startServer() {
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: "Muitas requisicoes. Tente novamente em instantes." },
+    message: { error: "Muitas requisições. Tente novamente em instantes." },
   });
-  app.use(globalLimiter);
+  app.use("/api", globalLimiter);
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

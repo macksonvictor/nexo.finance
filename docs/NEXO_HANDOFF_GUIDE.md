@@ -255,7 +255,92 @@ services/nexo-ai-python/app/services/
 services/nexo-ai-python/tests/
 ```
 
-## 7. Dominio, Clerk E Deploy
+## 7. Suporte NEXO
+
+A central de suporte deve seguir a regra de produto limpo: poucos caminhos na
+tela inicial, coleções temáticas e artigos completos quando o usuário escolher
+um assunto. O comportamento de clicar fora para fechar vale para o widget e
+painéis do suporte, sem alterar o fechamento global do restante do app.
+
+Arquivos principais:
+
+```txt
+client/src/pages/SupportPage.tsx
+client/src/components/SupportWidget.tsx
+client/src/lib/supportProvider.ts
+client/src/data/supportArticles.ts
+shared/supportKnowledge.ts
+server/support.ts
+server/_core/githubSupport.ts
+server/_core/notification.ts
+client/src/constants/team.ts
+.github/ISSUE_TEMPLATE/
+```
+
+Regras atuais:
+
+- A home de `/suporte` mostra busca e coleções; não despeja todos os artigos na
+  primeira tela.
+- Ao clicar em uma coleção, a página troca para a lista daquela coleção, no
+  estilo help center da Manus.
+- O widget começa como `NEXO Suporte IA`, cumprimenta pelo nome quando houver
+  usuário logado e responde com base nos artigos locais.
+- O widget tem abas `Início`, conversa ativa e `Mensagens`; mensagens antigas
+  não são despejadas quando o usuário inicia uma nova conversa.
+- Bug técnico e sugestão podem abrir issue sanitizada no GitHub quando
+  `GITHUB_TOKEN` e `GITHUB_SUPPORT_REPO` estiverem configurados.
+- Conta, pagamento, cobrança, dados financeiros, e-mail, telefone, chaves e
+  prints sensíveis nunca devem ir para GitHub público.
+- WhatsApp e Gmail pessoais não devem aparecer na interface pública.
+- Alertas internos usam `OWNER_NOTIFICATION_WEBHOOK_URL`, que pode receber uma
+  URL JSON comum ou uma lista de URLs separadas por vírgula, incluindo CallMeBot
+  já completo no `.env`.
+- Upload de imagens/anexos no suporte ainda não está ativo. Quando entrar,
+  usar storage privado, limite de tamanho, validação de tipo de arquivo e nunca
+  enviar anexos sensíveis para issue pública.
+
+Variáveis úteis:
+
+```env
+OWNER_NOTIFICATION_WEBHOOK_URL=
+GITHUB_TOKEN=
+GITHUB_SUPPORT_REPO=
+GITHUB_SUPPORT_LABEL_BUG=bug
+GITHUB_SUPPORT_LABEL_SUGGESTION=sugestao
+```
+
+Status importante:
+
+- O plugin GitHub usado pelo Codex ajuda a mexer no repositório durante o
+  desenvolvimento, mas o app rodando em produção não consegue usar essa sessão.
+  Para criar issue automaticamente, o servidor precisa de `GITHUB_TOKEN` no
+  ambiente.
+- `GITHUB_TOKEN` deve ser um token fine-grained limitado ao repositório do NEXO,
+  com permissão de `Issues: Read and write`.
+- `GITHUB_SUPPORT_REPO` deve ficar no formato `owner/repo`.
+- `OWNER_NOTIFICATION_WEBHOOK_URL` deve receber uma URL privada de webhook. Pode
+  ser JSON comum ou URLs completas do CallMeBot separadas por vírgula para
+  avisar mais de uma pessoa. Nunca colocar número, chave ou URL privada no
+  código ou no GitHub.
+- Se `GITHUB_TOKEN` estiver vazio, o suporte conversa, mas não cria issue.
+- Se `OWNER_NOTIFICATION_WEBHOOK_URL` estiver vazio, o suporte conversa, mas não
+  envia alerta interno/WhatsApp.
+- Se os dois estiverem vazios, não aparecerá nada no GitHub nem no WhatsApp; a
+  validação final deve sempre testar uma pergunta de bug real e conferir GitHub
+  + alerta privado.
+
+Suporte humano futuro:
+
+- O caminho recomendado para atendimento humano profissional é Chatwoot.
+- Chatwoot deve ser plugado depois por variáveis de ambiente/token de inbox,
+  sem expor telefone pessoal.
+- Intercom foi usado como referência visual porque a Manus usa Intercom no help
+  center, mas não é a escolha inicial do NEXO por custo e dependência.
+- Quando Chatwoot entrar, o provider deve encaminhar casos `private_support`
+  para a inbox humana e manter GitHub somente para `github_bug` e
+  `github_suggestion`.
+
+## 8. Dominio, Clerk E Deploy
 
 ### Dominio
 
@@ -321,7 +406,7 @@ Antes de ligar cobranca real:
 - Validar webhook antes de mover para live.
 - Conferir fallback para usuario admin/criador.
 
-## 8. Rive E Mascote
+## 9. Rive E Mascote
 
 O app ja esta preparado para receber:
 
@@ -359,7 +444,7 @@ Direcao visual:
 - Manter fundo transparente.
 - Exportar `.riv`, colocar na pasta publica e ativar em `nexoAIMotion.ts`.
 
-## 9. Padrao Para Melhorias Futuras
+## 10. Padrao Para Melhorias Futuras
 
 Quando mexer em UI:
 
@@ -383,7 +468,15 @@ Quando mexer em Python:
 - Primeiro ligar em shadow mode.
 - So depois usar a resposta Python diretamente no prompt principal.
 
-## 10. Checklist Antes De Entregar
+Quando mexer em suporte:
+
+- Manter a pagina inicial limpa.
+- Nao publicar contato pessoal.
+- Nao transformar duvida privada em issue publica.
+- Expandir artigos antes de criar novos botoes.
+- Testar busca, colecao, artigo e widget no modo claro/escuro.
+
+## 11. Checklist Antes De Entregar
 
 - `pnpm check` passa.
 - `pnpm test` passa.

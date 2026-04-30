@@ -425,19 +425,17 @@ export function SettingsModal({
 
       case "pagamento":
         return (
-          <SettingsCard title="Planos e pagamento" eyebrow="Stripe">
+          <SettingsCard title="Planos e pagamento" eyebrow="Pagamento">
             <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
-              Os botões de assinatura usam links do Stripe no frontend ou a
-              sessão de checkout no backend. Se aparecer aviso de configuração,
-              revise o arquivo <span className="font-mono text-foreground">.env</span> e
-              reinicie o app.
+              Os botões de assinatura usam o fluxo seguro de pagamento do NEXO.
+              Se aparecer aviso de configuração, revise o ambiente e reinicie o app.
             </p>
 
             <div className="grid gap-3 md:grid-cols-2">
               <SummaryTile label="Plano atual" value={planName} />
               <SummaryTile
-                label="Checkout"
-                value="Payment Link ou Stripe Secret"
+                label="Pagamento"
+                value="Fluxo seguro configuravel"
               />
             </div>
 

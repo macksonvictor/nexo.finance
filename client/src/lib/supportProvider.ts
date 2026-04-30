@@ -1,11 +1,10 @@
-import {
-  buildSupportMailto,
-  buildSupportWhatsappUrl,
-  SUPPORT_TEAM,
-} from "@/constants/team";
+import { SUPPORT_TEAM } from "@/constants/team";
 import {
   supportArticles,
+  supportCategories,
   type SupportArticle,
+  type SupportCategoryId,
+  type SupportEscalation,
 } from "@/data/supportArticles";
 import type { NexoLanguage } from "@/lib/language";
 
@@ -16,15 +15,26 @@ export type SupportTopic =
   | "ia"
   | "bug"
   | "sugestao"
+  | "seguranca"
   | "humano";
 
+export type SupportClassification =
+  | "duvida"
+  | "pagamento"
+  | "conta"
+  | "bug"
+  | "sugestao"
+  | "seguranca"
+  | "baixo_conhecimento";
+
 export type SupportActionKind =
-  | "topic"
   | "article"
-  | "human"
-  | "email"
-  | "whatsapp"
-  | "github";
+  | "category"
+  | "github_bug"
+  | "github_suggestion"
+  | "human_request"
+  | "escalate"
+  | "login";
 
 export interface SupportAction {
   id: string;
@@ -42,38 +52,49 @@ export interface SupportMessage {
   createdAt: string;
   actions?: SupportAction[];
   articleIds?: string[];
+  classification?: SupportClassification;
 }
 
 export interface SupportProvider {
   getInitialMessages(language: NexoLanguage): SupportMessage[];
+  searchArticles(query: string, limit?: number): SupportArticle[];
+  classifyMessage(message: string): SupportClassification;
+  replyFromArticles(message: string, language: NexoLanguage): SupportMessage;
   replyToTopic(topic: SupportTopic, language: NexoLanguage): SupportMessage;
   replyToText(message: string, language: NexoLanguage): SupportMessage;
-  getHumanHandoff(message?: string, language?: NexoLanguage): SupportAction[];
+  getEscalationTarget(
+    message: string,
+    language?: NexoLanguage,
+    classification?: SupportClassification
+  ): SupportAction[];
 }
 
-const STORAGE_VERSION = "v1";
+const STORAGE_VERSION = "v4";
 export const SUPPORT_WIDGET_STORAGE_KEY = `nexo:support-widget:${STORAGE_VERSION}`;
 
-const topicArticles: Record<Exclude<SupportTopic, "humano">, string[]> = {
-  pagamento: ["stripe-checkout", "planos-disponiveis", "creditos-nexo-ia"],
-  conta: ["proteger-conta", "onde-ficam-meus-dados", "modo-claro-escuro"],
-  caixas: ["criar-primeira-caixa", "como-funcionam-caixas", "informar-receita-do-mes"],
-  ia: ["nexo-ia", "creditos-nexo-ia", "python-ia"],
-  bug: ["segredos-chaves", "variaveis-ambiente"],
-  sugestao: ["como-comecar-no-nexo", "nexo-ia"],
+const topicCategories: Record<SupportTopic, SupportCategoryId> = {
+  pagamento: "planos-pagamento",
+  conta: "conta-acesso",
+  caixas: "caixas-metas",
+  ia: "nexo-ia",
+  bug: "problemas-tecnicos",
+  sugestao: "problemas-tecnicos",
+  seguranca: "seguranca-dados",
+  humano: "seguranca-dados",
 };
 
 const topicLabels: Record<SupportTopic, string> = {
-  pagamento: "Pagamento",
-  conta: "Conta",
-  caixas: "Caixas",
+  pagamento: "Planos e pagamento",
+  conta: "Conta e acesso",
+  caixas: "Caixas e metas",
   ia: "Nexo IA",
-  bug: "Bug",
-  sugestao: "Sugestao",
+  bug: "Bug técnico",
+  sugestao: "Sugestão",
+  seguranca: "Segurança e dados",
   humano: "Suporte humano",
 };
 
-const topicKeywords: Record<SupportTopic, string[]> = {
+const classificationKeywords: Record<SupportClassification, string[]> = {
   pagamento: [
     "pagamento",
     "pagar",
@@ -85,69 +106,112 @@ const topicKeywords: Record<SupportTopic, string[]> = {
     "elite",
     "assinatura",
     "cartao",
+    "cobranca",
+    "reembolso",
   ],
-  conta: ["conta", "login", "senha", "email", "entrar", "perfil", "clerk"],
-  caixas: ["caixa", "caixas", "receita", "saldo", "categoria", "distribuicao"],
-  ia: ["ia", "nexo ia", "chat", "creditos", "python", "prompt", "conversa"],
-  bug: ["bug", "erro", "travou", "quebrou", "nao funciona", "problema", "falha"],
-  sugestao: ["sugestao", "ideia", "melhoria", "feature", "recurso"],
-  humano: ["humano", "pessoa", "atendente", "whatsapp", "email", "suporte"],
+  conta: [
+    "conta",
+    "login",
+    "senha",
+    "email",
+    "entrar",
+    "perfil",
+    "clerk",
+    "mudar de conta",
+  ],
+  bug: [
+    "bug",
+    "erro",
+    "travou",
+    "quebrou",
+    "nao funciona",
+    "falha",
+    "layout",
+    "tela",
+    "botao",
+    "console",
+    "build",
+    "localhost",
+  ],
+  sugestao: ["sugestao", "ideia", "melhoria", "feature", "recurso", "roadmap"],
+  seguranca: [
+    "seguranca",
+    "privacidade",
+    "dados",
+    "chave",
+    "token",
+    "sk_live",
+    "api key",
+    "env",
+    "banco",
+  ],
+  duvida: ["como", "onde", "quando", "porque", "caixa", "meta", "ia", "dashboard"],
+  baixo_conhecimento: [],
 };
 
 const copy = {
   "pt-BR": {
-    initial:
-      "Ola! Voce esta falando com o NEXO Suporte IA. Eu ajudo com artigos e caminhos rapidos. Como podemos ajudar?",
-    honestHuman:
-      "Se precisar, nossa equipe humana continua por WhatsApp ou e-mail. Eu preparo o contexto para voce nao explicar tudo de novo.",
-    noMatch:
-      "Encontrei alguns caminhos que podem ajudar. Se nao resolver, fale com suporte humano com o contexto ja preenchido.",
-    articleIntro: "Artigos recomendados",
-    humanTitle: "Falar com suporte humano",
-    email: "Enviar e-mail",
-    whatsapp: "Abrir WhatsApp",
-    githubBug: "Reportar bug no GitHub",
-    githubSuggestion: "Sugerir melhoria no GitHub",
+    initial: "Oi, eu sou o suporte NEXO.",
+    prompt: "Como posso ajudar? Você pode me contar o que aconteceu ou escolher um tema.",
+    categoryIntro: "Separei os artigos mais úteis sobre",
+    articleIntro: "Encontrei estes caminhos no suporte NEXO.",
+    privateSupport:
+      "Isso parece envolver conta, pagamento ou dado sensível. Vou te direcionar para suporte privado para evitar expor informações pessoais em canal público.",
+    githubBug:
+      "Isso parece um problema técnico reproduzível. Se não envolver dados pessoais, vou direcionar para um registro técnico com passos de reprodução.",
+    githubSuggestion:
+      "Isso parece uma sugestão de produto. Vou direcionar para um registro de melhoria sem dados pessoais.",
+    lowConfidence:
+      "Não encontrei uma resposta forte o suficiente. Veja estes artigos relacionados; se não resolver, solicite suporte privado.",
     openArticle: "Abrir artigo",
-    topics: "Escolher tema",
-    handoffMessage:
-      "Ola, equipe NEXO. Preciso de ajuda com suporte. Resumo do problema: ",
+    openCategory: "Ver coleção",
+    humanRequest: "Solicitar suporte privado",
+    githubBugAction: "Avisar equipe técnica",
+    githubSuggestionAction: "Enviar sugestão",
+    humanQueued:
+      "Não consegui resolver com segurança por aqui. Vou te direcionar para suporte privado; evite enviar senhas, chaves ou dados bancários.",
   },
   "en-US": {
-    initial:
-      "Hi! You are talking to NEXO Support AI. I can guide you through articles and quick paths. How can we help?",
-    honestHuman:
-      "If needed, our human team continues through WhatsApp or email. I prepare the context so you do not have to explain everything again.",
-    noMatch:
-      "I found a few paths that may help. If that does not solve it, contact human support with context already filled in.",
-    articleIntro: "Recommended articles",
-    humanTitle: "Contact human support",
-    email: "Send email",
-    whatsapp: "Open WhatsApp",
-    githubBug: "Report bug on GitHub",
-    githubSuggestion: "Suggest improvement on GitHub",
+    initial: "Hi, I am NEXO Support.",
+    prompt: "How can I help? You can tell me what happened or choose a topic.",
+    categoryIntro: "I separated the most useful articles about",
+    articleIntro: "I found these paths in NEXO support.",
+    privateSupport:
+      "This seems to involve account, payment, or sensitive data. I will direct you to private support to avoid exposing personal information in a public channel.",
+    githubBug:
+      "This seems like a reproducible technical issue. If it has no personal data, I will direct it to a technical report with reproduction steps.",
+    githubSuggestion:
+      "This seems like a product suggestion. I will direct it to an improvement report without personal data.",
+    lowConfidence:
+      "I did not find a strong enough answer. Check these related articles; if it does not solve it, request private support.",
     openArticle: "Open article",
-    topics: "Choose topic",
-    handoffMessage:
-      "Hello NEXO team. I need support. Problem summary: ",
+    openCategory: "View collection",
+    humanRequest: "Request private support",
+    githubBugAction: "Notify technical team",
+    githubSuggestionAction: "Send suggestion",
+    humanQueued:
+      "I could not solve this safely here. I will direct you to private support; avoid sending passwords, keys, or banking data.",
   },
   "es-ES": {
-    initial:
-      "Hola! Estas hablando con NEXO Soporte IA. Te ayudo con articulos y caminos rapidos. Como podemos ayudar?",
-    honestHuman:
-      "Si hace falta, nuestro equipo humano continua por WhatsApp o email. Preparo el contexto para que no expliques todo de nuevo.",
-    noMatch:
-      "Encontre algunos caminos que pueden ayudar. Si no resuelve, habla con soporte humano con el contexto ya completo.",
-    articleIntro: "Articulos recomendados",
-    humanTitle: "Hablar con soporte humano",
-    email: "Enviar email",
-    whatsapp: "Abrir WhatsApp",
-    githubBug: "Reportar bug en GitHub",
-    githubSuggestion: "Sugerir mejora en GitHub",
-    openArticle: "Abrir articulo",
-    topics: "Elegir tema",
-    handoffMessage:
-      "Hola equipo NEXO. Necesito ayuda de soporte. Resumen del problema: ",
+    initial: "Hola, soy soporte NEXO.",
+    prompt: "¿Cómo puedo ayudarte? Puedes contarme qué pasó o elegir un tema.",
+    categoryIntro: "Separé los artículos más útiles sobre",
+    articleIntro: "Encontré estos caminos en el soporte NEXO.",
+    privateSupport:
+      "Esto parece involucrar cuenta, pago o datos sensibles. Te dirigiré a soporte privado para evitar exponer información personal en un canal público.",
+    githubBug:
+      "Esto parece un problema técnico reproducible. Si no incluye datos personales, lo dirigiré a un reporte técnico con pasos de reproducción.",
+    githubSuggestion:
+      "Esto parece una sugerencia de producto. Lo dirigiré a un reporte de mejora sin datos personales.",
+    lowConfidence:
+      "No encontré una respuesta suficientemente fuerte. Mira estos artículos relacionados; si no resuelve, solicita soporte privado.",
+    openArticle: "Abrir artículo",
+    openCategory: "Ver colección",
+    humanRequest: "Solicitar soporte privado",
+    githubBugAction: "Avisar al equipo técnico",
+    githubSuggestionAction: "Enviar sugerencia",
+    humanQueued:
+      "No pude resolver esto con seguridad aquí. Te dirigiré a soporte privado; evita enviar contraseñas, claves o datos bancarios.",
   },
 } satisfies Record<NexoLanguage, Record<string, string>>;
 
@@ -160,15 +224,11 @@ const normalize = (value: string) =>
 const createId = () =>
   `support-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const getArticlesByIds = (ids: string[]) =>
-  ids
-    .map((id) => supportArticles.find((article) => article.id === id))
-    .filter((article): article is SupportArticle => Boolean(article));
-
 const makeMessage = (
   content: string,
   actions?: SupportAction[],
-  articleIds?: string[]
+  articleIds?: string[],
+  classification?: SupportClassification
 ): SupportMessage => ({
   id: createId(),
   role: "assistant",
@@ -177,69 +237,35 @@ const makeMessage = (
   createdAt: new Date().toISOString(),
   actions,
   articleIds,
+  classification,
 });
 
-const makeHumanActions = (summary: string, language: NexoLanguage): SupportAction[] => {
-  const message = `${copy[language].handoffMessage}${summary || "Descreva aqui o que aconteceu."}`;
-  return [
-    {
-      id: "human-whatsapp",
-      label: copy[language].whatsapp,
-      kind: "whatsapp",
-      href: buildSupportWhatsappUrl(message),
-    },
-    {
-      id: "human-email",
-      label: copy[language].email,
-      kind: "email",
-      href: buildSupportMailto(message),
-    },
-    {
-      id: "human-github-bug",
-      label: copy[language].githubBug,
-      kind: "github",
-      href: SUPPORT_TEAM.githubBugUrl,
-    },
-    {
-      id: "human-github-suggestion",
-      label: copy[language].githubSuggestion,
-      kind: "github",
-      href: SUPPORT_TEAM.githubSuggestionUrl,
-    },
-  ];
-};
+const termsFrom = (message: string) =>
+  normalize(message)
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 2);
 
-const makeTopicActions = (language: NexoLanguage): SupportAction[] => [
-  {
-    id: "topic-pagamento",
-    label: topicLabels.pagamento,
-    kind: "topic",
-    value: "pagamento",
-  },
-  { id: "topic-conta", label: topicLabels.conta, kind: "topic", value: "conta" },
-  {
-    id: "topic-caixas",
-    label: topicLabels.caixas,
-    kind: "topic",
-    value: "caixas",
-  },
-  { id: "topic-ia", label: topicLabels.ia, kind: "topic", value: "ia" },
-  { id: "topic-bug", label: topicLabels.bug, kind: "topic", value: "bug" },
-  {
-    id: "topic-sugestao",
-    label: topicLabels.sugestao,
-    kind: "topic",
-    value: "sugestao",
-  },
-  {
-    id: "topic-humano",
-    label: copy[language].humanTitle,
-    kind: "human",
-    value: "humano",
-  },
-];
+const articleSearchText = (article: SupportArticle) =>
+  normalize(
+    [
+      article.title,
+      article.summary,
+      article.categoryId,
+      ...(article.keywords ?? []),
+      ...article.sections.flatMap((section) => [
+        section.title,
+        ...(section.body ?? []),
+        ...(section.steps ?? []),
+      ]),
+      ...(article.commonIssues ?? []).flatMap((issue) => [
+        issue.question,
+        issue.answer,
+      ]),
+    ].join(" ")
+  );
 
-const makeArticleActions = (
+const articleActions = (
   articles: SupportArticle[],
   language: NexoLanguage
 ): SupportAction[] =>
@@ -250,126 +276,305 @@ const makeArticleActions = (
     value: article.id,
   }));
 
-const detectTopic = (message: string): SupportTopic | null => {
-  const normalized = normalize(message);
-  const entries = Object.entries(topicKeywords) as Array<
-    [SupportTopic, string[]]
-  >;
-  return (
-    entries.find(([, keywords]) =>
-      keywords.some((keyword) => normalized.includes(normalize(keyword)))
-    )?.[0] ?? null
+const categoryAction = (
+  categoryId: SupportCategoryId,
+  language: NexoLanguage
+): SupportAction => {
+  const category = supportCategories.find((item) => item.id === categoryId);
+  return {
+    id: `category-${categoryId}`,
+    label: `${copy[language].openCategory}: ${category?.title ?? categoryId}`,
+    kind: "category",
+    value: categoryId,
+  };
+};
+
+const redactSensitive = (message: string) =>
+  message
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[e-mail removido]")
+    .replace(/\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9_]+\b/g, "[chave removida]")
+    .replace(/\b\d{4,}(?:[\s.-]?\d{2,})+\b/g, "[número removido]")
+    .replace(/\+?\d[\d\s().-]{8,}\d/g, "[telefone removido]");
+
+const buildPublicIssueUrl = (
+  baseUrl: string,
+  message: string,
+  typeLabel: string
+) => {
+  if (!message.trim()) return baseUrl;
+
+  const url = new URL(baseUrl);
+  const safeMessage = redactSensitive(message.trim()).slice(0, 900);
+  url.searchParams.set("title", `[Suporte NEXO] ${typeLabel}`);
+  url.searchParams.set(
+    "body",
+    [
+      "Resumo automático do suporte NEXO:",
+      "",
+      `Tipo: ${typeLabel}`,
+      `Mensagem do usuário: ${safeMessage}`,
+      "",
+      "Antes de publicar, revise e remova qualquer e-mail, telefone, valor financeiro, chave, token ou print com dados pessoais.",
+      "",
+      "Passos para reproduzir:",
+      "1. ",
+      "",
+      "Resultado esperado:",
+      "",
+      "Resultado atual:",
+    ].join("\n")
   );
+  return url.toString();
 };
 
-const searchArticles = (message: string) => {
-  const normalized = normalize(message);
-  const terms = normalized.split(/\s+/).filter((term) => term.length > 2);
-  if (!terms.length) return supportArticles.slice(0, 3);
+const buildPrivateSupportUrl = (baseUrl: string, message: string) => {
+  if (!message.trim()) return baseUrl;
 
-  return supportArticles
-    .map((article) => {
-      const text = normalize(
-        [
-          article.title,
-          article.summary,
-          ...article.sections.flatMap((section) => [
-            section.title,
-            ...(section.body ?? []),
-            ...(section.steps ?? []),
-          ]),
-        ].join(" ")
-      );
-      const score = terms.reduce(
-        (total, term) => total + (text.includes(term) ? 1 : 0),
-        0
-      );
-      return { article, score };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map((item) => item.article);
+  const body = [
+    "Olá, preciso de ajuda com o NEXO Finance.",
+    "",
+    "Resumo:",
+    message.trim().slice(0, 1200),
+    "",
+    "Não estou enviando senhas, chaves, dados bancários ou cartão.",
+  ].join("\n");
+
+  if (baseUrl.startsWith("mailto:")) {
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}body=${encodeURIComponent(body)}`;
+  }
+
+  try {
+    const url = new URL(baseUrl);
+    const textParam =
+      url.hostname.includes("wa.me") || url.hostname.includes("whatsapp")
+        ? "text"
+        : "context";
+    url.searchParams.set(textParam, body);
+    return url.toString();
+  } catch {
+    return baseUrl;
+  }
 };
+
+const actionForEscalation = (
+  escalation: SupportEscalation | undefined,
+  language: NexoLanguage,
+  message = ""
+): SupportAction[] => {
+  if (escalation === "github_bug") {
+    return [
+      {
+        id: "github-bug",
+        label: copy[language].githubBugAction,
+        kind: "github_bug",
+        href: buildPublicIssueUrl(
+          SUPPORT_TEAM.githubBugUrl,
+          message,
+          copy[language].githubBugAction
+        ),
+      },
+    ];
+  }
+
+  if (escalation === "github_suggestion") {
+    return [
+      {
+        id: "github-suggestion",
+        label: copy[language].githubSuggestionAction,
+        kind: "github_suggestion",
+        href: buildPublicIssueUrl(
+          SUPPORT_TEAM.githubSuggestionUrl,
+          message,
+          copy[language].githubSuggestionAction
+        ),
+      },
+    ];
+  }
+
+  if (escalation === "private_support") {
+    return [
+      {
+        id: "human-request",
+        label: copy[language].humanRequest,
+        kind: "human_request",
+        href: buildPrivateSupportUrl(SUPPORT_TEAM.humanSupportUrl, message),
+      },
+    ];
+  }
+
+  return [];
+};
+
+const likelyPrivate = (classification: SupportClassification) =>
+  classification === "pagamento" ||
+  classification === "conta" ||
+  classification === "seguranca";
 
 export const localSupportProvider: SupportProvider = {
   getInitialMessages(language) {
     return [
-      makeMessage(copy[language].initial, makeTopicActions(language)),
+      makeMessage(copy[language].initial),
+      makeMessage(
+        copy[language].prompt,
+        supportCategories.map((category) => categoryAction(category.id, language))
+      ),
     ];
+  },
+
+  searchArticles(query, limit = 4) {
+    const terms = termsFrom(query);
+
+    if (!terms.length) {
+      return supportArticles.filter((article) => article.featured).slice(0, limit);
+    }
+
+    return supportArticles
+      .map((article) => {
+        const text = articleSearchText(article);
+        const score = terms.reduce(
+          (total, term) => total + (text.includes(term) ? 1 : 0),
+          0
+        );
+        return { article, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((item) => item.article);
+  },
+
+  classifyMessage(message) {
+    const normalized = normalize(message);
+    const ordered: SupportClassification[] = [
+      "pagamento",
+      "conta",
+      "seguranca",
+      "sugestao",
+      "bug",
+      "duvida",
+    ];
+
+    for (const classification of ordered) {
+      if (
+        classificationKeywords[classification].some((keyword) =>
+          normalized.includes(normalize(keyword))
+        )
+      ) {
+        return classification;
+      }
+    }
+
+    return "baixo_conhecimento";
+  },
+
+  getEscalationTarget(message, language = "pt-BR", classification) {
+    const resolved = classification ?? this.classifyMessage(message);
+
+    if (resolved === "bug") {
+      return [
+        {
+          id: "github-bug",
+          label: copy[language].githubBugAction,
+          kind: "github_bug",
+          href: buildPublicIssueUrl(
+            SUPPORT_TEAM.githubBugUrl,
+            message,
+            copy[language].githubBugAction
+          ),
+        },
+      ];
+    }
+
+    if (resolved === "sugestao") {
+      return [
+        {
+          id: "github-suggestion",
+          label: copy[language].githubSuggestionAction,
+          kind: "github_suggestion",
+          href: buildPublicIssueUrl(
+            SUPPORT_TEAM.githubSuggestionUrl,
+            message,
+            copy[language].githubSuggestionAction
+          ),
+        },
+      ];
+    }
+
+    if (likelyPrivate(resolved) || resolved === "baixo_conhecimento") {
+      return [
+        {
+          id: "human-request",
+          label: copy[language].humanRequest,
+          kind: "human_request",
+          href: buildPrivateSupportUrl(SUPPORT_TEAM.humanSupportUrl, message),
+        },
+      ];
+    }
+
+    return [];
+  },
+
+  replyFromArticles(message, language) {
+    const classification = this.classifyMessage(message);
+    const articles = this.searchArticles(message);
+    const mostDirectEscalation = articles.find((article) => article.escalation)
+      ?.escalation;
+    const escalationActions =
+      mostDirectEscalation && mostDirectEscalation !== "self_service"
+        ? actionForEscalation(mostDirectEscalation, language, message)
+        : this.getEscalationTarget(message, language, classification);
+
+    let content = copy[language].articleIntro;
+
+    if (classification === "bug") content = copy[language].githubBug;
+    if (classification === "sugestao") content = copy[language].githubSuggestion;
+    if (likelyPrivate(classification)) content = copy[language].privateSupport;
+    if (classification === "baixo_conhecimento") content = copy[language].lowConfidence;
+
+    return makeMessage(
+      content,
+      [...articleActions(articles, language), ...escalationActions],
+      articles.map((article) => article.id),
+      classification
+    );
   },
 
   replyToTopic(topic, language) {
     if (topic === "humano") {
       return makeMessage(
-        copy[language].honestHuman,
-        makeHumanActions("", language)
+        copy[language].humanQueued,
+        [
+          {
+            id: "human-request",
+            label: copy[language].humanRequest,
+            kind: "human_request",
+            href: buildPrivateSupportUrl(SUPPORT_TEAM.humanSupportUrl, "Preciso falar com suporte humano."),
+          },
+        ],
+        undefined,
+        "baixo_conhecimento"
       );
     }
 
-    const articles = getArticlesByIds(topicArticles[topic]);
-    const humanActions =
-      topic === "bug" || topic === "sugestao"
-        ? makeHumanActions(topicLabels[topic], language)
-        : [
-            {
-              id: "topic-human-handoff",
-              label: copy[language].humanTitle,
-              kind: "human" as const,
-              value: "humano",
-            },
-          ];
-
+    const categoryId = topicCategories[topic];
+    const articles = supportArticles
+      .filter((article) => article.categoryId === categoryId)
+      .slice(0, 4);
     return makeMessage(
-      `${copy[language].articleIntro} para ${topicLabels[topic]}. ${copy[language].honestHuman}`,
-      [...makeArticleActions(articles, language), ...humanActions],
-      articles.map((article) => article.id)
+      `${copy[language].categoryIntro} ${topicLabels[topic]}.`,
+      [
+        categoryAction(categoryId, language),
+        ...articleActions(articles, language),
+        ...this.getEscalationTarget(topicLabels[topic], language),
+      ],
+      articles.map((article) => article.id),
+      topic === "bug" ? "bug" : topic === "sugestao" ? "sugestao" : "duvida"
     );
   },
 
   replyToText(message, language) {
-    const topic = detectTopic(message);
-    if (topic) {
-      if (topic === "humano") {
-        return makeMessage(
-          copy[language].honestHuman,
-          makeHumanActions(message, language)
-        );
-      }
-      const articles = getArticlesByIds(topicArticles[topic]);
-      return makeMessage(
-        `${copy[language].articleIntro} para ${topicLabels[topic]}. ${copy[language].honestHuman}`,
-        [
-          ...makeArticleActions(articles, language),
-          {
-            id: "text-human-handoff",
-            label: copy[language].humanTitle,
-            kind: "human",
-            value: "humano",
-          },
-        ],
-        articles.map((article) => article.id)
-      );
-    }
-
-    const articles = searchArticles(message);
-    return makeMessage(
-      copy[language].noMatch,
-      [
-        ...makeArticleActions(articles, language),
-        {
-          id: "search-human-handoff",
-          label: copy[language].humanTitle,
-          kind: "human",
-          value: "humano",
-        },
-      ],
-      articles.map((article) => article.id)
-    );
-  },
-
-  getHumanHandoff(message = "", language = "pt-BR") {
-    return makeHumanActions(message, language);
+    return this.replyFromArticles(message, language);
   },
 };
 
@@ -377,7 +582,7 @@ export function createSupportUserMessage(content: string): SupportMessage {
   return {
     id: createId(),
     role: "user",
-    author: "Voce",
+    author: "Você",
     content,
     createdAt: new Date().toISOString(),
   };
@@ -390,32 +595,32 @@ export const SUPPORT_TOPICS: Array<{
 }> = [
   {
     id: "pagamento",
-    label: "Pagamento",
-    description: "Planos, Stripe, checkout e retorno.",
+    label: "Planos e pagamento",
+    description: "Planos, créditos, assinatura e cobrança privada.",
   },
   {
     id: "conta",
-    label: "Conta",
-    description: "Login, perfil, senha e dados.",
+    label: "Conta e acesso",
+    description: "Login, idioma, perfil e troca de conta.",
   },
   {
     id: "caixas",
-    label: "Caixas",
-    description: "Criar, editar e entender distribuicao.",
+    label: "Caixas e metas",
+    description: "Planejamento, histórico, relatórios e indicadores.",
   },
   {
     id: "ia",
     label: "Nexo IA",
-    description: "Creditos, conversas e leitura do mes.",
+    description: "Conversas, contexto, créditos e IA Python.",
   },
   {
     id: "bug",
-    label: "Bug",
-    description: "Algo quebrou ou nao funcionou.",
+    label: "Bug técnico",
+    description: "Algo quebrou, travou ou não funcionou.",
   },
   {
     id: "sugestao",
-    label: "Sugestao",
+    label: "Sugestão",
     description: "Ideias para melhorar o produto.",
   },
 ];

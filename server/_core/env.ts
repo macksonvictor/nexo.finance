@@ -32,4 +32,13 @@ export const ENV = {
   pyAiEnableProphet: parseBoolean(process.env.PY_AI_ENABLE_PROPHET, false),
   ownerNotificationWebhookUrl:
     process.env.OWNER_NOTIFICATION_WEBHOOK_URL ?? "",
+  githubToken: process.env.GITHUB_TOKEN ?? "",
+  githubSupportRepo:
+    process.env.GITHUB_SUPPORT_REPO ??
+    process.env.GITHUB_REPOSITORY ??
+    "macksongaspar/nexo.finance",
+  githubSupportLabelBug:
+    process.env.GITHUB_SUPPORT_LABEL_BUG ?? "bug",
+  githubSupportLabelSuggestion:
+    process.env.GITHUB_SUPPORT_LABEL_SUGGESTION ?? "sugestao",
 };

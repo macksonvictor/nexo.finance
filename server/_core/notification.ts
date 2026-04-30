@@ -58,18 +58,53 @@ export async function notifyOwner(
     return false;
   }
 
-  try {
-    const response = await fetch(ENV.ownerNotificationWebhookUrl, {
+  const targets = ENV.ownerNotificationWebhookUrl
+    .split(",")
+    .map((target) => target.trim())
+    .filter(Boolean);
+
+  if (!targets.length) {
+    console.info("[Notification] OWNER_NOTIFICATION_WEBHOOK_URL not configured");
+    return false;
+  }
+
+  const body = {
+    source: "nexo",
+    title,
+    content,
+    timestamp: new Date().toISOString(),
+  };
+
+  const notifyTarget = async (target: string) => {
+    const url = new URL(target);
+    const isCallMeBot = url.hostname.includes("callmebot.com");
+
+    if (isCallMeBot && !url.searchParams.has("text")) {
+      url.searchParams.set("text", `${title}\n\n${content}`);
+    }
+
+    if (isCallMeBot) {
+      const response = await fetch(url.toString(), { method: "GET" });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        console.warn(
+          `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
+            detail ? `: ${detail}` : ""
+          }`
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    const response = await fetch(url.toString(), {
       method: "POST",
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        source: "nexo",
-        title,
-        content,
-        timestamp: new Date().toISOString(),
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -83,6 +118,13 @@ export async function notifyOwner(
     }
 
     return true;
+  };
+
+  try {
+    const results = await Promise.allSettled(targets.map(notifyTarget));
+    return results.some(
+      (result) => result.status === "fulfilled" && result.value
+    );
   } catch (error) {
     console.warn("[Notification] Error calling owner webhook:", error);
     return false;
