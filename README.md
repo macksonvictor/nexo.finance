@@ -391,13 +391,13 @@ pnpm test:py
 
 Deploy técnico atual:
 
-- [wholesome-liberation-production.up.railway.app](https://wholesome-liberation-production.up.railway.app/)
+- [[wholesome-liberation-production.up.railway.app](https://nexofinance.up.railway.app/)]
 
 Observações:
 
 - o link atual funciona como ambiente técnico de validação
-- para produção pública completa com Clerk, o ideal é usar domínio próprio
-- para testes locais e validação de interface, `pnpm dev` continua sendo a referência mais segura
+- para produção pública completa com Clerk, o ideal é aguardar o lançamento
+- estamos em testes ainda.
 
 ### Railway
 
