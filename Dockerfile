@@ -13,6 +13,8 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_STRIPE_PUBLISHABLE_KEY
 RUN pnpm build
 
 FROM base AS runtime
