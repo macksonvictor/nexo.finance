@@ -1,60 +1,54 @@
-# Security Policy — NEXO Finance
+# Política de Segurança do NEXO Finance
 
-## Supported versions
+## Versões Suportadas
 
-NEXO Finance is currently in active development.
+O desenvolvimento ativo acontece na branch `stable`. Correções de segurança devem partir de `stable` e entrar por pull request.
 
-Security reviews and fixes are focused on the latest version available in the `stable` branch.
+| Linha | Status |
+| --- | --- |
+| `stable` | Suportada |
+| branches `codex/*` | Trabalho em andamento |
+| demais branches | Sem garantia de suporte |
 
-## Reporting a vulnerability
+## Como Reportar Uma Vulnerabilidade
 
-If you discover a vulnerability, do not open a public issue containing sensitive details.
+Não abra issue pública com senhas, tokens, chaves, e-mails, telefone, dados financeiros, prints de conta ou qualquer dado sensível.
 
-Please report it privately through:
+Use um destes caminhos:
 
-- Email: macksongaspar@gmail.com
-- GitHub private contact, if available
+- Central de suporte dentro do app NEXO, quando disponível.
+- GitHub Security Advisory privado, se a opção estiver habilitada no repositório.
+- Canal interno configurado por `OWNER_NOTIFICATION_WEBHOOK_URL`, quando o relato vier pelo suporte IA.
 
-Include:
+Para bugs públicos sem dados sensíveis, use o template `Bug no NEXO`.
 
-- A clear description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Screenshots or logs, only if they do not expose secrets
-- Suggested fix, if known
+## O Que Incluir No Relato
 
-## Sensitive data rules
+- Área afetada: login, pagamento, IA, suporte, dados, dashboard ou outra.
+- Passos para reproduzir.
+- Impacto esperado.
+- Navegador, sistema e horário aproximado.
+- Prints apenas se não contiverem dados sensíveis.
 
-Never share or commit:
+## SLA Inicial
 
-- `.env` files
-- API keys
-- Stripe secrets
-- Clerk secrets
-- database URLs
-- access tokens
-- user financial data
-- private credentials
+Este projeto ainda está em fase de fundação. A triagem inicial deve seguir esta ordem:
 
-## Scope
+- Crítico: possível vazamento de dados, acesso indevido, pagamento ou chave exposta.
+- Alto: quebra de login, checkout, suporte, banco de dados ou IA em produção.
+- Médio: falha funcional com contorno claro.
+- Baixo: melhoria, ajuste visual ou texto.
 
-Security concerns include:
+## Dependências
 
-- authentication flaws
-- exposed secrets
-- payment or billing vulnerabilities
-- database access issues
-- unsafe AI output handling
-- user financial data exposure
-- broken access control
-- dependency vulnerabilities
+Alertas do Dependabot devem ser tratados por PR, com validação mínima:
 
-## Response process
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm build
+pnpm audit
+```
 
-Security reports will be reviewed and prioritized based on risk.
-
-Critical issues should be fixed before new feature work.
-
-## Responsible disclosure
-
-Please avoid publicly disclosing security issues before a fix is available.
+Quando houver um PR agrupado do Dependabot, valide primeiro o agrupado. PRs menores que forem cobertos pelo agrupado podem ser fechados depois do merge.

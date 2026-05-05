@@ -1,12 +1,12 @@
 name: Bug no NEXO
-description: Reporte algo que quebrou ou nao funcionou como esperado.
+description: Reporte algo que quebrou ou não funcionou como esperado.
 title: "[bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Obrigado por ajudar a melhorar o NEXO. Nao cole senhas, chaves Stripe, tokens Clerk ou dados sensiveis aqui.
+        Obrigado por ajudar a melhorar o NEXO. Não cole senhas, chaves Stripe, tokens Clerk ou dados sensíveis aqui.
   - type: textarea
     id: resumo
     attributes:
@@ -19,7 +19,7 @@ body:
     id: passos
     attributes:
       label: Como reproduzir?
-      description: Liste os passos ate o problema aparecer.
+      description: Liste os passos até o problema aparecer.
       placeholder: |
         1. Abri o app
         2. Cliquei em Atualizar
@@ -29,13 +29,13 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Area afetada
+      label: Área afetada
       options:
         - Dashboard
         - Caixas
         - Metas
-        - Historico
-        - Relatorios
+        - Histórico
+        - Relatórios
         - Indicadores
         - Nexo IA
         - Pagamentos
@@ -47,7 +47,7 @@ body:
   - type: textarea
     id: esperado
     attributes:
-      label: O que voce esperava?
+      label: O que você esperava?
       placeholder: Ex. O app deveria voltar para o Dashboard com o modal de planos fechado.
     validations:
       required: true
@@ -55,6 +55,6 @@ body:
     id: contexto
     attributes:
       label: Contexto adicional
-      description: Cole prints sem dados sensiveis, navegador, tamanho de tela e qualquer detalhe util.
+      description: Cole prints sem dados sensíveis, navegador, tamanho de tela e qualquer detalhe útil.
     validations:
       required: false

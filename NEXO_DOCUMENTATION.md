@@ -1,8 +1,8 @@
 # NEXO Documentation
 
-## Visao geral
+## Visão geral
 
-NEXO e uma aplicacao de gestao financeira pessoal baseada em orcamento por caixas, metas, historico, relatorios, planos pagos e assistente de IA.
+NEXO é uma aplicação de gestão financeira pessoal baseada em orçamento por caixas, metas, histórico, relatórios, planos pagos e assistente de IA.
 
 ## Arquitetura atual
 
@@ -13,12 +13,12 @@ NEXO e uma aplicacao de gestao financeira pessoal baseada em orcamento por caixa
 - `tests/`: testes automatizados
 - `.github/workflows/`: CI do repositorio
 
-## Autenticacao
+## Autenticação
 
-- O frontend usa Clerk com paginas de `sign-in` e `sign-up`
+- O frontend usa Clerk com páginas de `sign-in` e `sign-up`
 - O backend usa `@clerk/express`
-- O usuario autenticado e sincronizado na tabela `users`
-- O campo `openId` armazena o `userId` do Clerk para manter compatibilidade com a logica atual
+- O usuário autenticado é sincronizado na tabela `users`
+- O campo `openId` armazena o `userId` do Clerk para manter compatibilidade com a lógica atual
 
 ## Banco de dados
 
@@ -35,7 +35,7 @@ Principais entidades:
 - `bankConnections`
 - `notifications`
 
-## Integracoes
+## Integrações
 
 Principais:
 
@@ -49,7 +49,7 @@ Opcionais:
 - Alertas internos: `OWNER_NOTIFICATION_WEBHOOK_URL`
 - Analytics: `VITE_ANALYTICS_ENDPOINT` e `VITE_ANALYTICS_WEBSITE_ID`
 
-## Execucao
+## Execução
 
 Local:
 
@@ -83,16 +83,15 @@ O workflow em `.github/workflows/ci.yml` roda:
 Triggers:
 
 - push para `stable`
-- push para `codex/**`
 - pull request para `stable`
-- execucao manual com `workflow_dispatch`
+- execução manual com `workflow_dispatch`
 
 ## Deploy
 
-O projeto esta pronto para Railway, mas nao depende do Railway para funcionar. Com as mesmas variaveis de ambiente ele pode rodar em qualquer servidor Node.js ou via Docker.
+O projeto está pronto para Railway, mas não depende do Railway para funcionar. Com as mesmas variáveis de ambiente ele pode rodar em qualquer servidor Node.js ou via Docker.
 
 ## Producao publica com Clerk
 
-Para fechar o login publico em producao com Clerk, e necessario usar dominio proprio.
+Para fechar o login público em produção com Clerk, é necessário usar domínio próprio.
 
-Um dominio temporario como `*.up.railway.app` pode servir para teste tecnico do deploy, mas nao substitui o dominio proprio exigido pelo fluxo de producao do Clerk.
+Um domínio temporário como `*.up.railway.app` pode servir para teste técnico do deploy, mas não substitui o domínio próprio exigido pelo fluxo de produção do Clerk.

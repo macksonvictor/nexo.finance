@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Central de suporte NEXO
-    url: https://github.com/macksongaspar/nexo.finance#suporte-nexo
-    about: Use a central do app para conta, pagamento ou dados privados. GitHub fica so para bug e sugestao publica.
+    url: https://github.com/macksongaspar/nexo.finance/blob/stable/SUPPORT.md
+    about: Use a central do app para conta, pagamento ou dados privados. GitHub fica só para bug e sugestão pública.
