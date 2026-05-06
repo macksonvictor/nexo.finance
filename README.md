@@ -5,12 +5,7 @@
 <h1 align="center">Nexo Finance</h1>
 
 <p align="center">
-  <strong>Todo real recebe uma missão.</strong>
-</p>
-
-<p align="center">
-  Um app de gestão financeira pessoal baseado em Orçamento Base Zero,
-  caixas, metas, histórico e IA contextual.
+  <strong>Personal finance, reports, goals, and AI-assisted financial analysis in one place.</strong>
 </p>
 
 <p align="center">
@@ -23,223 +18,242 @@
 </p>
 
 <p align="center">
-  <a href="#visão-geral">Visão geral</a> |
-  <a href="#galeria-do-produto">Galeria</a> |
-  <a href="#funcionalidades">Funcionalidades</a> |
-  <a href="#nexo-ia">NEXO IA</a> |
+  <a href="#overview">Overview</a> |
+  <a href="#hosting-options">Hosting</a> |
+  <a href="#product-gallery">Gallery</a> |
+  <a href="#features">Features</a> |
+  <a href="#nexo-ai">NEXO AI</a> |
   <a href="#python-core">Python Core</a> |
-  <a href="#como-rodar-localmente">Como rodar</a> |
+  <a href="#local-setup">Local setup</a> |
   <a href="#deploy">Deploy</a>
 </p>
 
 ---
 
-## Visão Geral
+## Overview
 
-NEXO Finance é um produto autoral para organizar receita, gastos, caixas, metas e histórico mensal com uma regra simples:
+Nexo Finance is a personal finance app for managing income, expenses, goals, reports, and AI-assisted financial analysis.
 
-> cada real que entra precisa receber uma missão.
+It combines a financial dashboard, goal tracking, monthly history, reports, support tools, and a contextual AI assistant in one interface.
 
-Em vez de ser apenas um registrador de despesas, o NEXO trabalha como uma camada de decisão financeira. A receita mensal é distribuída em caixas, o progresso é acompanhado por metas, o histórico vira leitura de comportamento e a IA ajuda a interpretar risco, prioridade e próximos passos.
-
-O objetivo do produto é reduzir ruído, aumentar disciplina e transformar planejamento financeiro em uma experiência visual clara, elegante e acionável.
+The project is currently under active development and is being prepared for a more polished public release.
 
 ---
 
-## Galeria Do Produto
+## Hosting Options
+
+Current technical deployment:
+
+- [nexofinance.up.railway.app](https://nexofinance.up.railway.app/)
+
+Available setup paths:
+
+- Run locally for development
+- Deploy the main Node/Vite app on Railway
+- Deploy the Python Core as a separate Railway service
+- Connect an OpenAI-compatible provider for AI responses
+
+---
+
+## Product Gallery
 
 <p align="center">
-  <img src="./docs/assets/screenshots/dashboard.png" alt="Dashboard do NEXO Finance" width="820" />
+  <img src="./docs/assets/screenshots/dashboard.png" alt="Nexo Finance dashboard" width="820" />
 </p>
 
 <p align="center">
   <strong>Dashboard</strong><br />
-  Clareza para decidir cada real do mês.
+  A clear view of the current financial month.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/caixas.png" alt="Caixas financeiras do NEXO Finance" width="820" />
+  <img src="./docs/assets/screenshots/caixas.png" alt="Nexo Finance financial boxes" width="820" />
 </p>
 
 <p align="center">
-  <strong>Caixas</strong><br />
-  Cada parte da receita recebe uma missão.
+  <strong>Boxes</strong><br />
+  Organize money by purpose, category, and priority.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/metas.png" alt="Metas do NEXO Finance" width="820" />
+  <img src="./docs/assets/screenshots/metas.png" alt="Nexo Finance goals" width="820" />
 </p>
 
 <p align="center">
-  <strong>Metas</strong><br />
-  Objetivos financeiros com progresso visível.
+  <strong>Goals</strong><br />
+  Track financial goals with visible progress.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/indicadores.png" alt="Indicadores financeiros do NEXO Finance" width="820" />
+  <img src="./docs/assets/screenshots/indicadores.png" alt="Nexo Finance indicators" width="820" />
 </p>
 
 <p align="center">
-  <strong>Indicadores</strong><br />
-  Leitura rápida de disciplina, risco e distribuição financeira.
+  <strong>Indicators</strong><br />
+  Read financial signals, ratios, and risk indicators.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/reports.png" alt="Relatórios do NEXO Finance" width="820" />
+  <img src="./docs/assets/screenshots/reports.png" alt="Nexo Finance reports" width="820" />
 </p>
 
 <p align="center">
-  <strong>Relatórios</strong><br />
-  Visão analítica para entender o mês com mais precisão.
+  <strong>Reports</strong><br />
+  Analyze the month with structured financial summaries.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/nexo-ia.png" alt="NEXO IA" width="820" />
+  <img src="./docs/assets/screenshots/nexo-ia.png" alt="NEXO AI" width="820" />
 </p>
 
 <p align="center">
-  <strong>NEXO IA</strong><br />
-  Uma leitura contextual antes da próxima decisão.
+  <strong>NEXO AI</strong><br />
+  Ask contextual questions about the current financial view.
 </p>
 
 <p align="center">
-  <img src="./docs/assets/screenshots/mobile.png" alt="NEXO Finance no mobile" width="360" />
+  <img src="./docs/assets/screenshots/mobile.png" alt="Nexo Finance mobile" width="360" />
 </p>
 
 <p align="center">
   <strong>Mobile</strong><br />
-  O mesmo controle financeiro em tela pequena.
+  A compact experience for smaller screens.
 </p>
 
 ---
 
-## Funcionalidades
+## Features
 
 ### Dashboard
 
-- resumo mensal com receita planejada, caixas ativas, metas e leitura atualizada
-- cards de acompanhamento com status do mês em andamento
-- gráficos e indicadores para leitura rápida da distribuição financeira
-- atalhos contextuais para perguntar à IA sobre a tela atual
+- Monthly income overview
+- Active boxes and goals
+- Current month status cards
+- Financial charts and indicators
+- Contextual shortcuts for the AI assistant
 
-### Caixas
+### Boxes
 
-- criação e acompanhamento de caixas financeiras
-- organização do dinheiro por finalidade, prioridade e categoria
-- leitura de saldo, valor registrado e consumo por caixa
-- suporte visual com ícones animados em Lottie
+- Create and track financial boxes
+- Organize money by purpose and category
+- Read balance, registered amount, and usage by box
+- Visual support with Lottie animations
 
-Categorias base:
+Base categories:
 
-- essencial
-- investimento
-- lazer
-- reserva
-- outro
+- essential
+- investment
+- leisure
+- reserve
+- other
 
-### Metas
+### Goals
 
-- metas com valor alvo, prazo e progresso
-- acompanhamento de evolução mensal
-- leitura visual para aproximar objetivo, disciplina e ação
-- animação dedicada para reforçar a identidade da tela
+- Target amount, deadline, and progress
+- Monthly evolution tracking
+- Visual feedback for financial objectives
 
-### Histórico
+### History
 
-- visão consolidada por mês
-- leitura de movimentações, caixas e metas de períodos anteriores
-- exportação de dados em CSV direto pela tela de histórico
-- base para comparação e análise recorrente
+- Monthly consolidated view
+- Previous boxes, goals, and movements
+- CSV export from the history screen
+- Base for recurring comparison and analysis
 
-### Relatórios e Indicadores
+### Reports and Indicators
 
-- relatórios detalhados do mês
-- score financeiro, taxa de poupança e distribuição por categoria
-- indicadores de disciplina, crescimento e risco
-- contraste ajustado para modo claro e modo escuro
+- Monthly reports
+- Financial score
+- Savings rate
+- Category distribution
+- Risk and discipline indicators
 
-### Configurações
+### Settings and Support
 
-- janela grande sobre o app para centralizar ajustes
-- seções para conta, receita, conexão com banco, exportação, aparência e ajuda
-- menu superior de perfil com altura segura para notebooks e telas menores
+- Account and profile settings
+- Income configuration
+- Appearance controls
+- Help and support center
+- Public issue flow for non-sensitive bugs and suggestions
 
 ---
 
-## NEXO IA
+## NEXO AI
 
-A NEXO IA é a camada conversacional do produto. Ela foi desenhada para trabalhar com contexto financeiro real do app, sem tirar o usuário do fluxo principal.
+NEXO AI is the conversational layer of the product. It is designed to work with financial context from the app without forcing the user out of the main interface.
 
-Principais capacidades:
+Main capabilities:
 
-- janela oficial da IA sobre o app, sem depender de uma aba separada
-- histórico de conversas persistido localmente
-- renomeação inline pelo título da conversa
-- atalhos contextuais em Dashboard, Caixas, Metas e Histórico
-- modos de diagnóstico, risco, previsão e recomendação
-- integração com APIs compatíveis com OpenAI, incluindo Groq
+- Official AI window inside the app
+- Local conversation history
+- Inline conversation title editing
+- Contextual shortcuts from Dashboard, Boxes, Goals, and History
+- Diagnostic, risk, forecast, and recommendation modes
+- OpenAI-compatible API integration, including Groq
 
-### Python Core
+---
 
-O Python Core prepara a base do cérebro financeiro do NEXO, mantendo o Node/tRPC como gateway seguro. O frontend não chama Python diretamente.
+## Python Core
 
-Contratos principais:
+The Python Core is being prepared as the financial reasoning layer behind NEXO while keeping the Node/tRPC backend as the secure gateway. The frontend does not call Python directly.
+
+Main contracts:
 
 - `GET /health`
 - `POST /brain/analyze`
 - `POST /brain/simulate`
 - `POST /brain/coach-context`
 
-O app principal continua funcionando mesmo se o Python Core estiver offline, usando fallback seguro no gateway Node.
+If the Python Core is unavailable, the main app should continue running through a safe gateway fallback.
 
-### Mascote e Rive
+---
 
-A interface já está preparada para receber um mascote oficial em Rive:
+## Mascot and Rive
 
-- runtime Rive instalado no frontend
-- componentes `NexoRiveMascot` e `NexoRiveMascotCanvas`
-- manifest de estados em `nexoAIMotion`
-- pasta pública preparada em `client/public/rive/`
+The interface is ready to receive an official Rive mascot:
 
-O arquivo final ainda deve ser exportado pelo editor do Rive como:
+- Rive runtime installed on the frontend
+- `NexoRiveMascot` and `NexoRiveMascotCanvas` components
+- State manifest through `nexoAIMotion`
+- Public folder prepared at `client/public/rive/`
+
+Expected file path:
 
 ```txt
 client/public/rive/nexo-mascot.riv
 ```
 
-Contrato recomendado para o Rive:
+Recommended Rive contract:
 
 - State Machine: `NexoMascot`
 - inputs: `mood`, `intensity`, `hovered`, `blink`
-- estados: idle, reading, processing, responding, alert, confident, curious
-
-A direção visual recomendada é simples: o cubo reage pelo rosto, piscadas, boca e inclinações leves. Sem aura, partículas, brilho exagerado ou efeitos externos.
+- states: `idle`, `reading`, `processing`, `responding`, `alert`, `confident`, `curious`
 
 ---
 
-## Stack Técnico
+## Tech Stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 | --- | --- |
 | Frontend | React 19 + Vite + TypeScript |
 | UI | Tailwind CSS, Radix UI, Framer Motion |
-| Gráficos | Recharts |
-| Animações | Lottie + Rive-ready |
-| Estado | Zustand + React Query |
+| Charts | Recharts |
+| Animations | Lottie + Rive-ready |
+| State | Zustand + React Query |
 | Backend | Express + tRPC |
-| Banco | MySQL |
+| Database | MySQL |
 | ORM | Drizzle ORM |
-| Autenticação | Clerk |
-| IA | OpenAI-compatible API |
-| Brain financeiro | FastAPI/Python Core |
-| Pagamentos | Stripe |
-| Exportação | jsPDF + CSV |
+| Auth | Clerk |
+| AI | OpenAI-compatible API |
+| Financial brain | FastAPI/Python Core |
+| Payments | Stripe |
+| Export | jsPDF + CSV |
 | Deploy | Railway + Docker |
-| Testes | Vitest + Pytest |
+| Tests | Vitest + Pytest |
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```txt
 nexo/
@@ -269,7 +283,7 @@ nexo/
 |   |   `-- services/
 |   `-- tests/
 |-- services/
-|   `-- nexo-ai-python/        # microserviço legado/opcional
+|   `-- nexo-ai-python/
 |-- shared/
 |-- drizzle/
 |-- tests/
@@ -281,45 +295,35 @@ nexo/
 
 ---
 
-## Como Rodar Localmente
+## Local Setup
 
-### Requisitos
+### Requirements
 
-- Node.js compatível com o projeto
+- Node.js compatible with the project
 - pnpm
-- MySQL acessível por `DATABASE_URL`
-- Python 3.12 para o microserviço opcional da IA
-- Clerk configurado para login local
+- MySQL available through `DATABASE_URL`
+- Python 3.12 for optional Python services
+- Clerk configured for local authentication
 
-### Ambiente recomendado neste momento
-
-Para desenvolvimento com menos atrito:
-
-- app principal no Windows com `pnpm dev`
-- microserviço Python no WSL com Python `3.12`
-- navegador no Windows em `http://localhost:3000`
-
-Se você subir app e Python em ambientes diferentes, ajuste `NEXO_PYTHON_CORE_URL` para apontar para o endereço real do Python Core.
-
-### 1. Entrar no projeto
+### 1. Enter the project
 
 ```powershell
 cd "C:\END0-SYM\project\nexo project\nexo"
 ```
 
-### 2. Instalar dependências
+### 2. Install dependencies
 
 ```powershell
 pnpm install
 ```
 
-### 3. Criar o arquivo de ambiente
+### 3. Create the environment file
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-### 4. Configurar variáveis principais
+### 4. Configure required variables
 
 ```env
 DATABASE_URL=mysql://user:password@host:port/database
@@ -329,17 +333,9 @@ APP_URL=http://localhost:3000
 OWNER_USER_ID=user_...
 ```
 
-### 5. Configurar IA opcional
+### 5. Configure an AI provider
 
-Exemplo com Groq:
-
-```env
-OPENAI_API_KEY=gsk_...
-OPENAI_BASE_URL=https://api.groq.com/openai/v1
-LLM_MODEL=llama-3.3-70b-versatile
-```
-
-Exemplo com OpenAI:
+OpenAI example:
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -347,47 +343,45 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4.1-mini
 ```
 
-### 6. Iniciar o app principal
+Groq example:
+
+```env
+OPENAI_API_KEY=gsk_...
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=llama-3.3-70b-versatile
+```
+
+### 6. Start the main app
 
 ```powershell
 pnpm dev
 ```
 
-Acesse:
+Open:
 
 ```txt
 http://localhost:3000
 ```
 
-### 7. Subir o Python Core
+### 7. Start the Python Core
 
-Em outro terminal:
+In another terminal:
 
 ```powershell
 pnpm dev:python-core
 ```
 
-Teste:
+Health check:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8010/health
 ```
 
-Se o app principal estiver no Windows e o Python no WSL, consulte o IP do WSL e configure `NEXO_PYTHON_CORE_URL`:
-
-```bash
-hostname -I
-```
-
-```env
-NEXO_PYTHON_CORE_URL=http://192.168.x.x:8010
-```
-
 ---
 
-## Variáveis de Ambiente
+## Environment Variables
 
-### Obrigatórias
+### Required
 
 ```env
 DATABASE_URL=
@@ -396,7 +390,7 @@ CLERK_SECRET_KEY=
 APP_URL=http://localhost:3000
 ```
 
-### IA
+### AI and Python
 
 ```env
 OPENAI_API_KEY=
@@ -410,7 +404,7 @@ PY_AI_SHADOW_MODE=false
 PY_AI_ENABLE_PROPHET=false
 ```
 
-### Opcionais
+### Optional
 
 ```env
 OWNER_USER_ID=
@@ -423,13 +417,13 @@ STRIPE_PRO_PRICE_ID=
 STRIPE_ELITE_PRICE_ID=
 ```
 
-Arquivo de referência:
+Reference file:
 
 - [`.env.example`](./.env.example)
 
 ---
 
-## Comandos Disponíveis
+## Available Commands
 
 ```bash
 pnpm dev
@@ -447,7 +441,7 @@ pnpm format
 pnpm db:push
 ```
 
-Fluxo mínimo de validação:
+Minimum validation flow:
 
 ```bash
 pnpm check
@@ -455,7 +449,7 @@ pnpm test
 pnpm build
 ```
 
-Fluxo com Python:
+Python validation flow:
 
 ```bash
 pnpm check:py
@@ -468,21 +462,18 @@ pnpm test:python-core
 
 ## Deploy
 
-Deploy técnico atual:
-
-- [nexofinance.up.railway.app](https://nexofinance.up.railway.app/)
-
-Observações:
-
-- o link atual funciona como ambiente técnico de validação
-- para produção pública completa com Clerk, o ideal é aguardar o lançamento
-- estamos em testes ainda
-
 ### Railway
 
 ```txt
 Build: pnpm build
 Start: pnpm start
+```
+
+For multi-service Railway deployment, configure the Node gateway with the public or internal URL of the Python Core service:
+
+```env
+NEXO_PYTHON_CORE_URL=https://your-python-core-service.up.railway.app
+NEXO_PYTHON_CORE_TIMEOUT_MS=2500
 ```
 
 ### Docker
@@ -494,18 +485,18 @@ docker run --env-file .env -p 3000:3000 nexo
 
 ---
 
-## Qualidade e CI
+## Quality and CI
 
-O workflow em `.github/workflows/ci.yml` valida pushes e pull requests relevantes.
+The workflow in `.github/workflows/ci.yml` validates relevant pushes and pull requests.
 
-Validações principais:
+Main checks:
 
-- TypeScript com `pnpm check`
-- testes Node com `pnpm test`
-- build de produção com `pnpm build`
-- testes Python quando executados localmente com `pnpm test:py`
+- TypeScript validation with `pnpm check`
+- Node tests with `pnpm test`
+- Production build with `pnpm build`
+- Python tests when run locally with `pnpm test:py`
 
-Antes de publicar mudanças grandes, rode pelo menos:
+Before larger changes, run:
 
 ```bash
 pnpm exec tsc --noEmit
@@ -516,31 +507,31 @@ pnpm exec vite build
 
 ## Roadmap
 
-### Produto
+### Product
 
-- refinar dashboard, caixas e metas
-- amadurecer relatórios e indicadores
-- melhorar fluxos de histórico, exportação e configurações
+- Improve the dashboard, boxes, and goals experience
+- Mature reports and indicators
+- Refine history, export, and settings flows
+- Complete the mobile-first pass before public launch
 
-### IA
+### AI
 
-- evoluir contexto financeiro enviado para a NEXO IA
-- fortalecer memória, histórico e modos de análise
-- integrar o mascote oficial em Rive com reações reais do cubo
-- mover regras financeiras novas para o Python Core antes de expor automações de criação de caixas/metas
-- preparar ações tipadas para a IA propor mudanças e o usuário confirmar
+- Improve financial context sent to NEXO AI
+- Strengthen memory, history, and analysis modes
+- Integrate the official Rive mascot with real state reactions
+- Move financial reasoning rules into the Python Core
+- Prepare typed AI actions that require user confirmation
 
-### Plataforma
+### Platform
 
-- amadurecer deploy público com domínio próprio
-- evoluir observabilidade, billing e integrações
-- preparar Open Banking real quando a camada regulatória/API estiver definida
-- consolidar PostgreSQL como próxima migração estratégica de dados
-- fechar uma rodada mobile-first para telas pequenas antes do lançamento público
+- Prepare a public release with a dedicated domain
+- Improve observability, billing, and integrations
+- Prepare regulated Open Banking integration when the API layer is defined
+- Evaluate PostgreSQL as a future data migration path
 
 ---
 
-## Documentação
+## Documentation
 
 - [NEXO_DOCUMENTATION.md](./NEXO_DOCUMENTATION.md)
 - [SUPPORT.md](./SUPPORT.md)
@@ -553,48 +544,41 @@ pnpm exec vite build
 
 ---
 
-## Suporte
+## Support
 
-Canal atual:
+Use the in-app support center for private support requests.
 
-- central de suporte dentro do app NEXO
-- GitHub Issues apenas para bugs e sugestões públicas, sem dados pessoais
+Use GitHub Issues only for public bugs and suggestions that do not include sensitive information.
 
-Ao pedir suporte privado pelo app, envie:
-
-- e-mail da conta usada
-- descrição objetiva do problema
-- print ou vídeo curto, se possível
-- horário aproximado e dispositivo usado
-
-Não publique e-mail, telefone, chaves, dados financeiros ou prints sensíveis em issues públicas.
-
-Detalhes:
+Details:
 
 - [SUPPORT.md](./SUPPORT.md)
 
 ---
 
-## Autoria
+## Maintainers
 
-Nexo Finance é um projeto da **Tesserakt ©**.
+Nexo Finance is developed by **Mackson**.
 
-Apresentação recomendada da marca:
+Repository presentation, documentation, and GitHub organization are maintained with project staff support.
 
-```txt
-Desenvolvedores_ Mackson Gaspar & Bruno Souto
-```
+<p align="center">
+  <img src="./docs/nexofinance-logo.svg" alt="NEXO Finance" width="120" />
+</p>
 
-Essa formulação fortalece a marca sem sugerir uma estrutura de equipe formal maior do que a realidade atual.
-
----
-
-## Licença
-
-Licença atual do repositório: `MIT`.
+<p align="center">
+  <strong>Nexo Finance</strong><br />
+  Developed by Mackson · Repository maintained with project staff support
+</p>
 
 ---
 
-**Versão atual:** 1.0.0  
-**Branch principal:** `stable`  
-**Status atual:** base ativa em evolução, IA contextual em consolidação, README atualizado e app pronto para validação local.
+## License
+
+This repository is currently licensed under the `MIT` license.
+
+---
+
+**Current version:** 1.0.0  
+**Main branch:** `stable`  
+**Status:** active product development, AI context consolidation, and public release preparation.
