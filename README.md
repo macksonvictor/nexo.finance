@@ -25,7 +25,7 @@
   <a href="#nexo-ai">NEXO AI</a> |
   <a href="#python-core">Python Core</a> |
   <a href="#local-setup">Local setup</a> |
-  <a href="#deploy">Deploy</a>
+  <a href="#contributors">Contributors</a>
 </p>
 
 ---
@@ -546,6 +546,20 @@ Use GitHub Issues only for public bugs and suggestions that do not include sensi
 Details:
 
 - [SUPPORT.md](./SUPPORT.md)
+
+---
+
+## Contributors
+
+<a href="https://github.com/macksonvictor">
+  <img src="https://github.com/macksonvictor.png" width="70" alt="Mackson Victor" />
+</a>
+
+**Mackson** — Product development and project direction.
+
+<a href="https://github.com/macksonvictor/nexo.finance/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=macksonvictor/nexo.finance" alt="Nexo Finance contributors" />
+</a>
 
 ---
 
