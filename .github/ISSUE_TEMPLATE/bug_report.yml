@@ -1,60 +1,92 @@
-name: Bug no NEXO
-description: Reporte algo que quebrou ou não funcionou como esperado.
-title: "[bug] "
-labels: ["bug"]
+name: Bug report
+description: Report a public, reproducible bug in Nexo Finance.
+title: "bug: "
+labels: ["bug", "status: needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Obrigado por ajudar a melhorar o NEXO. Não cole senhas, chaves Stripe, tokens Clerk ou dados sensíveis aqui.
+        Thanks for reporting a bug.
+
+        Do not include email addresses, phone numbers, API keys, tokens, payment details, financial data, private URLs, or account screenshots in public issues.
+
+        For security issues, use SECURITY.md. For private account or payment support, use the in-app support channel.
+
   - type: textarea
-    id: resumo
+    id: summary
     attributes:
-      label: O que aconteceu?
-      description: Explique o bug de forma objetiva.
-      placeholder: Ex. Ao voltar do checkout, a tela de planos abriu sem o shell completo do app.
+      label: Summary
+      description: Describe the bug in one or two sentences.
+      placeholder: What happened?
     validations:
       required: true
+
   - type: textarea
-    id: passos
+    id: steps
     attributes:
-      label: Como reproduzir?
-      description: Liste os passos até o problema aparecer.
+      label: Steps to reproduce
+      description: Provide clear steps so the issue can be reproduced.
       placeholder: |
-        1. Abri o app
-        2. Cliquei em Atualizar
-        3. Voltei do Stripe
+        1. Go to ...
+        2. Click ...
+        3. See error ...
     validations:
       required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+
   - type: dropdown
     id: area
     attributes:
-      label: Área afetada
+      label: Affected area
       options:
         - Dashboard
-        - Caixas
-        - Metas
-        - Histórico
-        - Relatórios
-        - Indicadores
-        - Nexo IA
-        - Pagamentos
-        - Conta/Perfil
-        - Suporte
-        - Outro
+        - Boxes
+        - Goals
+        - History
+        - Reports / Indicators
+        - NEXO AI
+        - Support
+        - Authentication
+        - Payments
+        - Python Core
+        - Deployment
+        - Other
     validations:
       required: true
-  - type: textarea
-    id: esperado
+
+  - type: input
+    id: browser
     attributes:
-      label: O que você esperava?
-      placeholder: Ex. O app deveria voltar para o Dashboard com o modal de planos fechado.
-    validations:
-      required: true
+      label: Browser / device
+      placeholder: Chrome on Windows, Safari on iPhone, etc.
+
   - type: textarea
-    id: contexto
+    id: screenshots
     attributes:
-      label: Contexto adicional
-      description: Cole prints sem dados sensíveis, navegador, tamanho de tela e qualquer detalhe útil.
-    validations:
-      required: false
+      label: Screenshots or recordings
+      description: Attach only screenshots that do not expose sensitive information.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public issue safety check
+      options:
+        - label: This issue does not include personal data, financial data, secrets, tokens, private URLs, or account screenshots.
+          required: true
+        - label: This is not a security vulnerability report.
+          required: true
