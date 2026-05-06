@@ -48,16 +48,68 @@ O objetivo do produto é reduzir ruído, aumentar disciplina e transformar plane
 
 ## Galeria Do Produto
 
-Use esta área para apresentar o app como produto, não apenas como repositório técnico. As imagens devem ser adicionadas em `docs/assets/screenshots/` sem dados pessoais, valores reais, e-mails ou chaves.
+<p align="center">
+  <img src="./docs/assets/screenshots/dashboard.png" alt="Dashboard do NEXO Finance" width="820" />
+</p>
 
-| Tela | Frase de apresentação | Arquivo sugerido |
-| --- | --- | --- |
-| Dashboard | Clareza para decidir cada real do mês. | `docs/assets/screenshots/dashboard.png` |
-| Caixas | Cada parte da receita recebe uma missão. | `docs/assets/screenshots/caixas.png` |
-| Metas | Objetivos financeiros com progresso visível. | `docs/assets/screenshots/metas.png` |
-| NEXO IA | Uma leitura contextual antes da próxima decisão. | `docs/assets/screenshots/nexo-ia.png` |
-| Suporte | Ajuda limpa, artigos e triagem inteligente. | `docs/assets/screenshots/suporte.png` |
-| Mobile | O mesmo controle financeiro em tela pequena. | `docs/assets/screenshots/mobile.png` |
+<p align="center">
+  <strong>Dashboard</strong><br />
+  Clareza para decidir cada real do mês.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/caixas.png" alt="Caixas financeiras do NEXO Finance" width="820" />
+</p>
+
+<p align="center">
+  <strong>Caixas</strong><br />
+  Cada parte da receita recebe uma missão.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/metas.png" alt="Metas do NEXO Finance" width="820" />
+</p>
+
+<p align="center">
+  <strong>Metas</strong><br />
+  Objetivos financeiros com progresso visível.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/indicadores.png" alt="Indicadores financeiros do NEXO Finance" width="820" />
+</p>
+
+<p align="center">
+  <strong>Indicadores</strong><br />
+  Leitura rápida de disciplina, risco e distribuição financeira.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/reports.png" alt="Relatórios do NEXO Finance" width="820" />
+</p>
+
+<p align="center">
+  <strong>Relatórios</strong><br />
+  Visão analítica para entender o mês com mais precisão.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/nexo-ia.png" alt="NEXO IA" width="820" />
+</p>
+
+<p align="center">
+  <strong>NEXO IA</strong><br />
+  Uma leitura contextual antes da próxima decisão.
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/mobile.png" alt="NEXO Finance no mobile" width="360" />
+</p>
+
+<p align="center">
+  <strong>Mobile</strong><br />
+  O mesmo controle financeiro em tela pequena.
+</p>
 
 > Antes de publicar prints, oculte nome completo, e-mail, telefone, receita real, chaves, tokens e qualquer dado financeiro sensível.
 
