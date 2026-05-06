@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Central de suporte NEXO
-    url: https://github.com/macksongaspar/nexo.finance/blob/stable/SUPPORT.md
-    about: Use a central do app para conta, pagamento ou dados privados. GitHub fica só para bug e sugestão pública.
+  - name: Security vulnerability
+    url: https://github.com/macksonvictor/nexo.finance/blob/stable/SECURITY.md
+    about: Report security issues privately. Do not open public issues for vulnerabilities.
+  - name: Private support
+    url: https://github.com/macksonvictor/nexo.finance/blob/stable/SUPPORT.md
+    about: Use private support for account, payment, personal data, or sensitive product issues.
+  - name: Contribution guide
+    url: https://github.com/macksonvictor/nexo.finance/blob/stable/CONTRIBUTING.md
+    about: Read the contribution guide before opening pull requests or larger proposals.
