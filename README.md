@@ -557,9 +557,7 @@ Details:
 
 **Mackson** — Product development and project direction.
 
-<a href="https://github.com/macksonvictor/nexo.finance/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=macksonvictor/nexo.finance" alt="Nexo Finance contributors" />
-</a>
+[View GitHub contributors](https://github.com/macksonvictor/nexo.finance/graphs/contributors)
 
 ---
 
