@@ -13,10 +13,14 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  validate:
-    name: Check, test and build
+  node:
+    name: Node check, test and build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -24,7 +28,7 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-  
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -42,3 +46,56 @@ jobs:
 
       - name: Build application
         run: pnpm build
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+        continue-on-error: true
+
+  python-core:
+    name: Python Core tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: python-core/requirements.txt
+
+      - name: Install Python Core dependencies
+        run: python -m pip install -r python-core/requirements.txt
+
+      - name: Run Python Core tests
+        run: |
+          if [ -d "python-core/tests" ]; then
+            python -m pytest python-core/tests
+          else
+            echo "No python-core/tests directory found. Skipping."
+          fi
+
+  security-files:
+    name: Repository governance files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate governance files
+        run: |
+          test -f README.md
+          test -f SECURITY.md
+          test -f CONTRIBUTING.md
+          test -f CODE_OF_CONDUCT.md
+          test -f SUPPORT.md
+          test -f LICENSE
+          test -f .github/PULL_REQUEST_TEMPLATE.md
+          test -f .github/ISSUE_TEMPLATE/bug_report.yml
+          test -f .github/ISSUE_TEMPLATE/feature_request.yml
+          test -f .github/dependabot.yml
