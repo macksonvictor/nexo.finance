@@ -111,8 +111,6 @@ O objetivo do produto é reduzir ruído, aumentar disciplina e transformar plane
   O mesmo controle financeiro em tela pequena.
 </p>
 
-> Antes de publicar prints, oculte nome completo, e-mail, telefone, receita real, chaves, tokens e qualquer dado financeiro sensível.
-
 ---
 
 ## Funcionalidades
