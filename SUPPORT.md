@@ -1,52 +1,95 @@
-# Suporte NEXO Finance
+# Support
 
-## Canal principal
+This document explains how to request help for Nexo Finance.
 
-Use a central de suporte dentro do app NEXO. Ela começa pela IA de suporte, tenta responder com base nos artigos e só escala quando o caso realmente precisa de acompanhamento humano.
+---
 
-Não publique e-mail, telefone, chaves, tokens, dados financeiros ou prints sensíveis em issues públicas.
+## Main Support Channel
 
-## Quando entrar em contato
+Use the support center inside the Nexo Finance app whenever available.
 
-Use a central para:
+The support flow starts with the AI support assistant, checks available support articles, and escalates only when a case needs human follow-up.
 
-- problemas de acesso
-- erros no app
-- dúvidas sobre planos
-- falhas em cobrança
-- sugestões de melhoria
+---
 
-## Como enviar um pedido de suporte melhor
+## When to Request Support
 
-Para agilizar o atendimento, envie:
+Use the support center for:
 
-- e-mail da conta usada no produto
-- descrição objetiva do problema
-- passo a passo do que aconteceu
-- print ou vídeo curto, sem dados sensíveis
-- horário aproximado do erro
-- navegador, celular ou sistema usado
+- Account access issues
+- App errors
+- Billing or plan questions
+- Payment failures
+- AI assistant issues
+- Suggestions for product improvement
 
-## Modelo rápido
+---
+
+## Public GitHub Issues
+
+Use GitHub Issues only for public bugs and suggestions that do not include sensitive information.
+
+Do not publish:
+
+- Email addresses
+- Phone numbers
+- API keys
+- Tokens
+- Financial data
+- Payment details
+- Private URLs
+- Account screenshots
+- Any other sensitive information
+
+Account, payment, and security-related reports should be handled privately.
+
+For security reports, follow:
+
+- [SECURITY.md](./SECURITY.md)
+
+---
+
+## How to Write a Good Support Request
+
+A useful support request should include:
+
+- The account email used in the product, only in private support channels
+- A clear description of the issue
+- Steps to reproduce the problem
+- Approximate time of the issue
+- Device, browser, and operating system
+- Screenshot or short video only if it does not expose sensitive data
+
+---
+
+## Quick Template
 
 ```txt
-Assunto: NEXO - problema ao [entrar / pagar / usar]
+Subject: Nexo Finance - issue with [login / payment / app / AI / other]
 
-Nome:
-E-mail da conta:
-O que aconteceu:
-Como reproduzir:
-Horário aproximado:
-Dispositivo / navegador:
-Anexos:
+Account email:
+What happened:
+Steps to reproduce:
+Approximate time:
+Device / browser:
+Attachments:
 ```
 
-## GitHub
+Use the account email only in private support channels, not in public GitHub issues.
 
-Use GitHub apenas para bugs e sugestões públicas, sem dados pessoais.
+---
 
-Problemas de conta, pagamento e segurança devem ficar no suporte privado do app.
+## Response Expectations
 
-## Observação
+Nexo Finance is under active development. Support handling may depend on the current stage of the product and available project operations.
 
-O suporte humano profissional será conectado por ferramenta dedicada quando a operação estiver pronta. Até lá, o app usa alerta interno configurado por ambiente.
+The project may use internal notifications configured by the maintainers to review support requests.
+
+---
+
+## Related Documents
+
+- [README.md](./README.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [SECURITY.md](./SECURITY.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
