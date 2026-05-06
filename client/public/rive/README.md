@@ -20,13 +20,28 @@ asset: "/rive/nexo-mascot.riv"
 
 ## Runtime contract
 
-State machine name:
+Temporary test file:
+
+```txt
+client/public/rive/nexo-mascot.riv
+```
+
+While testing marketplace Rive files, `stateMachine` can stay `null` and the app
+plays timeline animations by name.
+
+Final state machine name:
+
+```txt
+NEXO_StateMachine
+```
+
+Fallback accepted name:
 
 ```txt
 NexoMascot
 ```
 
-Inputs:
+Final inputs:
 
 ```txt
 mood: number
@@ -39,12 +54,12 @@ Mood values:
 
 ```txt
 0 idle
-1 reading
-2 processing
-3 responding
-4 alert
-5 confident
-6 curious
+1 processing
+2 responding
+3 alert
+4 reading
+5 surprised
+6 confident
 ```
 
 Intensity values:
@@ -57,7 +72,8 @@ Intensity values:
 Guidelines:
 
 ```txt
-No background glow, rings, aura, blur, or radial light in the Rive file.
+No square/background layer in the Rive file.
+The app owns the background.
 Keep the cube clean and isolated.
 Use hover/tap to grow slightly and blink.
 Use responding for mouth movement during AI output.

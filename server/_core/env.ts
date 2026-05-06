@@ -30,6 +30,16 @@ export const ENV = {
   pyAiTimeoutMs: parseNumber(process.env.PY_AI_TIMEOUT_MS, 2500),
   pyAiShadowMode: parseBoolean(process.env.PY_AI_SHADOW_MODE, false),
   pyAiEnableProphet: parseBoolean(process.env.PY_AI_ENABLE_PROPHET, false),
+  pythonCoreBaseUrl:
+    process.env.NEXO_PYTHON_CORE_URL ??
+    process.env.PYTHON_CORE_BASE_URL ??
+    process.env.NEXO_PYTHON_CORE_BASE_URL ??
+    "http://127.0.0.1:8010",
+  pythonCoreTimeoutMs: parseNumber(
+    process.env.NEXO_PYTHON_CORE_TIMEOUT_MS ??
+      process.env.PYTHON_CORE_TIMEOUT_MS,
+    2500
+  ),
   ownerNotificationWebhookUrl:
     process.env.OWNER_NOTIFICATION_WEBHOOK_URL ?? "",
   githubToken: process.env.GITHUB_TOKEN ?? "",

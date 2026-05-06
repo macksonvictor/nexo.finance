@@ -1,0 +1,54 @@
+.nexo-lottie-mascot {
+  position: relative;
+  display: inline-flex;
+  width: var(--mascot-size, 32px);
+  height: var(--mascot-size, 32px);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+.nexo-lottie-mascot--hero {
+  overflow: visible;
+}
+
+.nexo-lottie-mascot__player,
+.nexo-lottie-mascot__fallback {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.nexo-lottie-mascot__player {
+  transform: scale(var(--mascot-content-scale, 2.05));
+  transform-origin: 50% 50%;
+}
+
+.nexo-lottie-mascot__player svg {
+  display: block;
+  overflow: visible;
+  background: transparent !important;
+}
+
+.nexo-lottie-mascot__fallback::before {
+  width: 48%;
+  height: 48%;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255, 255, 255, 0.72), transparent 0 12%, transparent 13%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(122, 122, 122, 0.7) 54%, rgba(18, 18, 18, 0.9));
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+  content: "";
+}
+
+.nexo-lottie-mascot__fallback {
+  opacity: 0;
+}

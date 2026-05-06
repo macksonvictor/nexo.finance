@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
-import mascotAssetUrl from "@/assets/nexo-ai-mascot.svg";
 import brandAssetUrl from "@/assets/nexo-ai-brand.svg";
+import { NexoLottieMascot } from "./NexoLottieMascot";
 import "./NexoCubeLogo.css";
 
 export type NexoCubeVariant = "mascot" | "brand";
@@ -23,18 +23,28 @@ export function NexoCubeLogo({
   variant = "mascot",
   glow = false,
 }: NexoCubeLogoProps) {
+  if (variant === "mascot") {
+    return (
+      <NexoLottieMascot
+        size={size}
+        state="idle"
+        className={className}
+        decorative={decorative}
+        ariaLabel={ariaLabel}
+      />
+    );
+  }
+
   const style = {
     "--cube-size": `${size}px`,
   } as CSSProperties & Record<"--cube-size", string>;
-  const imageUrl = variant === "brand" ? brandAssetUrl : mascotAssetUrl;
-  const variantClass =
-    variant === "brand" ? "nexo-cube-asset--brand" : "nexo-cube-asset--mascot";
+  const imageUrl = brandAssetUrl;
 
   return (
     <span
       className={cn(
         "nexo-cube-asset",
-        variantClass,
+        "nexo-cube-asset--brand",
         glow && "nexo-cube-asset--glow",
         className
       )}

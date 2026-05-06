@@ -204,7 +204,7 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbfbfa] text-neutral-950 dark:bg-background dark:text-foreground">
+    <div className="nexo-support-page min-h-screen bg-[#fbfbfa] text-neutral-950 dark:bg-background dark:text-foreground">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-8">
         <button
           type="button"

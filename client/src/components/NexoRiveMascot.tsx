@@ -19,7 +19,7 @@ interface NexoRiveMascotProps {
   className?: string;
   fallback: ReactNode;
   riveSrc?: string | null;
-  stateMachine?: string;
+  stateMachine?: string | null;
   ariaLabel?: string;
   decorative?: boolean;
 }
@@ -31,7 +31,7 @@ export type NexoRiveMascotCanvasProps = {
   className?: string;
   fallback: ReactNode;
   riveSrc: string;
-  stateMachine: string;
+  stateMachine: string | null;
   ariaLabel: string;
   decorative: boolean;
 };

@@ -45,9 +45,7 @@ def test_predict_uses_prophet_when_gate_is_open(monkeypatch, client, base_payloa
             return self
 
         def predict(self, future):
-            import pandas as pd
-
-            return pd.DataFrame({"yhat": [8321.55]})
+            return {"yhat": [8321.55]}
 
     monkeypatch.setattr(predict_service, "settings", Settings(enable_prophet=True))
     monkeypatch.setattr(predict_service, "PROPHET_AVAILABLE", True)

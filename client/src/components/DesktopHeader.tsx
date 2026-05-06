@@ -5,8 +5,7 @@ import { BRAND_AI_NAME } from "@/lib/branding";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { getAppCopy } from "@/lib/i18n";
 import type { ViewType } from "@/types/finance";
-import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
-import { NexoRiveMascot } from "./NexoRiveMascot";
+import { NexoCubeAnimated } from "./NexoCubeAnimated";
 import { AccountMenuPanel } from "./AccountMenuPanel";
 import type { ProfilePanelType } from "./ProfileActionPanel";
 
@@ -131,17 +130,11 @@ export function DesktopHeader({
               : "opacity-80"
           }`}
         >
-          <NexoRiveMascot
+          <NexoCubeAnimated
             size={56}
-            state="idle"
-            fallback={
-              <img
-                src={frontCubeUrl}
-                alt=""
-                aria-hidden="true"
-                className="h-14 w-14 object-contain xl:h-16 xl:w-16"
-              />
-            }
+            mood={isAIWindowOpen ? "listening" : "idle"}
+            allowHoverReaction
+            allowPressReaction
           />
         </button>
 

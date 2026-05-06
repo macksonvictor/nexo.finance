@@ -1,16 +1,19 @@
+import type { NexoBrainRiveState } from "@shared/riveState";
+import {
+  NEXO_MASCOT_ALIAS_STATE,
+  NEXO_MASCOT_LOTTIE_TIMELINES,
+  NEXO_MASCOT_STATE_LOOPS,
+  NEXO_MASCOT_STATE_SPEEDS,
+  NEXO_MASCOT_STATE_TIMELINES,
+  type NexoMascotAlias,
+  type NexoMascotMood,
+} from "./mascotMotion";
+
 export type NexoAIMotionEngine = "css" | "rive" | "lottie";
 
-export type NexoAIMascotMood =
-  | "idle"
-  | "reading"
-  | "processing"
-  | "responding"
-  | "alert"
-  | "confident"
-  | "curious"
-  | "thinking"
-  | "speaking"
-  | "listening";
+export type NexoAIMascotAlias = NexoMascotAlias;
+
+export type NexoAIMascotMood = NexoMascotMood;
 
 export type NexoAIMotionIntensity = "soft" | "hero";
 
@@ -65,31 +68,35 @@ export const NEXO_AI_MASCOT_STATES = {
     faceBehavior: "Sorriso seguro e olhos estaveis.",
     motionNotes: "Animacao de 700 a 900 ms, sem loop continuo.",
   },
-  curious: {
+  surprised: {
     label: "Surpresa / curiosidade",
     purpose: "Reage a input inesperado, incompleto ou fora do padrao.",
     cubeBehavior: "Cubo inclina de lado de forma simpatica.",
     faceBehavior: "Olhos levemente maiores e boca pequena de curiosidade.",
     motionNotes: "Uma inclinacao curta seguida de retorno ao repouso.",
   },
-} satisfies Record<
-  Exclude<NexoAIMascotMood, "thinking" | "speaking" | "listening">,
-  NexoAIMascotStateSpec
->;
+} satisfies Record<NexoBrainRiveState, NexoAIMascotStateSpec>;
 
-export const NEXO_AI_MASCOT_STATE_ALIASES = {
-  thinking: "processing",
-  speaking: "responding",
-  listening: "idle",
-} satisfies Record<"thinking" | "speaking" | "listening", keyof typeof NEXO_AI_MASCOT_STATES>;
+export const NEXO_AI_MASCOT_STATE_ALIASES = NEXO_MASCOT_ALIAS_STATE;
 
 export const NEXO_AI_MOTION_MANIFEST = {
-  engine: "rive",
-  version: "rive-ready-v1",
+  engine: "lottie",
+  version: "lottie-mono-v1",
   rive: {
-    // Keep null until the exported file exists. When ready, use "/rive/nexo-mascot.riv".
-    asset: null,
-    stateMachine: "NexoMascot",
+    // Temporary mascot file. The final NEXO cube should keep this same input contract.
+    asset: "/rive/nexo-mascot.riv",
+    // Keep null while using marketplace/test .riv files that only expose timelines.
+    // The final mascot should expose "NEXO_StateMachine" or "NexoMascot".
+    stateMachine: null,
+    animations: {
+      idle: "Listening",
+      processing: "Thinking",
+      responding: "Speaking",
+      alert: "Thinking",
+      reading: "Loading Start",
+      surprised: "Loading & speaking",
+      confident: "Listening",
+    },
     inputs: {
       mood: "mood",
       intensity: "intensity",
@@ -98,16 +105,23 @@ export const NEXO_AI_MOTION_MANIFEST = {
     },
   },
   lottie: {
-    idle: null,
-    reading: null,
-    processing: null,
-    responding: null,
-    alert: null,
-    confident: null,
-    curious: null,
-    thinking: null,
-    speaking: null,
-    listening: null,
+    asset: "nexo-ai-mascot-orb",
+    contentScale: 2.05,
+    jumpContentScale: 2.05,
+    idleFrame: 31,
+    timelines: NEXO_MASCOT_LOTTIE_TIMELINES,
+    stateTimelines: NEXO_MASCOT_STATE_TIMELINES,
+    segments: {
+      idle: NEXO_MASCOT_LOTTIE_TIMELINES.idle,
+      reading: NEXO_MASCOT_LOTTIE_TIMELINES.thinking,
+      processing: NEXO_MASCOT_LOTTIE_TIMELINES.thinking,
+      responding: NEXO_MASCOT_LOTTIE_TIMELINES.yes,
+      alert: NEXO_MASCOT_LOTTIE_TIMELINES.alert,
+      surprised: NEXO_MASCOT_LOTTIE_TIMELINES.no,
+      confident: NEXO_MASCOT_LOTTIE_TIMELINES.yes,
+    },
+    loop: NEXO_MASCOT_STATE_LOOPS,
+    speed: NEXO_MASCOT_STATE_SPEEDS,
   },
 } as const;
 

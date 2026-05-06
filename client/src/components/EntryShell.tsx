@@ -6,9 +6,8 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
-import { BRAND_AI_NAME, BRAND_NAME } from "@/lib/branding";
+import { BRAND_AI_NAME } from "@/lib/branding";
 import { cn } from "@/lib/utils";
-import { BrandLogo } from "./BrandLogo";
 
 interface EntryShellProps {
   eyebrow?: string;
@@ -67,20 +66,6 @@ export function EntryShell({
 
             <div className={cn("space-y-6", eyebrow ? "mt-9" : "mt-3")}>
               <div className="max-w-3xl">
-                <div className="mb-7 flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-                    <BrandLogo className="h-10 w-10" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-lg font-semibold leading-none tracking-tight text-[#F5F5F5]">
-                      {BRAND_NAME}
-                    </p>
-                    <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.28em] text-[#777]">
-                      Gestão financeira
-                    </p>
-                  </div>
-                </div>
-
                 <h1 className="text-4xl font-semibold tracking-tight text-[#FAFAF7] sm:text-5xl sm:leading-none lg:text-[58px] lg:leading-[0.96]">
                   {title}
                 </h1>

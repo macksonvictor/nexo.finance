@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import math
-
-import numpy as np
+from datetime import datetime
+from statistics import mean, pstdev
 
 from app.schemas import AnalysisRequest, Requirements, RiskResponse, RiskResult
 from app.services.dataset_rules import evaluate_risk_requirements
-from app.services.feature_engineering import build_historical_frame, build_transaction_frame
 
 
 def score_risk(payload: AnalysisRequest) -> RiskResponse:
@@ -25,9 +24,8 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
             },
         )
 
-    tx_frame = build_transaction_frame(payload)
-    expense_frame = tx_frame[tx_frame["type"] == "expense"].copy()
-    historical_frame = build_historical_frame(payload)
+    expense_rows = _build_expense_rows(payload)
+    historical_months = payload.historical_months
 
     burn_rate = payload.month.spent / max(payload.month.income, 1)
     free_balance_pressure = max(-payload.month.balance, 0) / max(payload.month.income, 1)
@@ -39,20 +37,15 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
     )
     meta_high_count = sum(1 for meta in payload.metas if meta.risco == "alto")
     meta_medium_count = sum(1 for meta in payload.metas if meta.risco == "medio")
-    high_risk_history_ratio = _calculate_high_risk_history_ratio(historical_frame)
-    volatility = _coefficient_of_variation(expense_frame["amount"].to_list())
-    average_daily_expense = _average_daily_expense(expense_frame)
+    high_risk_history_ratio = _calculate_high_risk_history_ratio(historical_months)
+    volatility = _coefficient_of_variation([row["amount"] for row in expense_rows])
+    average_daily_expense = _average_daily_expense(expense_rows)
     runway_days = _calculate_runway_days(payload.month.balance, average_daily_expense)
-    stability_score = _calculate_stability_score(
-        volatility,
-        burn_rate,
-        high_risk_history_ratio,
-        early_burn=0.0,
-    )
+    total_expense = max(sum(row["amount"] for row in expense_rows), 1)
     early_burn = (
-        float(expense_frame[expense_frame["month_progress"] <= (10 / 31)]["amount"].sum())
-        / max(float(expense_frame["amount"].sum()), 1)
-        if not expense_frame.empty
+        sum(row["amount"] for row in expense_rows if row["month_progress"] <= (10 / 31))
+        / total_expense
+        if expense_rows
         else 0.0
     )
     stability_score = _calculate_stability_score(
@@ -127,7 +120,8 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
     )
 
     confidence = round(
-        min(0.6 + len(tx_frame) / 90 + len(historical_frame) / 20, 0.94), 2
+        min(0.6 + len(payload.recent_transactions) / 90 + len(historical_months) / 20, 0.94),
+        2,
     )
 
     return RiskResponse(
@@ -153,21 +147,43 @@ def score_risk(payload: AnalysisRequest) -> RiskResponse:
         requirements=Requirements(met=True, missing=[]),
         debug={
             "methodology": "weighted_risk_formula",
-            "datasetSize": int(len(tx_frame) + len(historical_frame)),
+            "datasetSize": len(payload.recent_transactions) + len(historical_months),
             "gatesTriggered": requirements.gates_triggered,
         },
     )
 
 
-def _calculate_high_risk_history_ratio(historical_frame) -> float:
-    if historical_frame.empty:
+def _build_expense_rows(payload: AnalysisRequest) -> list[dict]:
+    rows: list[dict] = []
+    for transaction in payload.recent_transactions:
+        if transaction.type != "expense":
+            continue
+        date = _parse_datetime(transaction.date)
+        rows.append(
+            {
+                "amount": float(transaction.amount),
+                "day": date.day,
+                "month_progress": max(0.0, min(date.day / 31, 1.0)),
+            }
+        )
+    return rows
+
+
+def _parse_datetime(value: str) -> datetime:
+    normalized = value.replace("Z", "+00:00")
+    return datetime.fromisoformat(normalized)
+
+
+def _calculate_high_risk_history_ratio(historical_months) -> float:
+    if not historical_months:
         return 0.0
 
-    high_risk_months = historical_frame[
-        (historical_frame["income"] > 0)
-        & ((historical_frame["spent"] / historical_frame["income"]) >= 0.9)
+    high_risk_months = [
+        month
+        for month in historical_months
+        if month.income > 0 and (month.spent / month.income) >= 0.9
     ]
-    return float(len(high_risk_months) / len(historical_frame))
+    return float(len(high_risk_months) / len(historical_months))
 
 
 def _coefficient_of_variation(values: list[float]) -> float:
@@ -178,18 +194,18 @@ def _coefficient_of_variation(values: list[float]) -> float:
     if math.isclose(mean_value, 0.0):
         return 0.0
 
-    return float(np.std(values) / mean_value)
+    return float(pstdev(values) / mean_value)
 
 
-def _average_daily_expense(expense_frame) -> float:
-    if expense_frame.empty:
+def _average_daily_expense(expense_rows: list[dict]) -> float:
+    if not expense_rows:
         return 0.0
 
-    daily_totals = expense_frame.groupby("day")["amount"].sum()
-    if daily_totals.empty:
-        return 0.0
+    daily_totals: dict[int, float] = {}
+    for row in expense_rows:
+        daily_totals[row["day"]] = daily_totals.get(row["day"], 0.0) + row["amount"]
 
-    return float(daily_totals.mean())
+    return float(mean(daily_totals.values())) if daily_totals else 0.0
 
 
 def _calculate_runway_days(balance: float, average_daily_expense: float) -> float:

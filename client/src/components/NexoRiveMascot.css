@@ -6,6 +6,8 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  background: transparent;
 }
 
 .nexo-rive-mascot__fallback,
@@ -20,7 +22,11 @@
 }
 
 .nexo-rive-mascot__canvas {
+  background: transparent !important;
+  mix-blend-mode: screen;
+  object-fit: contain;
   opacity: 0;
+  pointer-events: auto;
 }
 
 .nexo-rive-mascot--ready .nexo-rive-mascot__canvas {
