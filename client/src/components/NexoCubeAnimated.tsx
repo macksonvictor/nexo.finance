@@ -7,8 +7,7 @@ import {
   type NexoAIMotionEngine,
   type NexoAIMotionIntensity,
 } from "@/lib/nexoAIMotion";
-import mascotAssetUrl from "@/assets/nexo-ai-mascot.svg";
-import { NexoRiveMascot } from "./NexoRiveMascot";
+import { NexoLottieMascot } from "./NexoLottieMascot";
 import "./NexoCubeLogo.css";
 
 interface NexoCubeAnimatedProps {
@@ -19,6 +18,9 @@ interface NexoCubeAnimatedProps {
   engine?: NexoAIMotionEngine;
   intensity?: NexoAIMotionIntensity;
   mood?: NexoAIMascotMood;
+  allowHoverReaction?: boolean;
+  allowJumpReaction?: boolean;
+  allowPressReaction?: boolean;
 }
 
 export function NexoCubeAnimated({
@@ -29,8 +31,14 @@ export function NexoCubeAnimated({
   engine,
   intensity = "soft",
   mood = "idle",
+  allowHoverReaction = false,
+  allowJumpReaction = false,
+  allowPressReaction = false,
 }: NexoCubeAnimatedProps) {
   const resolvedEngine = resolveMascotMotionEngine(engine);
+  // The final Rive cube will reuse the same state contract, but the active
+  // product mascot is the monochrome Lottie orb to avoid old cube fallbacks.
+  const activeEngine = resolvedEngine === "css" ? "css" : "lottie";
   const style = {
     "--cube-size": `${size}px`,
   } as CSSProperties & Record<"--cube-size", string>;
@@ -44,26 +52,19 @@ export function NexoCubeAnimated({
         className
       )}
       style={style}
-      data-motion-engine={resolvedEngine}
+      data-motion-engine={activeEngine}
       data-motion-version={NEXO_AI_MOTION_MANIFEST.version}
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : ariaLabel}
       role={decorative ? undefined : "img"}
     >
-      <span className="nexo-cube-asset__shell">
-        <img
-          src={mascotAssetUrl}
-          alt=""
-          aria-hidden="true"
-          className="nexo-cube-asset__image"
-        />
-      </span>
+      <span className="nexo-lottie-mascot__fallback" aria-hidden="true" />
     </span>
   );
 
-  if (resolvedEngine === "rive") {
+  if (activeEngine === "lottie") {
     return (
-      <NexoRiveMascot
+      <NexoLottieMascot
         size={size}
         state={mood}
         intensity={intensity}
@@ -71,6 +72,9 @@ export function NexoCubeAnimated({
         fallback={fallback}
         decorative={decorative}
         ariaLabel={ariaLabel}
+        allowHoverReaction={allowHoverReaction}
+        allowJumpReaction={allowJumpReaction}
+        allowPressReaction={allowPressReaction}
       />
     );
   }

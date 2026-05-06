@@ -524,7 +524,6 @@
     color: var(--shell-plan-upgrade-text);
   }
 
-  .light .nexo-brand-logo,
   .light .nexo-app-shell header .nexo-brand-logo,
   .light .nexo-app-shell aside .nexo-brand-logo {
     filter: brightness(0) saturate(100%);

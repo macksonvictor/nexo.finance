@@ -64,6 +64,27 @@
   display: none;
 }
 
+.nexo-cube-asset--mascot {
+  --cube-shadow: rgba(95, 126, 178, 0.18);
+  --cube-glow: rgba(126, 155, 210, 0.2);
+}
+
+.nexo-cube-asset--mascot .nexo-cube-asset__image {
+  filter:
+    saturate(0.82)
+    contrast(1.08)
+    brightness(0.98)
+    drop-shadow(0 18px 34px rgba(66, 82, 120, 0.16));
+}
+
+.dark .nexo-cube-asset--mascot .nexo-cube-asset__image {
+  filter:
+    saturate(0.75)
+    contrast(1.12)
+    brightness(1.04)
+    drop-shadow(0 18px 34px rgba(126, 155, 210, 0.2));
+}
+
 .nexo-cube-asset--glow .nexo-cube-asset__image {
   filter: none;
 }

@@ -20,8 +20,6 @@ import {
   type NexoAIUIPreferences,
 } from "@/lib/nexoAIHistory";
 import { NexoCubeAnimated } from "./NexoCubeAnimated";
-import { NexoCubeLogo } from "./NexoCubeLogo";
-import frontCubeUrl from "@/assets/nexo-ai-front-cube.svg";
 import { buildAIExplicitContext } from "@/lib/aiExplicitContext";
 import { useFinanceStore } from "@/stores/useFinanceStore";
 import { Streamdown } from "streamdown";
@@ -1055,11 +1053,11 @@ export function NexoAIView({
                   aria-label="Voltar para o início da IA"
                 >
                   <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl transition duration-200 group-hover:scale-[1.02]">
-                    <img
-                      src={frontCubeUrl}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-20 w-20 object-contain"
+                    <NexoCubeAnimated
+                      size={72}
+                      mood="listening"
+                      allowHoverReaction
+                      allowPressReaction
                     />
                   </span>
                   <span className="min-w-0">
@@ -1163,7 +1161,10 @@ export function NexoAIView({
                           className="mt-1 flex shrink-0 items-center justify-center"
                           style={{ width: AI_AVATAR_SIZE, height: AI_AVATAR_SIZE }}
                         >
-                          <NexoCubeLogo size={AI_AVATAR_SIZE} glow />
+                          <NexoCubeAnimated
+                            size={AI_AVATAR_SIZE}
+                            mood="listening"
+                          />
                         </div>
                       )}
 
@@ -1354,11 +1355,10 @@ function DesktopHistoryRail({
           aria-label={historyVisible ? "Ocultar conversas" : "Abrir conversas"}
         >
           <span className="relative flex h-14 w-14 items-center justify-center">
-            <img
-              src={frontCubeUrl}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-14 w-14 object-contain transition-opacity duration-150 group-hover:opacity-0"
+            <NexoCubeAnimated
+              size={56}
+              mood="idle"
+              className="absolute inset-0 transition-opacity duration-150 group-hover:opacity-0"
             />
             <span className="absolute inset-0 flex items-center justify-center text-[#F5F5F5] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
               {historyVisible ? (
@@ -1974,7 +1974,13 @@ function EmptyState({
     <div className="flex h-full flex-col items-center justify-center py-10 text-center">
       <div className="space-y-5 px-3">
         <div className="mx-auto flex items-center justify-center">
-          <NexoCubeAnimated size={192} intensity="hero" mood="listening" />
+          <NexoCubeAnimated
+            size={170}
+            intensity="hero"
+            mood="listening"
+            allowJumpReaction
+            allowPressReaction
+          />
         </div>
 
         <div className="space-y-3">
@@ -1991,7 +1997,7 @@ function SessionLoadingState({ activeMode }: { activeMode: AIVisibleMode }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 py-10">
       <div className="mx-auto flex items-center justify-center">
-        <NexoCubeAnimated size={192} intensity="hero" mood="thinking" />
+        <NexoCubeAnimated size={160} intensity="hero" mood="thinking" />
       </div>
       <p className="text-sm leading-relaxed text-[#A8A8A8]">
         {getLoadingCopy(activeMode)}

@@ -14,31 +14,18 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import {
-  NEXO_AI_MASCOT_STATE_ALIASES,
+  toNexoRiveInputValue,
+  type NexoBrainRiveState,
+} from "@shared/riveState";
+import {
   NEXO_AI_MOTION_MANIFEST,
   type NexoAIMascotMood,
 } from "@/lib/nexoAIMotion";
+import { resolveNexoMascotMood } from "@/lib/mascotMotion";
 import type { NexoRiveMascotCanvasProps } from "./NexoRiveMascot";
 
-const MASCOT_MOOD_INDEX = {
-  idle: 0,
-  reading: 1,
-  processing: 2,
-  responding: 3,
-  alert: 4,
-  confident: 5,
-  curious: 6,
-} satisfies Record<
-  Exclude<NexoAIMascotMood, "thinking" | "speaking" | "listening">,
-  number
->;
-
-function resolveMascotMood(state: NexoAIMascotMood) {
-  if (state === "thinking" || state === "speaking" || state === "listening") {
-    return NEXO_AI_MASCOT_STATE_ALIASES[state];
-  }
-
-  return state;
+function resolveMascotMood(state: NexoAIMascotMood): NexoBrainRiveState {
+  return resolveNexoMascotMood(state);
 }
 
 export function NexoRiveMascotCanvas({
@@ -55,6 +42,8 @@ export function NexoRiveMascotCanvas({
   const [hasLoaded, setHasLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const mood = resolveMascotMood(state);
+  const moodInputValue = toNexoRiveInputValue(mood);
+  const fallbackAnimation = NEXO_AI_MOTION_MANIFEST.rive.animations[mood];
   const style = {
     "--cube-size": `${size}px`,
   } as CSSProperties & Record<"--cube-size", string>;
@@ -65,9 +54,11 @@ export function NexoRiveMascotCanvas({
 
   const { rive, RiveComponent } = useRive({
     src: riveSrc,
-    stateMachines: stateMachine,
+    animations: stateMachine ? undefined : fallbackAnimation,
+    stateMachines: stateMachine ?? undefined,
     autoplay: true,
     layout,
+    useOffscreenRenderer: false,
     automaticallyHandleEvents: false,
     onLoad: () => {
       setHasLoaded(true);
@@ -77,37 +68,52 @@ export function NexoRiveMascotCanvas({
       setLoadFailed(true);
       setHasLoaded(false);
     },
+  }, {
+    useOffscreenRenderer: false,
+    shouldResizeCanvasToContainer: true,
   });
 
   const moodInput = useStateMachineInput(
     rive,
-    stateMachine,
+    stateMachine ?? "",
     NEXO_AI_MOTION_MANIFEST.rive.inputs.mood,
-    MASCOT_MOOD_INDEX[mood]
+    moodInputValue
   );
   const intensityInput = useStateMachineInput(
     rive,
-    stateMachine,
+    stateMachine ?? "",
     NEXO_AI_MOTION_MANIFEST.rive.inputs.intensity,
     intensity === "hero" ? 1 : 0
   );
   const hoveredInput = useStateMachineInput(
     rive,
-    stateMachine,
+    stateMachine ?? "",
     NEXO_AI_MOTION_MANIFEST.rive.inputs.hovered,
     false
   );
   const blinkInput = useStateMachineInput(
     rive,
-    stateMachine,
+    stateMachine ?? "",
     NEXO_AI_MOTION_MANIFEST.rive.inputs.blink
   );
 
   useEffect(() => {
+    if (!rive || stateMachine) return;
+
+    const animation = rive.animationNames.includes(fallbackAnimation)
+      ? fallbackAnimation
+      : NEXO_AI_MOTION_MANIFEST.rive.animations.idle;
+
+    rive.stop();
+    rive.play(animation, true);
+  }, [fallbackAnimation, rive, stateMachine]);
+
+  useEffect(() => {
     if (moodInput?.type === StateMachineInputType.Number) {
-      moodInput.value = MASCOT_MOOD_INDEX[mood];
+      // Later NEXO_StateMachine will read this Number input to drive the cube reaction.
+      moodInput.value = moodInputValue;
     }
-  }, [mood, moodInput]);
+  }, [moodInput, moodInputValue]);
 
   useEffect(() => {
     if (intensityInput?.type === StateMachineInputType.Number) {
@@ -150,6 +156,7 @@ export function NexoRiveMascotCanvas({
       {!loadFailed && (
         <RiveComponent
           className="nexo-rive-mascot__canvas"
+          style={{ background: "transparent", backgroundColor: "transparent" }}
           aria-hidden="true"
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
