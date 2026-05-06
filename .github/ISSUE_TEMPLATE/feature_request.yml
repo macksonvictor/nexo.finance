@@ -1,41 +1,86 @@
-name: Sugestão de melhoria
-description: Sugira uma melhoria para o NEXO Finance.
-title: "[sugestão] "
-labels: ["sugestao"]
+name: Feature request
+description: Suggest a public product improvement for Nexo Finance.
+title: "feat: "
+labels: ["enhancement", "status: needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use este formulário para ideias de produto, UX, IA, suporte ou integrações.
+        Use this form for public product, UX, AI, support, documentation, or integration suggestions.
+
+        Do not include personal data, financial data, private account details, payment information, API keys, tokens, or private URLs.
+
   - type: textarea
-    id: problema
+    id: problem
     attributes:
-      label: Qual problema essa ideia resolve?
-      placeholder: Ex. Quero que o suporte sugira artigos antes de abrir WhatsApp.
+      label: Problem
+      description: What problem does this feature solve?
+      placeholder: Describe the user problem or product gap.
     validations:
       required: true
+
   - type: textarea
-    id: solucao
+    id: solution
     attributes:
-      label: Como você imagina a solução?
-      placeholder: Descreva o comportamento ideal para o usuário.
+      label: Proposed solution
+      description: How should the feature work?
+      placeholder: Describe the ideal behavior for the user.
     validations:
       required: true
+
   - type: dropdown
-    id: prioridade
+    id: area
     attributes:
-      label: Prioridade percebida
+      label: Product area
       options:
-        - Baixa
-        - Média
-        - Alta
-        - Crítica para lançamento
+        - Dashboard
+        - Boxes
+        - Goals
+        - History
+        - Reports / Indicators
+        - NEXO AI
+        - Support
+        - Authentication
+        - Payments
+        - Python Core
+        - Mobile
+        - Documentation
+        - Other
     validations:
-      required: false
-  - type: textarea
-    id: referencias
+      required: true
+
+  - type: dropdown
+    id: priority
     attributes:
-      label: Referências ou exemplos
-      description: Links, prints ou produtos que inspiram a sugestão.
+      label: Perceived priority
+      options:
+        - Low
+        - Medium
+        - High
+        - Launch critical
     validations:
       required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Are there other ways to solve this?
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References or examples
+      description: Add public links, examples, or screenshots that do not expose sensitive information.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public issue safety check
+      options:
+        - label: This request does not include personal data, financial data, secrets, tokens, private URLs, or account screenshots.
+          required: true
