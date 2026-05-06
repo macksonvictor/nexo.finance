@@ -14,8 +14,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml">
-    <img alt="CI" src="https://github.com/macksongaspar/nexo.finance/actions/workflows/ci.yml/badge.svg" />
+  <a href="https://github.com/macksonvictor/nexo.finance/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/macksonvictor/nexo.finance/actions/workflows/ci.yml/badge.svg" />
   </a>
   <img alt="React" src="https://img.shields.io/badge/React-19-111111?logo=react" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-111111?logo=typescript" />
@@ -24,8 +24,10 @@
 
 <p align="center">
   <a href="#visão-geral">Visão geral</a> |
+  <a href="#galeria-do-produto">Galeria</a> |
   <a href="#funcionalidades">Funcionalidades</a> |
   <a href="#nexo-ia">NEXO IA</a> |
+  <a href="#python-core">Python Core</a> |
   <a href="#como-rodar-localmente">Como rodar</a> |
   <a href="#deploy">Deploy</a>
 </p>
@@ -41,6 +43,23 @@ NEXO Finance é um produto autoral para organizar receita, gastos, caixas, metas
 Em vez de ser apenas um registrador de despesas, o NEXO trabalha como uma camada de decisão financeira. A receita mensal é distribuída em caixas, o progresso é acompanhado por metas, o histórico vira leitura de comportamento e a IA ajuda a interpretar risco, prioridade e próximos passos.
 
 O objetivo do produto é reduzir ruído, aumentar disciplina e transformar planejamento financeiro em uma experiência visual clara, elegante e acionável.
+
+---
+
+## Galeria Do Produto
+
+Use esta área para apresentar o app como produto, não apenas como repositório técnico. As imagens devem ser adicionadas em `docs/assets/screenshots/` sem dados pessoais, valores reais, e-mails ou chaves.
+
+| Tela | Frase de apresentação | Arquivo sugerido |
+| --- | --- | --- |
+| Dashboard | Clareza para decidir cada real do mês. | `docs/assets/screenshots/dashboard.png` |
+| Caixas | Cada parte da receita recebe uma missão. | `docs/assets/screenshots/caixas.png` |
+| Metas | Objetivos financeiros com progresso visível. | `docs/assets/screenshots/metas.png` |
+| NEXO IA | Uma leitura contextual antes da próxima decisão. | `docs/assets/screenshots/nexo-ia.png` |
+| Suporte | Ajuda limpa, artigos e triagem inteligente. | `docs/assets/screenshots/suporte.png` |
+| Mobile | O mesmo controle financeiro em tela pequena. | `docs/assets/screenshots/mobile.png` |
+
+> Antes de publicar prints, oculte nome completo, e-mail, telefone, receita real, chaves, tokens e qualquer dado financeiro sensível.
 
 ---
 
@@ -110,17 +129,18 @@ Principais capacidades:
 - modos de diagnóstico, risco, previsão e recomendação
 - integração com APIs compatíveis com OpenAI, incluindo Groq
 
-### Microserviço Python
+### Python Core
 
-O projeto inclui uma base opcional em Python para análises financeiras auxiliares:
+O Python Core prepara a base do cérebro financeiro do NEXO, mantendo o Node/tRPC como gateway seguro. O frontend não chama Python diretamente.
 
-- leitura de saúde do serviço
-- detecção de padrões
-- previsões
-- avaliação de risco
-- modo sombra para comparar respostas sem assumir o fluxo principal
+Contratos principais:
 
-O app principal continua funcionando sem o microserviço, desde que `PY_AI_ENABLED=false`.
+- `GET /health`
+- `POST /brain/analyze`
+- `POST /brain/simulate`
+- `POST /brain/coach-context`
+
+O app principal continua funcionando mesmo se o Python Core estiver offline, usando fallback seguro no gateway Node.
 
 ### Mascote e Rive
 
@@ -161,7 +181,7 @@ A direção visual recomendada é simples: o cubo reage pelo rosto, piscadas, bo
 | ORM | Drizzle ORM |
 | Autenticação | Clerk |
 | IA | OpenAI-compatible API |
-| IA local opcional | FastAPI/Python |
+| Brain financeiro | FastAPI/Python Core |
 | Pagamentos | Stripe |
 | Exportação | jsPDF + CSV |
 | Deploy | Railway + Docker |
@@ -191,8 +211,15 @@ nexo/
 |   |-- ai.ts
 |   |-- db.ts
 |   `-- routers.ts
+|-- python-core/
+|   |-- app/
+|   |   |-- api/
+|   |   |-- brain/
+|   |   |-- schemas/
+|   |   `-- services/
+|   `-- tests/
 |-- services/
-|   `-- nexo-ai-python/
+|   `-- nexo-ai-python/        # microserviço legado/opcional
 |-- shared/
 |-- drizzle/
 |-- tests/
@@ -222,7 +249,7 @@ Para desenvolvimento com menos atrito:
 - microserviço Python no WSL com Python `3.12`
 - navegador no Windows em `http://localhost:3000`
 
-Se você subir app e Python em ambientes diferentes, ajuste `PY_AI_BASE_URL` para apontar para o endereço real do microserviço.
+Se você subir app e Python em ambientes diferentes, ajuste `NEXO_PYTHON_CORE_URL` para apontar para o endereço real do Python Core.
 
 ### 1. Entrar no projeto
 
@@ -282,32 +309,28 @@ Acesse:
 http://localhost:3000
 ```
 
-### 7. Subir o microserviço Python da IA
+### 7. Subir o Python Core
 
-No WSL:
+Em outro terminal:
 
-```bash
-cd /mnt/c/END0-SYM/project/nexo\ project/nexo/services/nexo-ai-python
-source .venv/bin/activate
-uvicorn app.main:app --reload --port 8001
+```powershell
+pnpm dev:python-core
 ```
 
-Se o app principal também estiver no WSL:
+Teste:
 
-```env
-PY_AI_BASE_URL=http://127.0.0.1:8001
+```powershell
+Invoke-RestMethod http://127.0.0.1:8010/health
 ```
 
-Se o app principal estiver no Windows e o Python no WSL, consulte o IP do WSL:
+Se o app principal estiver no Windows e o Python no WSL, consulte o IP do WSL e configure `NEXO_PYTHON_CORE_URL`:
 
 ```bash
 hostname -I
 ```
 
-E configure, por exemplo:
-
 ```env
-PY_AI_BASE_URL=http://192.168.x.x:8001
+NEXO_PYTHON_CORE_URL=http://192.168.x.x:8010
 ```
 
 ---
@@ -331,6 +354,7 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4.1-mini
 PY_AI_ENABLED=false
 PY_AI_BASE_URL=http://127.0.0.1:8001
+NEXO_PYTHON_CORE_URL=http://127.0.0.1:8010
 PY_AI_TIMEOUT_MS=2500
 PY_AI_SHADOW_MODE=false
 PY_AI_ENABLE_PROPHET=false
@@ -360,12 +384,15 @@ Arquivo de referência:
 ```bash
 pnpm dev
 pnpm dev:py
+pnpm dev:python-core
 pnpm build
 pnpm start
 pnpm check
 pnpm check:py
+pnpm check:python-core
 pnpm test
 pnpm test:py
+pnpm test:python-core
 pnpm format
 pnpm db:push
 ```
@@ -383,6 +410,8 @@ Fluxo com Python:
 ```bash
 pnpm check:py
 pnpm test:py
+pnpm check:python-core
+pnpm test:python-core
 ```
 
 ---
@@ -391,13 +420,13 @@ pnpm test:py
 
 Deploy técnico atual:
 
-- [[wholesome-liberation-production.up.railway.app](https://nexofinance.up.railway.app/)]
+- [nexofinance.up.railway.app](https://nexofinance.up.railway.app/)
 
 Observações:
 
 - o link atual funciona como ambiente técnico de validação
 - para produção pública completa com Clerk, o ideal é aguardar o lançamento
-- estamos em testes ainda.
+- estamos em testes ainda
 
 ### Railway
 
@@ -448,12 +477,16 @@ pnpm exec vite build
 - evoluir contexto financeiro enviado para a NEXO IA
 - fortalecer memória, histórico e modos de análise
 - integrar o mascote oficial em Rive com reações reais do cubo
+- mover regras financeiras novas para o Python Core antes de expor automações de criação de caixas/metas
+- preparar ações tipadas para a IA propor mudanças e o usuário confirmar
 
 ### Plataforma
 
 - amadurecer deploy público com domínio próprio
 - evoluir observabilidade, billing e integrações
 - preparar Open Banking real quando a camada regulatória/API estiver definida
+- consolidar PostgreSQL como próxima migração estratégica de dados
+- fechar uma rodada mobile-first para telas pequenas antes do lançamento público
 
 ---
 
@@ -462,6 +495,8 @@ pnpm exec vite build
 - [NEXO_DOCUMENTATION.md](./NEXO_DOCUMENTATION.md)
 - [SUPPORT.md](./SUPPORT.md)
 - [docs/GITHUB_MAINTENANCE.md](./docs/GITHUB_MAINTENANCE.md)
+- [docs/NEXO_BRAIN_STRUCTURE.md](./docs/NEXO_BRAIN_STRUCTURE.md)
+- [docs/PYTHON_CORE_LOCAL.md](./docs/PYTHON_CORE_LOCAL.md)
 - [SECURITY.md](./SECURITY.md)
 - [client/public/rive/README.md](./client/public/rive/README.md)
 - [Dockerfile](./Dockerfile)
@@ -500,7 +535,7 @@ Apresentação recomendada da marca:
 Desenvolvedores_ Mackson Gaspar & Bruno Souto
 ```
 
-Essa formulação foi feito para fortalecer a marca e evitar sugerir uma estrutura de equipe.
+Essa formulação fortalece a marca sem sugerir uma estrutura de equipe formal maior do que a realidade atual.
 
 ---
 
