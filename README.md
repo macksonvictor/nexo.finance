@@ -57,74 +57,67 @@ Available setup paths:
 
 ## Product Gallery
 
+### 📊 Dashboard
+
+A clear view of the current financial month.
+
 <p align="center">
   <img src="./docs/assets/screenshots/dashboard.png" alt="Nexo Finance dashboard" width="820" />
 </p>
 
-<p align="center">
-  <strong>Dashboard</strong><br />
-  A clear view of the current financial month.
-</p>
+### 📦 Boxes
+
+Organize money by purpose, category, and priority.
 
 <p align="center">
   <img src="./docs/assets/screenshots/caixas.png" alt="Nexo Finance financial boxes" width="820" />
 </p>
 
-<p align="center">
-  <strong>Boxes</strong><br />
-  Organize money by purpose, category, and priority.
-</p>
+### 🎯 Goals
+
+Track financial goals with visible progress.
 
 <p align="center">
   <img src="./docs/assets/screenshots/metas.png" alt="Nexo Finance goals" width="820" />
 </p>
 
-<p align="center">
-  <strong>Goals</strong><br />
-  Track financial goals with visible progress.
-</p>
+### 📈 Indicators
+
+Read financial signals, ratios, and risk indicators.
 
 <p align="center">
   <img src="./docs/assets/screenshots/indicadores.png" alt="Nexo Finance indicators" width="820" />
 </p>
 
-<p align="center">
-  <strong>Indicators</strong><br />
-  Read financial signals, ratios, and risk indicators.
-</p>
+### 📑 Reports
+
+Analyze the month with structured financial summaries.
 
 <p align="center">
   <img src="./docs/assets/screenshots/reports.png" alt="Nexo Finance reports" width="820" />
 </p>
 
-<p align="center">
-  <strong>Reports</strong><br />
-  Analyze the month with structured financial summaries.
-</p>
+### 🤖 NEXO AI
+
+Ask contextual questions about the current financial view.
 
 <p align="center">
   <img src="./docs/assets/screenshots/nexo-ia.png" alt="NEXO AI" width="820" />
 </p>
 
-<p align="center">
-  <strong>NEXO AI</strong><br />
-  Ask contextual questions about the current financial view.
-</p>
+### 📱 Mobile
+
+A compact experience for smaller screens.
 
 <p align="center">
   <img src="./docs/assets/screenshots/mobile.png" alt="Nexo Finance mobile" width="360" />
-</p>
-
-<p align="center">
-  <strong>Mobile</strong><br />
-  A compact experience for smaller screens.
 </p>
 
 ---
 
 ## Features
 
-### Dashboard
+### 📊 Dashboard
 
 - Monthly income overview
 - Active boxes and goals
@@ -132,7 +125,7 @@ Available setup paths:
 - Financial charts and indicators
 - Contextual shortcuts for the AI assistant
 
-### Boxes
+### 📦 Boxes
 
 - Create and track financial boxes
 - Organize money by purpose and category
@@ -147,20 +140,20 @@ Base categories:
 - reserve
 - other
 
-### Goals
+### 🎯 Goals
 
 - Target amount, deadline, and progress
 - Monthly evolution tracking
 - Visual feedback for financial objectives
 
-### History
+### 🕒 History
 
 - Monthly consolidated view
 - Previous boxes, goals, and movements
 - CSV export from the history screen
 - Base for recurring comparison and analysis
 
-### Reports and Indicators
+### 📈 Reports and Indicators
 
 - Monthly reports
 - Financial score
@@ -168,7 +161,7 @@ Base categories:
 - Category distribution
 - Risk and discipline indicators
 
-### Settings and Support
+### ⚙️ Settings and Support
 
 - Account and profile settings
 - Income configuration
