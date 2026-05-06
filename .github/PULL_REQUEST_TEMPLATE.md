@@ -1,28 +1,58 @@
-## Resumo
+## Summary
 
-Descreva em 2 ou 3 linhas o que mudou e por quê.
+<!-- Explain what this pull request changes and why it is needed. -->
 
-## Tipo De Mudança
+## Changes
 
-- [ ] Correção de bug
-- [ ] Melhoria de produto/UX
-- [ ] Documentação
-- [ ] Dependências/segurança
-- [ ] Infra/CI
+- 
+- 
+- 
 
-## Validação
+## Affected Areas
+
+<!-- Check every area touched by this PR. -->
+
+- [ ] Frontend
+- [ ] Backend / tRPC
+- [ ] Database / Drizzle
+- [ ] Authentication / Clerk
+- [ ] Payments / Stripe
+- [ ] AI / OpenAI-compatible provider
+- [ ] Python Core
+- [ ] Support flow
+- [ ] Documentation
+- [ ] CI / Deployment
+- [ ] Dependencies
+
+## Testing
+
+<!-- List the commands you ran. If something was not tested, explain why. -->
 
 - [ ] `pnpm check`
 - [ ] `pnpm test`
 - [ ] `pnpm build`
-- [ ] Teste manual no app quando houver alteração visual
+- [ ] `pnpm audit`
+- [ ] `pnpm check:py`
+- [ ] `pnpm test:py`
+- [ ] `pnpm check:python-core`
+- [ ] `pnpm test:python-core`
 
-## Segurança
+## Screenshots or Recordings
 
-- [ ] Não inclui `.env`, tokens, chaves, e-mails pessoais ou números privados
-- [ ] Não expõe dados de conta, pagamento ou suporte sensível em issue pública
-- [ ] Se mudou dependência, revisei alertas do Dependabot/audit
+<!-- Required for UI changes. Remove this section if not applicable. -->
 
-## Observações
+## Security Checklist
 
-Inclua riscos, pendências ou prints quando fizer sentido.
+- [ ] No `.env` files were committed.
+- [ ] No API keys, tokens, passwords, or private URLs were committed.
+- [ ] No personal data, account data, payment data, or financial data was included.
+- [ ] Public issues and logs do not expose sensitive information.
+- [ ] Authentication, payment, and AI changes were reviewed carefully.
+
+## Deployment Notes
+
+<!-- Mention required environment variables, migrations, Railway changes, or manual steps. -->
+
+## Additional Notes
+
+<!-- Anything reviewers should know before merging. -->
