@@ -1,60 +1,68 @@
-# Operação do GitHub do NEXO Finance
+# GitHub Maintenance Guide
 
-Este arquivo é o ponto de partida para manter o repositório organizado, seguro e fácil de evoluir.
+This document is the operational starting point for keeping the Nexo Finance repository organized, secure, and easy to evolve.
 
-## Estado Atual
+---
 
-- `stable` é a base oficial do produto.
-- `codex/*` são branches de trabalho.
-- Pull requests devem entrar em `stable`.
-- `.env` nunca deve ser commitado.
-- Conta, pagamento, dados pessoais e segurança não devem virar issue pública.
+## Current State
+
+- `stable` is the official product branch.
+- `codex/*` branches are work branches.
+- Pull requests should target `stable`.
+- `.env` files must never be committed.
+- Account, payment, personal data, and security issues must not be handled through public issues.
+
+---
 
 ## Issues
 
-Use issues para trabalho público, seguro e sem dados sensíveis.
+Use issues only for public, safe, non-sensitive work.
 
-Categorias recomendadas:
+Recommended labels:
 
-- `bug`: erro reproduzível no app.
-- `support: bug`: bug criado pelo suporte IA, já sanitizado.
-- `support: suggestion`: sugestão criada pelo suporte IA.
-- `type: roadmap`: tarefa estratégica ou pendência de produto.
-- `status: needs-triage`: precisa de leitura e decisão.
-- `status: verified`: validado ou concluído.
+- `bug`: reproducible app error.
+- `support: bug`: bug created by AI support after sanitization.
+- `support: suggestion`: public suggestion created by AI support.
+- `type: roadmap`: strategic task or product backlog item.
+- `status: needs-triage`: requires review and decision.
+- `status: verified`: validated or completed.
 
-Quando fechar:
+When to close:
 
-- Feche issue de teste depois que o fluxo foi validado.
-- Feche roadmap só quando a mudança entrou em `stable`.
-- Não feche alertas de produção antes de testar no ambiente final.
+- Close test issues after the flow is validated.
+- Close roadmap issues only after the change has landed in `stable`.
+- Do not close production alerts before testing in the final environment.
+
+---
 
 ## Pull Requests
 
-Fluxo recomendado:
+Recommended flow:
 
-1. Abrir PR contra `stable`.
-2. Rodar CI.
-3. Revisar `Files changed`.
-4. Verificar se `.env` ou segredos não entraram.
-5. Fazer merge apenas com checks verdes.
+1. Open the pull request against `stable`.
+2. Run CI.
+3. Review `Files changed`.
+4. Confirm that `.env` files, credentials, tokens, or secrets were not included.
+5. Merge only when checks are green and the change scope is clear.
 
-Para Dependabot:
+For Dependabot:
 
-- Priorize o PR agrupado quando ele cobrir várias dependências.
-- Rode `pnpm check`, `pnpm test`, `pnpm build` e `pnpm audit`.
-- Depois do merge do agrupado, feche PRs menores que ficaram redundantes.
+- Prioritize grouped pull requests when they cover multiple dependencies.
+- Run `pnpm check`, `pnpm test`, `pnpm build`, and `pnpm audit`.
+- After the grouped pull request is safely merged, close smaller redundant pull requests.
 
-## Tags E Releases
+---
 
-Use tags para marcar checkpoints reais do produto.
+## Tags and Releases
 
-Sugestão:
+Use tags to mark real product checkpoints.
 
-- `v0.9.0`: fundação de suporte IA, GitHub automation e governança inicial.
-- `v1.0.0`: app pronto para produção com domínio, Clerk, Stripe, banco e suporte validado.
+Suggested milestones:
 
-Criação local:
+- `v0.9.0`: AI support foundation, GitHub automation, and initial repository governance.
+- `v1.0.0`: production-ready app with domain, Clerk, Stripe, database, and support flow validated.
+
+Local release tag example:
 
 ```bash
 git checkout stable
@@ -63,41 +71,47 @@ git tag -a v0.9.0 -m "NEXO support foundation"
 git push origin v0.9.0
 ```
 
-## Projects, Wiki E Documentação
+---
 
-O GitHub Project `NEXO Finance — Product Roadmap` deve continuar como quadro de execução.
+## Projects, Wiki, and Documentation
+
+The GitHub Project `NEXO Finance — Product Roadmap` should remain the execution board.
 
 Use:
 
-- `Projects`: tarefas, status e próximos passos.
-- `docs/`: guias versionados junto do código.
-- `Wiki`: opcional no futuro, se a documentação pública crescer demais.
+- `Projects` for tasks, statuses, and next steps.
+- `docs/` for versioned guides that evolve with the code.
+- `Wiki` later if public documentation grows beyond repository docs.
 
-Por enquanto, a melhor fonte de verdade é o diretório `docs/`, porque passa por PR e acompanha a evolução do app.
+For now, `docs/` is the best source of truth because it can be reviewed through pull requests and versioned with the product.
 
-## Proteção Da Branch Stable
+---
 
-A regra de proteção em `stable` já pode existir mesmo se o GitHub mostrar `Not enforced` em repositório privado gratuito.
+## Stable Branch Protection
 
-Configuração recomendada:
+The `stable` branch should be protected even if GitHub shows protection as `Not enforced` on a private free repository.
 
-- exigir pull request antes de merge.
-- exigir status checks.
-- impedir force push.
-- impedir delete da branch.
+Recommended configuration:
 
-Se a proteção precisar ser aplicada de verdade em repo privado, o caminho é GitHub Team/Enterprise ou tornar o repositório público quando fizer sentido.
+- Require pull requests before merge.
+- Require status checks.
+- Prevent force pushes.
+- Prevent branch deletion.
 
-## Segurança E Dependabot
+If enforced protection is required for a private repository, use GitHub Team/Enterprise features or consider making the repository public when appropriate.
 
-Arquivos importantes:
+---
+
+## Security and Dependabot
+
+Important files:
 
 - `SECURITY.md`
 - `.github/dependabot.yml`
 - `.github/PULL_REQUEST_TEMPLATE.md`
 - `.github/ISSUE_TEMPLATE/*`
 
-Comandos úteis:
+Useful commands:
 
 ```bash
 pnpm audit
@@ -107,26 +121,36 @@ pnpm test
 pnpm build
 ```
 
-Prioridade atual de segurança:
+Current security priority:
 
-1. Validar e mergear o PR agrupado do Dependabot.
-2. Resolver alertas críticos de `@clerk/shared` e `jspdf`/`dompurify`.
-3. Resolver alertas altos de `vite`, `rollup`, `pnpm`, `tar` e `axios`.
-4. Rodar o app e conferir login, checkout, suporte IA e exportação.
+1. Validate and merge the grouped Dependabot pull request.
+2. Resolve critical alerts related to `@clerk/shared` and `jspdf`/`dompurify`.
+3. Resolve high alerts related to `vite`, `rollup`, `pnpm`, `tar`, and `axios`.
+4. Run the app and check login, checkout, AI support, and export flows.
 
-## Suporte IA E Issues
+---
 
-O suporte IA pode criar issue automaticamente apenas para:
+## AI Support and Issues
 
-- bug técnico público.
-- sugestão pública.
+AI support may automatically create public issues only for:
 
-Não deve criar issue pública para:
+- Public technical bugs.
+- Public product suggestions.
 
-- conta.
-- pagamento.
-- segurança.
-- dados pessoais.
-- prints com informação sensível.
+AI support must not create public issues for:
 
-Esses casos devem acionar o canal privado configurado por `OWNER_NOTIFICATION_WEBHOOK_URL`.
+- Account issues.
+- Payment issues.
+- Security issues.
+- Personal data.
+- Screenshots containing sensitive information.
+
+Those cases should use the private channel configured through `OWNER_NOTIFICATION_WEBHOOK_URL`.
+
+---
+
+## Maintenance Rule
+
+Do not mix unrelated work in the same pull request.
+
+Keep documentation, dependency updates, product changes, security fixes, and UI changes separated whenever possible. This keeps `stable` easier to review, deploy, and recover.
