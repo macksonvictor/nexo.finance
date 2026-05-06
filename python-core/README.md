@@ -1,8 +1,58 @@
 # NEXO Python Core
 
-Python Core is the first isolated version of the NEXO Brain. It receives financial context, interprets the month, and returns a decision-ready response for the Node gateway and the future Rive mascot.
+**NEXO Python Core** is the financial intelligence layer behind NEXO.  
+It analyzes monthly financial context, identifies risk signals, simulates future scenarios, and prepares decision-ready insights for the Node.js gateway and AI interface.
 
-## Run locally
+The frontend does not call this service directly. NEXO uses the Node.js backend as the gateway, keeping authentication, billing, user sessions, and web concerns centralized while Python focuses on financial reasoning.
+
+---
+
+## What it does
+
+NEXO Python Core provides structured financial intelligence through isolated HTTP endpoints.
+
+Core capabilities:
+
+- Monthly budget analysis
+- Spending and transaction interpretation
+- Risk scoring
+- Conservative scenario simulation
+- Coach-ready context generation
+- Explainable financial recommendations
+- Future mascot state signaling for the NEXO AI interface
+
+---
+
+## Architecture
+
+```txt
+Frontend
+   ↓
+Node.js Gateway
+   ↓
+NEXO Python Core
+   ↓
+Financial intelligence modules
+```
+
+The Python service is intentionally isolated. This makes the system easier to evolve, test, deploy, and scale without coupling the financial intelligence layer directly to the frontend.
+
+---
+
+## Requirements
+
+Recommended local environment:
+
+- Python 3.11+
+- pip
+- Node.js gateway running separately
+- Windows, Linux, macOS, or WSL2
+
+---
+
+## Quickstart
+
+From the project root:
 
 ```bash
 python -m pip install -r python-core/requirements.txt
@@ -15,17 +65,7 @@ Health check:
 curl http://127.0.0.1:8010/health
 ```
 
-Brain analysis:
-
-```bash
-curl -X POST http://127.0.0.1:8010/brain/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"local-user","income":5000,"expenses":3900,"goals":[{"name":"Reserva","target_amount":3000,"current_amount":900}],"transactions":[{"description":"Compra","amount":120,"type":"expense"}],"current_context":{"source":"dashboard"}}'
-```
-
-## Contract
-
-`GET /health` returns:
+Expected response:
 
 ```json
 {
@@ -34,26 +74,80 @@ curl -X POST http://127.0.0.1:8010/brain/analyze \
 }
 ```
 
-`POST /brain/analyze` accepts:
+---
 
-```json
-{
-  "user_id": "local-user",
-  "income": 5000,
-  "expenses": 3900,
-  "goals": [],
-  "transactions": [],
-  "current_context": {}
-}
+## Gateway configuration
+
+The Node.js gateway should point to the Python Core service using:
+
+```env
+NEXO_PYTHON_CORE_URL=http://127.0.0.1:8010
+NEXO_PYTHON_CORE_TIMEOUT_MS=2500
 ```
 
-`POST /brain/analyze` returns:
+For Railway or any multi-service deployment, do not use `127.0.0.1` unless both processes run inside the same service/container.
+
+Example:
+
+```env
+NEXO_PYTHON_CORE_URL=https://your-python-service.up.railway.app
+NEXO_PYTHON_CORE_TIMEOUT_MS=2500
+```
+
+If the Python service is unavailable, the Node.js gateway should fall back safely so the main app remains stable.
+
+---
+
+## API
+
+### `GET /health`
+
+Checks if the service is running.
+
+```bash
+curl http://127.0.0.1:8010/health
+```
+
+---
+
+### `POST /brain/analyze`
+
+Analyzes the current financial context and returns a decision-ready summary.
+
+```bash
+curl -X POST http://127.0.0.1:8010/brain/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "local-user",
+    "income": 5000,
+    "expenses": 3900,
+    "goals": [
+      {
+        "name": "Reserva",
+        "target_amount": 3000,
+        "current_amount": 900
+      }
+    ],
+    "transactions": [
+      {
+        "description": "Compra",
+        "amount": 120,
+        "type": "expense"
+      }
+    ],
+    "current_context": {
+      "source": "dashboard"
+    }
+  }'
+```
+
+Returns:
 
 ```json
 {
-  "assistant_message": "Mensagem pronta para a IA ou UI.",
+  "assistant_message": "Decision-ready financial insight.",
   "risk_level": "low | medium | high | critical",
-  "suggested_action": "Próxima ação objetiva.",
+  "suggested_action": "Objective next action.",
   "financial_summary": {
     "income": 5000,
     "expenses": 3900,
@@ -71,18 +165,126 @@ curl -X POST http://127.0.0.1:8010/brain/analyze \
 }
 ```
 
-## Architecture rule
+---
 
-The frontend does not call this service directly. Node remains the gateway and calls Python over HTTP when the integration is enabled. This keeps auth, payments and web concerns stable while Python becomes the intelligence layer.
+### `POST /brain/simulate`
 
-## Gateway variable
-
-The Node gateway should point to this service with:
+Projects conservative financial scenarios.
 
 ```bash
-NEXO_PYTHON_CORE_URL=http://127.0.0.1:8010
-NEXO_PYTHON_CORE_TIMEOUT_MS=2500
+curl -X POST http://127.0.0.1:8010/brain/simulate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "local-user",
+    "baseContext": {
+      "user_id": "local-user",
+      "income": 5000,
+      "expenses": 3900,
+      "goals": [],
+      "transactions": [],
+      "current_context": {}
+    },
+    "scenario": {
+      "name": "Reduce variable expenses",
+      "kind": "expense_change",
+      "expenseDelta": -300
+    },
+    "monthsAhead": 3,
+    "language": "pt-BR",
+    "currency": "BRL"
+  }'
 ```
 
-If the service is offline, the TypeScript gateway client returns a conservative
-local fallback so the current app does not break.
+Returns:
+
+```json
+{
+  "scenarioId": "sim_...",
+  "baselineSummary": {},
+  "projectedSummary": {},
+  "riskDelta": 4,
+  "timeline": [],
+  "recommendations": [],
+  "explanation": "Conservative scenario reading.",
+  "riveState": "confident"
+}
+```
+
+---
+
+### `POST /brain/coach-context`
+
+Builds safe assistant-facing context for the NEXO AI coach.
+
+```bash
+curl -X POST http://127.0.0.1:8010/brain/coach-context \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "local-user",
+    "sourceView": "dashboard",
+    "userMessage": "What should I do now?",
+    "financialContext": {
+      "user_id": "local-user",
+      "income": 5000,
+      "expenses": 3900,
+      "goals": [],
+      "transactions": [],
+      "current_context": {}
+    },
+    "language": "pt-BR",
+    "currency": "BRL"
+  }'
+```
+
+Returns:
+
+```json
+{
+  "coachContext": {},
+  "contextQuality": "empty | partial | usable | strong",
+  "missingData": [],
+  "safePromptContext": "Safe context summary for the assistant.",
+  "suggestedQuestions": [],
+  "riveState": "reading"
+}
+```
+
+---
+
+## Core modules
+
+```txt
+budget_engine.py          Builds the monthly budget snapshot.
+transaction_analyzer.py   Interprets transaction totals, categories, and largest expenses.
+risk_engine.py            Calculates risk score, risk level, and risk drivers.
+future_simulator.py       Projects conservative financial scenarios.
+coach_context.py          Builds assistant-facing financial context.
+explainability.py         Explains recommendations and simulations.
+memory.py                 Scores context quality and missing data.
+```
+
+---
+
+## Design principles
+
+- Python handles financial intelligence.
+- Node.js remains the gateway.
+- Frontend never calls Python directly.
+- Failures must degrade safely.
+- Responses should be structured, explainable, and ready for UI or AI usage.
+- The service should remain small, isolated, testable, and deployment-friendly.
+
+---
+
+## Status
+
+NEXO Python Core is an early isolated intelligence layer for the NEXO financial assistant.
+
+Current focus:
+
+- Stable local execution
+- Clean gateway integration
+- Safer financial analysis
+- Richer simulation logic
+- Improved assistant context quality
+- Future Rive mascot state integration
