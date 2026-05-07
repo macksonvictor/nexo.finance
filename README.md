@@ -555,8 +555,8 @@ Details:
   <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
 </a>
 <img
-  src={[contributor.avatar_url](https://github.com/macksonvictor)}
-  alt={[contributor.login](https://github.com/macksonvictor)}
+  src={(https://github.com/macksonvictor)}
+  alt={(https://github.com/macksonvictor)}
   className="w-16 h-16 rounded-full object-cover"
 />
 ---
