@@ -40,8 +40,18 @@ The project is currently under active development and is being prepared for a mo
 
 ---
 
+## Hosting Options
+
+Current technical deployment:
+
+- [nexofinance.up.railway.app](https://nexofinance.up.railway.app/)
+
+---
+
 ## Contributors
 
-<a href="https://github.com/macksonvictor/nexo.finance/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=macksonvictor/nexo.finance" />
+<a href="https://github.com/macksonvictor">
+  <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" />
 </a>
+
+**Mackson** — Product development and project direction.
