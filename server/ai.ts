@@ -13,6 +13,7 @@ import {
 } from "@shared/plans";
 
 export type AIContextState = "new_user" | "partial" | "ready";
+export type AILanguage = "pt-BR" | "en-US" | "es-ES";
 
 export type AIConversationMessage = {
   role: "user" | "assistant";
@@ -58,6 +59,7 @@ export type AIRecentTransaction = {
 
 export type AIContextSnapshot = {
   monthId: string;
+  language: AILanguage;
   sourceView: AISourceView;
   plan: PlanTier;
   planName: string;
@@ -210,7 +212,14 @@ export function createAIUsageState(
   };
 }
 
-export function buildAISuggestions(snapshot: AIContextSnapshot): Record<AIVisibleMode, string[]> {
+export function buildAISuggestions(
+  snapshot: AIContextSnapshot,
+  language: AILanguage = snapshot.language ?? "pt-BR"
+): Record<AIVisibleMode, string[]> {
+  if (language !== "pt-BR") {
+    return buildLocalizedAISuggestions(snapshot, language);
+  }
+
   if (snapshot.contextState === "new_user") {
     return {
       chat: [
@@ -416,31 +425,97 @@ export function buildAISuggestions(snapshot: AIContextSnapshot): Record<AIVisibl
   }
 }
 
-export function buildAISystemPrompt(snapshot: AIContextSnapshot, mode: AIVisibleMode) {
-  const basePrompt =
-    "Você é o Nexo IA, assistente financeiro pessoal do NEXO. Responda em português do Brasil, com linguagem direta, acionável, firme e sóbria. Use os dados reais do contexto quando existirem. Nunca invente números ausentes. Quando o contexto for insuficiente, diga isso claramente e oriente o usuário sobre o próximo passo mais útil. Evite respostas vagas, genéricas ou excessivamente diplomáticas quando houver sinais claros no contexto.";
+function buildLocalizedAISuggestions(
+  snapshot: AIContextSnapshot,
+  language: Exclude<AILanguage, "pt-BR">
+): Record<AIVisibleMode, string[]> {
+  const isEnglish = language === "en-US";
+  const copy = isEnglish
+    ? {
+        firstStep: "What should I set up first so NEXO can read my month well?",
+        actionPlan: "Build a short action plan from what is already registered.",
+        risk: "What is my biggest financial risk right now?",
+        indicators: "Which indicators can I already trust with the current data?",
+        predict: "If I keep this pace, will the month end comfortably or tight?",
+        dashboard: "What should I adjust first from my dashboard?",
+        caixas: "Which boxes are under the most pressure this month?",
+        metas: "Which goals deserve the most attention right now?",
+        historico: "What does my recent history reveal about my financial behavior?",
+        defaultChat: "Where am I losing clarity in my finances this month?",
+      }
+    : {
+        firstStep: "¿Qué debo configurar primero para que NEXO lea bien mi mes?",
+        actionPlan: "Crea un plan de acción corto con lo que ya está registrado.",
+        risk: "¿Cuál es mi mayor riesgo financiero ahora?",
+        indicators: "¿Qué indicadores ya puedo confiar con los datos actuales?",
+        predict: "Si mantengo este ritmo, ¿el mes termina cómodo o ajustado?",
+        dashboard: "¿Qué debo ajustar primero mirando mi panel?",
+        caixas: "¿Qué cajas están más presionadas este mes?",
+        metas: "¿Qué metas merecen más atención ahora?",
+        historico: "¿Qué revela mi historial reciente sobre mi comportamiento financiero?",
+        defaultChat: "¿Dónde estoy perdiendo claridad financiera este mes?",
+      };
 
-  const modePrompt = getModePrompt(mode);
+  if (snapshot.contextState === "new_user") {
+    return {
+      chat: [copy.firstStep, copy.defaultChat, copy.actionPlan],
+      recommendations: [copy.actionPlan, copy.firstStep, copy.defaultChat],
+      risk: [copy.risk, copy.firstStep, copy.defaultChat],
+      indicators: [copy.indicators, copy.firstStep, copy.defaultChat],
+      predict: [copy.predict, copy.firstStep, copy.actionPlan],
+    };
+  }
+
+  const sourceQuestion =
+    snapshot.sourceView === "dashboard"
+      ? copy.dashboard
+      : snapshot.sourceView === "caixas"
+        ? copy.caixas
+        : snapshot.sourceView === "metas"
+          ? copy.metas
+          : snapshot.sourceView === "historico"
+            ? copy.historico
+            : copy.defaultChat;
+
+  return {
+    chat: [sourceQuestion, copy.defaultChat, copy.firstStep],
+    recommendations: [copy.actionPlan, sourceQuestion, copy.firstStep],
+    risk: [copy.risk, sourceQuestion, copy.defaultChat],
+    indicators: [copy.indicators, sourceQuestion, copy.defaultChat],
+    predict: [copy.predict, sourceQuestion, copy.actionPlan],
+  };
+}
+
+export function buildAISystemPrompt(
+  snapshot: AIContextSnapshot,
+  mode: AIVisibleMode,
+  language: AILanguage = snapshot.language ?? "pt-BR"
+) {
+  const copy = getAIServerCopy(language);
+  const basePrompt = copy.basePrompt;
+
+  const modePrompt = getModePrompt(mode, language);
   const contextBlock = buildContextBlock(snapshot);
   const priorityRead = buildPriorityRead(snapshot);
   const integrityRules = buildContextIntegrityRules(snapshot);
 
   return `${basePrompt}
 
-Modo atual: ${AI_MODE_LABELS[mode]}
-Origem da conversa: ${AI_SOURCE_LABELS[snapshot.sourceView]}
-Plano do usuário: ${snapshot.planName}
-Estado do contexto: ${snapshot.contextState}
+${copy.activeLanguage}: ${copy.languageName}
+${copy.currentMode}: ${copy.modeLabels[mode]}
+${copy.source}: ${copy.sourceLabels[snapshot.sourceView]}
+${copy.userPlan}: ${snapshot.planName}
+${copy.contextState}: ${snapshot.contextState}
 
-Regras de integridade do contexto:
+${copy.integrityRules}:
 ${integrityRules}
 
-Leitura prioritária do momento:
+${copy.priorityRead}:
 ${priorityRead}
 
 ${contextBlock}
 
-Instruções específicas do modo:
+${copy.modeInstructions}:
 ${modePrompt}`;
 }
 
@@ -483,7 +558,7 @@ export function enforceAIContextIntegrity(
     return content;
   }
 
-  return buildContextGroundedFallback(snapshot, mode, contradictions);
+  return buildContextGroundedFallback(snapshot, mode, contradictions, snapshot.language);
 }
 
 function buildPriorityRead(snapshot: AIContextSnapshot) {
@@ -568,53 +643,100 @@ function buildContextIntegrityRules(snapshot: AIContextSnapshot) {
 function buildContextGroundedFallback(
   snapshot: AIContextSnapshot,
   mode: AIVisibleMode,
-  contradictions: string[]
+  contradictions: string[],
+  language: AILanguage = snapshot.language ?? "pt-BR"
 ) {
   const topCaixa = snapshot.caixasSummary[0];
   const highRiskMetas = snapshot.metasSummary.filter((meta) => meta.risco === "alto");
+  const isEnglish = language === "en-US";
+  const isSpanish = language === "es-ES";
   const modeLead =
     mode === "risk"
-      ? "Seu risco precisa ser lido pelos dados reais do mês, não por uma tela vazia."
+      ? isEnglish
+        ? "Your risk needs to be read from the real month data, not from an empty screen."
+        : isSpanish
+          ? "Tu riesgo debe leerse desde los datos reales del mes, no desde una pantalla vacía."
+          : "Seu risco precisa ser lido pelos dados reais do mês, não por uma tela vazia."
       : mode === "predict"
-      ? "A projeção precisa partir do que já está registrado no mês."
-      : mode === "recommendations"
-      ? "A recomendação correta precisa considerar o que já existe no seu mês."
-      : "Vou corrigir a leitura: já existe contexto financeiro para este mês.";
+        ? isEnglish
+          ? "The projection needs to start from what is already registered this month."
+          : isSpanish
+            ? "La proyección debe partir de lo que ya está registrado este mes."
+            : "A projeção precisa partir do que já está registrado no mês."
+        : mode === "recommendations"
+          ? isEnglish
+            ? "The right recommendation needs to consider what already exists in your month."
+            : isSpanish
+              ? "La recomendación correcta debe considerar lo que ya existe en tu mes."
+              : "A recomendação correta precisa considerar o que já existe no seu mês."
+          : isEnglish
+            ? "I will correct the reading: there is already financial context for this month."
+            : isSpanish
+              ? "Voy a corregir la lectura: ya existe contexto financiero para este mes."
+              : "Vou corrigir a leitura: já existe contexto financeiro para este mês.";
 
   const lines = [
     `${modeLead}`,
     "",
-    `No mês ${snapshot.monthId}, eu vejo ${snapshot.counts.caixas} caixa(s), ${snapshot.counts.metas} meta(s), receita de ${formatCurrency(snapshot.totalIncome)}, gasto atual de ${formatCurrency(snapshot.totalSpent)} e saldo nas caixas de ${formatCurrency(snapshot.currentBalance)}.`,
+    isEnglish
+      ? `For ${snapshot.monthId}, I can see ${snapshot.counts.caixas} box(es), ${snapshot.counts.metas} goal(s), income of ${formatCurrency(snapshot.totalIncome)}, current spending of ${formatCurrency(snapshot.totalSpent)} and box balance of ${formatCurrency(snapshot.currentBalance)}.`
+      : isSpanish
+        ? `En ${snapshot.monthId}, veo ${snapshot.counts.caixas} caja(s), ${snapshot.counts.metas} meta(s), ingresos de ${formatCurrency(snapshot.totalIncome)}, gasto actual de ${formatCurrency(snapshot.totalSpent)} y saldo en cajas de ${formatCurrency(snapshot.currentBalance)}.`
+        : `No mês ${snapshot.monthId}, eu vejo ${snapshot.counts.caixas} caixa(s), ${snapshot.counts.metas} meta(s), receita de ${formatCurrency(snapshot.totalIncome)}, gasto atual de ${formatCurrency(snapshot.totalSpent)} e saldo nas caixas de ${formatCurrency(snapshot.currentBalance)}.`,
   ];
 
   if (topCaixa) {
     lines.push(
-      `A caixa mais pressionada agora é ${topCaixa.nome}: ${topCaixa.percentualGasto}% consumido, ${formatCurrency(topCaixa.gasto)} gastos de ${formatCurrency(topCaixa.alocado)} alocados, criticidade ${topCaixa.criticidade}.`
+      isEnglish
+        ? `The most pressured box right now is ${topCaixa.nome}: ${topCaixa.percentualGasto}% consumed, ${formatCurrency(topCaixa.gasto)} spent from ${formatCurrency(topCaixa.alocado)} allocated, criticality ${topCaixa.criticidade}.`
+        : isSpanish
+          ? `La caja más presionada ahora es ${topCaixa.nome}: ${topCaixa.percentualGasto}% consumido, ${formatCurrency(topCaixa.gasto)} gastados de ${formatCurrency(topCaixa.alocado)} asignados, criticidad ${topCaixa.criticidade}.`
+          : `A caixa mais pressionada agora é ${topCaixa.nome}: ${topCaixa.percentualGasto}% consumido, ${formatCurrency(topCaixa.gasto)} gastos de ${formatCurrency(topCaixa.alocado)} alocados, criticidade ${topCaixa.criticidade}.`
     );
   }
 
   if (highRiskMetas.length > 0) {
     lines.push(
-      `Também existe pressão em meta(s): ${highRiskMetas
-        .map((meta) => `${meta.nome} (${meta.progresso}% concluída, risco ${meta.risco})`)
-        .join("; ")}.`
+      isEnglish
+        ? `There is also pressure on goal(s): ${highRiskMetas
+            .map((meta) => `${meta.nome} (${meta.progresso}% complete, risk ${meta.risco})`)
+            .join("; ")}.`
+        : isSpanish
+          ? `También hay presión en meta(s): ${highRiskMetas
+              .map((meta) => `${meta.nome} (${meta.progresso}% completada, riesgo ${meta.risco})`)
+              .join("; ")}.`
+          : `Também existe pressão em meta(s): ${highRiskMetas
+              .map((meta) => `${meta.nome} (${meta.progresso}% concluída, risco ${meta.risco})`)
+              .join("; ")}.`
     );
   } else if (snapshot.metasSummary.length > 0) {
     const meta = snapshot.metasSummary[0];
     lines.push(
-      `A meta mais relevante na leitura atual é ${meta.nome}, com ${meta.progresso}% de progresso e risco ${meta.risco}.`
+      isEnglish
+        ? `The most relevant goal in the current reading is ${meta.nome}, with ${meta.progresso}% progress and ${meta.risco} risk.`
+        : isSpanish
+          ? `La meta más relevante en la lectura actual es ${meta.nome}, con ${meta.progresso}% de progreso y riesgo ${meta.risco}.`
+          : `A meta mais relevante na leitura atual é ${meta.nome}, com ${meta.progresso}% de progresso e risco ${meta.risco}.`
     );
   }
 
   lines.push(
     "",
-    "Próximo passo: olhe primeiro para a caixa mais consumida e decida se vai reduzir gasto, realocar saldo ou pausar uma despesa antes de mexer no restante do mês."
+    isEnglish
+      ? "Next step: look first at the most consumed box and decide whether to reduce spending, reallocate balance, or pause an expense before changing the rest of the month."
+      : isSpanish
+        ? "Próximo paso: mira primero la caja más consumida y decide si vas a reducir gasto, reasignar saldo o pausar un gasto antes de tocar el resto del mes."
+        : "Próximo passo: olhe primeiro para a caixa mais consumida e decida se vai reduzir gasto, realocar saldo ou pausar uma despesa antes de mexer no restante do mês."
   );
 
   if (contradictions.length > 0) {
     lines.push(
       "",
-      `Obs.: eu forcei esta resposta com base no contexto real porque a geração anterior contradizia: ${contradictions.join(", ")}.`
+      isEnglish
+        ? `Note: I forced this answer from the real context because the previous generation contradicted: ${contradictions.join(", ")}.`
+        : isSpanish
+          ? `Nota: forcé esta respuesta con base en el contexto real porque la generación anterior contradecía: ${contradictions.join(", ")}.`
+          : `Obs.: eu forcei esta resposta com base no contexto real porque a geração anterior contradizia: ${contradictions.join(", ")}.`
     );
   }
 
@@ -633,7 +755,8 @@ function normalizeForIntegrityCheck(value: string) {
 export function buildConversationMessages(
   mode: AIVisibleMode,
   messages: AIConversationMessage[] | undefined,
-  question?: string
+  question?: string,
+  language: AILanguage = "pt-BR"
 ) {
   const sanitizedMessages = (messages ?? [])
     .map((message) => ({
@@ -650,7 +773,7 @@ export function buildConversationMessages(
   return [
     {
       role: "user" as const,
-      content: question?.trim() || getDefaultQuestion(mode),
+      content: question?.trim() || getDefaultQuestion(mode, language),
     },
   ];
 }
@@ -721,7 +844,132 @@ Histórico curto:
 ${historyBlock}`;
 }
 
-function getModePrompt(mode: AIVisibleMode) {
+type AIServerCopy = {
+  activeLanguage: string;
+  basePrompt: string;
+  contextState: string;
+  currentMode: string;
+  integrityRules: string;
+  languageName: string;
+  modeInstructions: string;
+  modeLabels: Record<AIVisibleMode, string>;
+  priorityRead: string;
+  source: string;
+  sourceLabels: Record<AISourceView, string>;
+  userPlan: string;
+};
+
+function getAIServerCopy(language: AILanguage): AIServerCopy {
+  if (language === "en-US") {
+    return {
+      activeLanguage: "Active language",
+      basePrompt:
+        "You are Nexo AI, NEXO's personal finance assistant. Reply entirely in English, even if some internal context labels are in Portuguese. Use clear, direct, actionable, sober language. Use real context data when it exists. Never invent missing numbers. When context is insufficient, say that clearly and guide the user to the most useful next step. Avoid vague, generic, or overly diplomatic answers when the context shows clear signals.",
+      contextState: "Context state",
+      currentMode: "Current mode",
+      integrityRules: "Context integrity rules",
+      languageName: "English (United States)",
+      modeInstructions: "Mode-specific instructions",
+      modeLabels: {
+        chat: "Free chat",
+        risk: "Risk index",
+        indicators: "Indicators",
+        predict: "Forecast",
+        recommendations: "Recommendations",
+      },
+      priorityRead: "Priority reading",
+      source: "Conversation source",
+      sourceLabels: {
+        dashboard: "Dashboard",
+        caixas: "Boxes",
+        metas: "Goals",
+        historico: "History",
+        ia: "Nexo AI",
+      },
+      userPlan: "User plan",
+    };
+  }
+
+  if (language === "es-ES") {
+    return {
+      activeLanguage: "Idioma activo",
+      basePrompt:
+        "Eres Nexo IA, el asistente financiero personal de NEXO. Responde completamente en español, incluso si algunas etiquetas internas del contexto están en portugués. Usa un lenguaje claro, directo, práctico y sobrio. Usa datos reales del contexto cuando existan. Nunca inventes números ausentes. Cuando el contexto sea insuficiente, dilo claramente y orienta al usuario hacia el siguiente paso más útil. Evita respuestas vagas, genéricas o demasiado diplomáticas cuando el contexto muestre señales claras.",
+      contextState: "Estado del contexto",
+      currentMode: "Modo actual",
+      integrityRules: "Reglas de integridad del contexto",
+      languageName: "Español (España)",
+      modeInstructions: "Instrucciones específicas del modo",
+      modeLabels: {
+        chat: "Chat libre",
+        risk: "Índice de riesgo",
+        indicators: "Indicadores",
+        predict: "Previsión",
+        recommendations: "Recomendaciones",
+      },
+      priorityRead: "Lectura prioritaria",
+      source: "Origen de la conversación",
+      sourceLabels: {
+        dashboard: "Dashboard",
+        caixas: "Cajas",
+        metas: "Metas",
+        historico: "Historial",
+        ia: "Nexo IA",
+      },
+      userPlan: "Plan del usuario",
+    };
+  }
+
+  return {
+    activeLanguage: "Idioma ativo",
+    basePrompt:
+      "Você é o Nexo IA, assistente financeiro pessoal do NEXO. Responda em português do Brasil, com linguagem direta, acionável, firme e sóbria. Use os dados reais do contexto quando existirem. Nunca invente números ausentes. Quando o contexto for insuficiente, diga isso claramente e oriente o usuário sobre o próximo passo mais útil. Evite respostas vagas, genéricas ou excessivamente diplomáticas quando houver sinais claros no contexto.",
+    contextState: "Estado do contexto",
+    currentMode: "Modo atual",
+    integrityRules: "Regras de integridade do contexto",
+    languageName: "Português (Brasil)",
+    modeInstructions: "Instruções específicas do modo",
+    modeLabels: AI_MODE_LABELS,
+    priorityRead: "Leitura prioritária do momento",
+    source: "Origem da conversa",
+    sourceLabels: AI_SOURCE_LABELS,
+    userPlan: "Plano do usuário",
+  };
+}
+
+function getModePrompt(mode: AIVisibleMode, language: AILanguage = "pt-BR") {
+  if (language === "en-US") {
+    switch (mode) {
+      case "risk":
+        return "Calculate and explain a 0 to 100 risk index with justification, risk factors, weak points for the month, and immediate mitigation actions.";
+      case "indicators":
+        return "Explain the user's main indicators with clear numbers, objective interpretation, and practical next steps. Avoid long tables.";
+      case "predict":
+        return "Create a cautious forecast for the rest of the month. Estimate the chance of pressure, highlight the most stressed boxes, and say what to do now to avoid problems.";
+      case "recommendations":
+        return "Deliver a short, specific, executable action plan. Start with the most important move now, then list 2 or 3 complementary adjustments. If there is a clear risk or bad pattern, say it plainly.";
+      case "chat":
+      default:
+        return "Talk naturally, but use the month context to answer with real value. Identify the main point of the month, be clear, and end with objective next steps when useful.";
+    }
+  }
+
+  if (language === "es-ES") {
+    switch (mode) {
+      case "risk":
+        return "Calcula y explica un índice de riesgo de 0 a 100 con justificación, factores de riesgo, puntos débiles del mes y acciones inmediatas de mitigación.";
+      case "indicators":
+        return "Explica los indicadores principales del usuario con números claros, interpretación objetiva y próximos pasos prácticos. Evita tablas largas.";
+      case "predict":
+        return "Haz una previsión prudente para el resto del mes. Estima la probabilidad de presión, destaca las cajas más exigidas y di qué hacer ahora para evitar problemas.";
+      case "recommendations":
+        return "Entrega un plan de acción corto, específico y ejecutable. Empieza por el movimiento más importante ahora y luego lista 2 o 3 ajustes complementarios. Si hay un riesgo o patrón negativo claro, dilo sin suavizar demasiado.";
+      case "chat":
+      default:
+        return "Conversa de forma natural, pero usa el contexto del mes para responder con utilidad real. Identifica el punto principal del mes, habla con claridad y, cuando tenga sentido, termina con próximos pasos objetivos.";
+    }
+  }
+
   switch (mode) {
     case "risk":
       return "Calcule e explique um índice de risco de 0 a 100 com justificativa, fatores de risco, pontos frágeis do mês e ações de mitigação imediata.";
@@ -737,7 +985,39 @@ function getModePrompt(mode: AIVisibleMode) {
   }
 }
 
-function getDefaultQuestion(mode: AIVisibleMode) {
+function getDefaultQuestion(mode: AIVisibleMode, language: AILanguage = "pt-BR") {
+  if (language === "en-US") {
+    switch (mode) {
+      case "risk":
+        return "Calculate my financial risk index and tell me where I am vulnerable.";
+      case "indicators":
+        return "Show my main indicators and explain what they mean.";
+      case "predict":
+        return "If I continue like this, am I at risk of running out of money before the end of the month?";
+      case "recommendations":
+        return "Build a practical action plan to improve my finances.";
+      case "chat":
+      default:
+        return "What is blocking me financially this month?";
+    }
+  }
+
+  if (language === "es-ES") {
+    switch (mode) {
+      case "risk":
+        return "Calcula mi índice de riesgo financiero y dime dónde soy vulnerable.";
+      case "indicators":
+        return "Muestra mis indicadores principales y explica qué significan.";
+      case "predict":
+        return "Si continúo así, ¿corro riesgo de quedarme sin dinero antes de fin de mes?";
+      case "recommendations":
+        return "Crea un plan de acción práctico para mejorar mis finanzas.";
+      case "chat":
+      default:
+        return "¿Qué me está bloqueando financieramente este mes?";
+    }
+  }
+
   switch (mode) {
     case "risk":
       return "Calcule meu índice de risco financeiro e me diga onde estou vulnerável.";
@@ -751,6 +1031,18 @@ function getDefaultQuestion(mode: AIVisibleMode) {
     default:
       return "O que está me travando financeiramente neste mês?";
   }
+}
+
+export function getAIErrorFallback(language: AILanguage = "pt-BR") {
+  if (language === "en-US") {
+    return "I could not generate the analysis right now.";
+  }
+
+  if (language === "es-ES") {
+    return "No pude generar el análisis en este momento.";
+  }
+
+  return "Não foi possível gerar análise.";
 }
 
 function getZonedDateParts(date: Date, timeZone: string): ZonedDateParts {

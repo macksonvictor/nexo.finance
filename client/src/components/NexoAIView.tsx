@@ -33,6 +33,7 @@ import {
   type AISourceView,
   type AIVisibleMode,
 } from "@shared/ai";
+import type { NexoLanguage } from "@/lib/language";
 import {
   BarChart3,
   ChevronDown,
@@ -264,6 +265,7 @@ export function NexoAIView({
   entryKey,
   overlayMode = false,
   resetOnEntry = false,
+  language = "pt-BR",
   onClose,
 }: {
   onNavigate?: (view: string) => void;
@@ -276,6 +278,7 @@ export function NexoAIView({
   entryKey?: number;
   overlayMode?: boolean;
   resetOnEntry?: boolean;
+  language?: NexoLanguage;
   onClose?: () => void;
 }) {
   const AI_AVATAR_SIZE = 72;
@@ -339,9 +342,10 @@ export function NexoAIView({
             sourceEntityId,
             timeZone,
             explicitContext,
+            language,
           }
         : undefined,
-    [explicitContext, selectedMonth, sourceEntityId, sourceView, timeZone]
+    [explicitContext, language, selectedMonth, sourceEntityId, sourceView, timeZone]
   );
 
   const { data: sessionData, isLoading: isSessionLoading } =
@@ -350,6 +354,7 @@ export function NexoAIView({
     });
 
   const activeModeMeta = MODE_META[activeMode];
+  const aiCopy = getAIUICopy(language);
   const availableModes = sessionData?.availableModes ?? ["chat"];
   const lockedModes = sessionData?.lockedModes ?? TOOL_ORDER;
   const currentUsage = usageOverride ?? sessionData?.usage ?? null;
@@ -369,6 +374,7 @@ export function NexoAIView({
         panelRef={settingsPanelRef}
         uiPreferences={uiPreferences}
         position={settingsPanelPosition}
+        language={language}
         onTogglePreference={handleTogglePreference}
       />
     ) : null;
@@ -612,10 +618,10 @@ export function NexoAIView({
       if (error.message.startsWith("PLAN_LIMIT:")) {
         toast.error(
           error.message.replace("PLAN_LIMIT:", "").trim() ||
-            "Esse modo exige um plano superior.",
+            aiCopy.higherPlanRequired,
           {
             action: {
-              label: "Ver planos",
+              label: aiCopy.viewPlans,
               onClick: () => onNavigate?.("planos"),
             },
           }
@@ -623,16 +629,16 @@ export function NexoAIView({
       } else if (error.message.startsWith("AI_LIMIT:")) {
         toast.error(
           error.message.replace("AI_LIMIT:", "").trim() ||
-            "Você atingiu o limite desta janela.",
+            aiCopy.quotaReached,
           {
             action: {
-              label: "Ver planos",
+              label: aiCopy.viewPlans,
               onClick: () => onNavigate?.("planos"),
             },
           }
         );
       } else {
-        toast.error(`Erro ao consultar a IA: ${error.message}`);
+        toast.error(`${aiCopy.aiErrorPrefix}: ${error.message}`);
       }
 
       setIsLoading(false);
@@ -643,10 +649,10 @@ export function NexoAIView({
   function handleLockedMode(mode: AIVisibleMode) {
     const meta = MODE_META[mode];
     toast.message(
-      `${meta.label} está disponível a partir do plano ${PLAN_NAMES[meta.requiredPlan]}.`,
+      getLockedModeMessage(mode, meta.requiredPlan, language),
       {
         action: {
-          label: "Ver planos",
+          label: getAIUICopy(language).viewPlans,
           onClick: () => onNavigate?.("planos"),
         },
       }
@@ -660,7 +666,7 @@ export function NexoAIView({
     attachments: AIAttachment[] = composerAttachments
   ) {
     if (!selectedMonth || !sessionInput) {
-      toast.error("Selecione um mês primeiro");
+      toast.error(aiCopy.selectMonthFirst);
       return;
     }
 
@@ -674,7 +680,7 @@ export function NexoAIView({
         `Você atingiu o limite de ${currentUsage?.limit ?? 0} mensagens nesta janela.`,
         {
           action: {
-            label: "Ver planos",
+            label: aiCopy.viewPlans,
             onClick: () => onNavigate?.("planos"),
           },
         }
@@ -682,10 +688,10 @@ export function NexoAIView({
       return;
     }
 
-    const finalQuestion = (question?.trim() || MODE_META[mode].starter).trim();
+    const finalQuestion = (question?.trim() || getModeStarter(mode, language)).trim();
     const userFacingContent =
-      finalQuestion || (attachments.length > 0 ? "Arquivos anexados para contexto." : "");
-    const questionForModel = buildQuestionWithAttachments(userFacingContent, attachments);
+      finalQuestion || (attachments.length > 0 ? aiCopy.attachedFilesOnly : "");
+    const questionForModel = buildQuestionWithAttachments(userFacingContent, attachments, language);
 
     if (mode === "chat" && !userFacingContent) {
       return;
@@ -723,12 +729,13 @@ export function NexoAIView({
         content:
           message.role === "ai"
             ? message.content
-            : buildQuestionWithAttachments(message.content, message.attachments ?? []),
+            : buildQuestionWithAttachments(message.content, message.attachments ?? [], language),
       })),
       sourceView,
       sourceEntityId,
       timeZone,
       explicitContext,
+      language,
     });
   }
 
@@ -796,7 +803,7 @@ export function NexoAIView({
           }
         : {
             id: conversationId,
-            title: options?.title ?? "Nova conversa",
+            title: options?.title ?? aiCopy.newConversation,
             createdAt: timestamp,
             updatedAt: timestamp,
             sourceView: options?.sourceView ?? sourceView,
@@ -998,6 +1005,7 @@ export function NexoAIView({
                   onRenameConversation={handleRenameConversation}
                   onSelectConversation={handleSelectConversation}
                   onStartNewConversation={handleStartNewConversation}
+                  language={language}
                 />
               </div>
             </>
@@ -1006,6 +1014,7 @@ export function NexoAIView({
           <div className="hidden h-full min-h-0 shrink-0 items-stretch gap-3 overflow-visible xl:flex">
             <DesktopHistoryRail
               historyVisible={desktopHistoryVisible}
+              language={language}
               onFocusSearch={handleFocusHistorySearch}
               onOpenSettings={(event) => handleToggleSettings("rail", event)}
               onStartNewConversation={handleStartNewConversation}
@@ -1030,6 +1039,7 @@ export function NexoAIView({
                   onRenameConversation={handleRenameConversation}
                   onSelectConversation={handleSelectConversation}
                   onStartNewConversation={handleStartNewConversation}
+                  language={language}
                 />
               </aside>
             )}
@@ -1049,8 +1059,8 @@ export function NexoAIView({
                   type="button"
                   onClick={handleStartNewConversation}
                   className="group flex min-w-0 items-center gap-3 rounded-[22px] bg-transparent pr-2 text-left transition duration-200 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
-                  title="Voltar para o início da IA"
-                  aria-label="Voltar para o início da IA"
+                  title={aiCopy.backToAIStart}
+                  aria-label={aiCopy.backToAIStart}
                 >
                   <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl transition duration-200 group-hover:scale-[1.02]">
                     <NexoCubeAnimated
@@ -1062,11 +1072,11 @@ export function NexoAIView({
                   </span>
                   <span className="min-w-0">
                     <h2 className="truncate text-lg font-semibold tracking-tight text-[#F5F5F5]">
-                      {activeConversationTitle ?? "Nova conversa"}
+                      {activeConversationTitle ?? aiCopy.newConversation}
                     </h2>
                     {activeMode !== "chat" && (
                       <span className="mt-1 block text-[11px] uppercase tracking-[0.18em] text-[#7B7B7B]">
-                        {activeModeMeta.label}
+                        {getModeLabel(activeMode, language)}
                       </span>
                     )}
                   </span>
@@ -1074,11 +1084,11 @@ export function NexoAIView({
               ) : (
                 <div className="min-w-0">
                   <h2 className="truncate text-lg font-semibold tracking-tight text-[#F5F5F5]">
-                    {activeConversationTitle ?? "Nova conversa"}
+                    {activeConversationTitle ?? aiCopy.newConversation}
                   </h2>
                   {activeMode !== "chat" && (
                     <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#7B7B7B]">
-                      {activeModeMeta.label}
+                      {getModeLabel(activeMode, language)}
                     </p>
                   )}
                 </div>
@@ -1097,22 +1107,22 @@ export function NexoAIView({
                       ? "border-[#2F2F2F] bg-[#151515] text-[#F5F5F5]"
                       : "border-[#1F1F1F] bg-[#101010] text-[#BDBDBD] hover:border-[#343434] hover:text-[#F5F5F5]"
                   }`}
-                  aria-label="Abrir configurações da IA"
+                  aria-label={aiCopy.settingsTitle}
                 >
                   <SlidersHorizontal size={15} />
                 </button>
               )}
 
-              {currentUsage && <UsagePill usage={currentUsage} />}
+              {currentUsage && <UsagePill usage={currentUsage} language={language} />}
 
               {activeMode !== "chat" && (
                 <div className="flex items-center gap-2 rounded-2xl border border-[#252525] bg-[#121212] px-3 py-2 text-sm text-[#D2D2D2]">
                   <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
-                  <span>{activeModeMeta.label}</span>
+                  <span>{getModeLabel(activeMode, language)}</span>
                   <button
                     onClick={() => handleSelectMode("chat")}
                     className="ml-1 flex h-7 w-7 items-center justify-center rounded-full border border-[#303030] bg-[#181818] text-[#8F8F8F] transition-colors hover:text-[#F5F5F5]"
-                    title="Voltar ao chat"
+                    title={aiCopy.backToChat}
                   >
                     <X size={14} />
                   </button>
@@ -1123,8 +1133,8 @@ export function NexoAIView({
                 <button
                   onClick={onClose}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#2A2A2A] bg-[#141414] text-[#D2D2D2] transition-colors hover:border-[#383838] hover:text-[#F5F5F5]"
-                  title="Fechar a janela da IA"
-                  aria-label="Fechar a janela da IA"
+                  title={aiCopy.closeWindow}
+                  aria-label={aiCopy.closeWindow}
                 >
                   <X size={14} />
                 </button>
@@ -1139,12 +1149,13 @@ export function NexoAIView({
             className={`mx-auto flex h-full min-h-0 w-full flex-col ${contentShellClass}`}
           >
             {isSessionLoading && messages.length === 0 ? (
-              <SessionLoadingState activeMode={activeMode} />
+              <SessionLoadingState activeMode={activeMode} language={language} />
             ) : messages.length === 0 && !isLoading ? (
               <EmptyState
                 activeMode={activeMode}
                 sourceView={sourceView}
                 userName={userName}
+                language={language}
               />
             ) : (
               <div className="nexo-ai-chat-scroll min-h-0 flex-1 overflow-y-auto pr-1">
@@ -1180,7 +1191,7 @@ export function NexoAIView({
                             className="inline-flex h-2 w-2 rounded-full"
                             style={{ backgroundColor: MODE_META[msg.mode].color }}
                           />
-                          {MODE_META[msg.mode].shortLabel}
+                          {getModeShortLabel(msg.mode, language)}
                         </div>
 
                         {msg.role === "ai" ? (
@@ -1205,11 +1216,12 @@ export function NexoAIView({
                             <PythonInsightGrid
                               insights={msg.pythonInsights!}
                               mode={msg.mode}
+                              language={language}
                             />
                           )}
 
                         <p className="mt-3 text-[10px] font-mono text-[#5A5A5A]">
-                          {new Date(msg.timestamp).toLocaleTimeString("pt-BR", {
+                          {new Date(msg.timestamp).toLocaleTimeString(language, {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
@@ -1228,10 +1240,10 @@ export function NexoAIView({
                       </div>
                       <div className="rounded-2xl border border-[#242424] bg-[#141414] px-4 py-3">
                         <p className="text-xs uppercase tracking-[0.16em] text-[#737373]">
-                          {MODE_META[activeMode].shortLabel}
+                          {getModeShortLabel(activeMode, language)}
                         </p>
                         <p className="mt-2 text-sm leading-relaxed text-[#B5B5B5]">
-                          {getLoadingCopy(activeMode)}
+                          {getLoadingCopy(activeMode, language)}
                         </p>
                       </div>
                     </div>
@@ -1273,6 +1285,7 @@ export function NexoAIView({
               onSubmit={handleSubmit}
               showSuggestionChips={uiPreferences.showSuggestionChips}
               suggestions={currentSuggestions}
+              language={language}
             />
           </div>
         </div>
@@ -1285,17 +1298,21 @@ export function NexoAIView({
 
 function AISettingsPanel({
   className = "",
+  language,
   panelRef,
   position,
   uiPreferences,
   onTogglePreference,
 }: {
   className?: string;
+  language: NexoLanguage;
   panelRef: RefObject<HTMLDivElement | null>;
   position?: AISettingsPanelPosition | null;
   uiPreferences: AIUIPreferences;
   onTogglePreference: (key: keyof AIUIPreferences) => void;
 }) {
+  const copy = getAIUICopy(language);
+
   return (
     <div
       ref={panelRef}
@@ -1308,23 +1325,23 @@ function AISettingsPanel({
     >
       <div className="border-b border-[#242424] px-1 pb-4">
         <p className="text-lg font-semibold tracking-tight text-[#F5F5F5]">
-          Configurações da IA
+          {copy.settingsTitle}
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-[#8A8A8A]">
-          Ajustes visuais da conversa e da camada analítica.
+          {copy.settingsDescription}
         </p>
       </div>
       <div className="mt-4 space-y-3">
         <SettingsToggle
           checked={uiPreferences.showStructuredInsights}
-          description="Mostra blocos analíticos nas respostas quando houver leitura rica."
-          label="Cartões analíticos"
+          description={copy.structuredInsightsDescription}
+          label={copy.structuredInsights}
           onChange={() => onTogglePreference("showStructuredInsights")}
         />
         <SettingsToggle
           checked={uiPreferences.showSuggestionChips}
-          description="Mantém sugestões rápidas abaixo da barra de conversa."
-          label="Sugestões rápidas"
+          description={copy.quickSuggestionsDescription}
+          label={copy.quickSuggestions}
           onChange={() => onTogglePreference("showSuggestionChips")}
         />
       </div>
@@ -1334,17 +1351,21 @@ function AISettingsPanel({
 
 function DesktopHistoryRail({
   historyVisible,
+  language,
   onFocusSearch,
   onOpenSettings,
   onStartNewConversation,
   onToggleHistory,
 }: {
   historyVisible: boolean;
+  language: NexoLanguage;
   onFocusSearch: () => void;
   onOpenSettings: (event: ReactMouseEvent<HTMLElement>) => void;
   onStartNewConversation: () => void;
   onToggleHistory: () => void;
 }) {
+  const copy = getAIUICopy(language);
+
   return (
     <div className="nexo-ai-rail relative z-30 flex h-full w-[68px] shrink-0 flex-col items-center overflow-visible rounded-[28px] border border-[#171717] bg-[#060606] px-3 py-4">
       <div className="group relative">
@@ -1352,7 +1373,7 @@ function DesktopHistoryRail({
           type="button"
           onClick={onToggleHistory}
           className="group flex h-14 w-14 items-center justify-center bg-transparent text-[#F5F5F5] transition duration-200 hover:scale-[1.03] hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
-          aria-label={historyVisible ? "Ocultar conversas" : "Abrir conversas"}
+          aria-label={historyVisible ? copy.hideConversations : copy.openConversations}
         >
           <span className="relative flex h-14 w-14 items-center justify-center">
             <NexoCubeAnimated
@@ -1374,13 +1395,13 @@ function DesktopHistoryRail({
       <div className="mt-5 flex flex-col items-center gap-3">
         <DockIconButton
           icon={<SquarePen size={16} />}
-          label="Nova conversa"
+          label={copy.newConversation}
           onClick={onStartNewConversation}
         />
         {!historyVisible && (
           <DockIconButton
             icon={<Search size={16} />}
-            label="Buscar conversas"
+            label={copy.searchConversationsAction}
             onClick={onFocusSearch}
           />
         )}
@@ -1389,7 +1410,7 @@ function DesktopHistoryRail({
       <div className="mt-auto flex flex-col items-center gap-3">
         <DockIconButton
           icon={<SlidersHorizontal size={16} />}
-          label="Configurações"
+          label={copy.settingsTitle}
           onClick={onOpenSettings}
           dataAttribute="true"
           hideTooltip
@@ -1453,6 +1474,7 @@ function DockTooltip({
 function HistorySidebar({
   activeConversationId,
   conversations,
+  language,
   searchInputRef,
   searchQuery,
   isLoading,
@@ -1464,6 +1486,7 @@ function HistorySidebar({
 }: {
   activeConversationId: string | null;
   conversations: AIConversation[];
+  language: NexoLanguage;
   searchInputRef?: RefObject<HTMLInputElement | null>;
   searchQuery: string;
   isLoading: boolean;
@@ -1473,6 +1496,7 @@ function HistorySidebar({
   onSelectConversation: (conversationId: string) => void;
   onStartNewConversation: () => void;
 }) {
+  const copy = getAIUICopy(language);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const skipBlurCommitRef = useRef(false);
@@ -1517,7 +1541,7 @@ function HistorySidebar({
     <div className="nexo-ai-sidebar flex h-full min-h-0 w-[312px] max-w-[84vw] flex-col overflow-hidden rounded-[28px] border border-[#171717] bg-[#060606] xl:w-full xl:max-w-none">
       <div className="shrink-0 border-b border-[#171717] bg-[#080808]">
         <div className="flex items-center justify-between px-4 py-4">
-          <p className="text-sm font-semibold text-[#F5F5F5]">Conversas</p>
+          <p className="text-sm font-semibold text-[#F5F5F5]">{copy.conversations}</p>
 
           {onClose && (
             <div className="flex items-center gap-2 xl:hidden">
@@ -1525,8 +1549,8 @@ function HistorySidebar({
                 type="button"
                 onClick={onClose}
                 className="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#262626] bg-[#141414] text-[#BDBDBD] transition-colors hover:border-[#383838] hover:text-[#F5F5F5] xl:hidden"
-                aria-label="Fechar histórico"
-                title="Fechar histórico"
+                aria-label={copy.closeHistory}
+                title={copy.closeHistory}
               >
                 <X size={15} />
               </button>
@@ -1542,7 +1566,7 @@ function HistorySidebar({
             className="flex w-full items-center gap-3 rounded-2xl border border-[#2A2A2A] bg-[#171717] px-4 py-3 text-left text-sm font-medium text-[#F5F5F5] transition-colors hover:border-[#383838] hover:bg-[#1B1B1B] disabled:cursor-not-allowed disabled:opacity-45"
           >
             <SquarePen size={16} />
-            <span>Nova conversa</span>
+            <span>{copy.newConversation}</span>
           </button>
         </div>
 
@@ -1554,7 +1578,7 @@ function HistorySidebar({
               type="text"
               value={searchQuery}
               onChange={(event) => onChangeSearchQuery(event.target.value)}
-              placeholder="Pesquisar conversas"
+              placeholder={copy.searchConversations}
               className="w-full bg-transparent text-sm text-[#F5F5F5] outline-none placeholder:text-[#5C5C5C]"
             />
           </label>
@@ -1565,8 +1589,8 @@ function HistorySidebar({
         {conversations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#262626] bg-[#121212] px-4 py-5 text-sm leading-relaxed text-[#848484]">
             {searchQuery.trim()
-              ? "Nenhuma conversa corresponde a essa pesquisa."
-              : "Suas conversas vão aparecer aqui conforme você usar a IA neste mês."}
+              ? copy.noSearchResults
+              : copy.historyEmpty}
           </div>
         ) : (
           <div className="space-y-1">
@@ -1633,13 +1657,13 @@ function HistorySidebar({
                           startRenamingConversation(event, conversation)
                         }
                         className="min-w-0 flex-1 truncate rounded-lg text-left text-sm font-medium text-[#F5F5F5] outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-[#4A4A4A]"
-                        title="Clique para renomear"
+                        title={copy.renameConversation}
                       >
                         {conversation.title}
                       </button>
                     )}
                     <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[#6E6E6E]">
-                      {MODE_META[conversation.lastMode].shortLabel}
+                      {getModeShortLabel(conversation.lastMode, language)}
                     </span>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-[#7F7F7F]">
@@ -1685,6 +1709,7 @@ function Composer({
   onSubmit,
   showSuggestionChips,
   suggestions,
+  language,
 }: {
   activeMode: AIVisibleMode;
   activeModeMeta: ModeMeta;
@@ -1712,9 +1737,11 @@ function Composer({
   onSubmit: (event: FormEvent) => void;
   showSuggestionChips: boolean;
   suggestions: string[];
+  language: NexoLanguage;
 }) {
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
+  const copy = getAIUICopy(language);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1787,8 +1814,8 @@ function Composer({
                 onClick={() => setAttachmentMenuOpen((open) => !open)}
                 disabled={isLoading}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#252525] bg-[#181818] text-[#D0D0D0] transition-colors hover:border-[#3A3A3A] hover:bg-[#1D1D1D] hover:text-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-45"
-                title="Adicionar anexos"
-                aria-label="Adicionar anexos"
+                title={copy.addAttachments}
+                aria-label={copy.addAttachments}
               >
                 <Plus size={17} />
               </button>
@@ -1803,10 +1830,10 @@ function Composer({
                 onKeyDown={onComposerKeyDown}
                 placeholder={
                   isQuotaReached
-                    ? "Seu limite desta janela foi atingido."
+                    ? copy.quotaReached
                     : activeMode === "chat"
-                      ? "Pergunte algo com contexto real do seu mês..."
-                      : activeModeMeta.starter
+                      ? copy.placeholder
+                      : getModeStarter(activeMode, language)
                 }
                 className="block max-h-36 min-h-[34px] w-full resize-none bg-transparent py-[7px] text-sm leading-5 text-[#F5F5F5] outline-none ring-0 placeholder:text-[#5C5C5C] focus:border-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-0"
                 disabled={isLoading || isQuotaReached}
@@ -1828,7 +1855,7 @@ function Composer({
                 <span style={{ color: activeModeMeta.color }}>{activeModeMeta.icon}</span>
               )}
               <span className="hidden sm:inline">
-                {activeMode === "chat" ? "Chat livre" : activeModeMeta.shortLabel}
+                {activeMode === "chat" ? copy.chatFree : getModeShortLabel(activeMode, language)}
               </span>
               <ChevronDown
                 size={15}
@@ -1870,9 +1897,9 @@ function Composer({
                 <ImagePlus size={17} />
               </span>
               <span className="min-w-0">
-                <span className="block font-medium">Imagem ou vídeo</span>
+                <span className="block font-medium">{copy.mediaAttachment}</span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-[#8A8A8A]">
-                  Anexe mídia para usar como referência da conversa.
+                  {copy.mediaAttachmentDescription}
                 </span>
               </span>
             </button>
@@ -1885,9 +1912,9 @@ function Composer({
                 <FileUp size={17} />
               </span>
               <span className="min-w-0">
-                <span className="block font-medium">Arquivo</span>
+                <span className="block font-medium">{copy.fileAttachment}</span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-[#8A8A8A]">
-                  PDF, planilha, texto, JSON e documentos.
+                  {copy.fileAttachmentDescription}
                 </span>
               </span>
             </button>
@@ -1897,14 +1924,14 @@ function Composer({
         {modeMenuOpen && (
           <div className="nexo-ai-floating-menu absolute bottom-[calc(100%+10px)] right-0 z-[220] max-h-[min(320px,calc(100dvh-220px))] w-[min(320px,calc(100vw-48px))] overflow-y-auto rounded-2xl border border-[#2B2B2B] bg-[#151515] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
             <div className="mb-1 px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#767676]">
-              Ferramentas
+              {copy.tools}
             </div>
             <div className="space-y-1">
               <ModeMenuButton
                 active={activeMode === "chat"}
                 available={availableModes.includes("chat")}
-                description="Conversa livre sobre o seu momento financeiro."
-                label={MODE_META.chat.label}
+                description={copy.chatDescription}
+                label={getModeLabel("chat", language)}
                 color={MODE_META.chat.color}
                 icon={MODE_META.chat.icon}
                 lockedLabel={PLAN_NAMES[MODE_META.chat.requiredPlan]}
@@ -1916,8 +1943,8 @@ function Composer({
                   key={mode}
                   active={activeMode === mode}
                   available={!lockedModes.includes(mode)}
-                  description={MODE_META[mode].description}
-                  label={MODE_META[mode].label}
+                  description={getModeDescription(mode, language)}
+                  label={getModeLabel(mode, language)}
                   color={MODE_META[mode].color}
                   icon={MODE_META[mode].icon}
                   lockedLabel={PLAN_NAMES[MODE_META[mode].requiredPlan]}
@@ -1935,8 +1962,7 @@ function Composer({
 
       {currentUsage?.reached && (
         <div className="rounded-2xl border border-[#352624] bg-[#1A1313] px-4 py-3 text-sm text-[#D8B6AF]">
-          Você atingiu o limite de {currentUsage.limit} mensagens nesta{" "}
-          {currentUsage.window === "day" ? "janela diária" : "janela mensal"}.
+          {copy.limitReached(currentUsage.limit, currentUsage.window)}
         </div>
       )}
 
@@ -1961,14 +1987,16 @@ function Composer({
 
 function EmptyState({
   activeMode,
+  language,
   sourceView,
   userName,
 }: {
   activeMode: AIVisibleMode;
+  language: NexoLanguage;
   sourceView: AISourceView;
   userName?: string | null;
 }) {
-  const title = getEmptyStateTitle(activeMode, sourceView, userName);
+  const title = getEmptyStateTitle(activeMode, sourceView, userName, language);
 
   return (
     <div className="flex h-full flex-col items-center justify-center py-10 text-center">
@@ -1993,14 +2021,20 @@ function EmptyState({
   );
 }
 
-function SessionLoadingState({ activeMode }: { activeMode: AIVisibleMode }) {
+function SessionLoadingState({
+  activeMode,
+  language,
+}: {
+  activeMode: AIVisibleMode;
+  language: NexoLanguage;
+}) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 py-10">
       <div className="mx-auto flex items-center justify-center">
         <NexoCubeAnimated size={160} intensity="hero" mood="thinking" />
       </div>
       <p className="text-sm leading-relaxed text-[#A8A8A8]">
-        {getLoadingCopy(activeMode)}
+        {getLoadingCopy(activeMode, language)}
       </p>
     </div>
   );
@@ -2052,13 +2086,15 @@ function ModeMenuButton({
   );
 }
 
-function UsagePill({ usage }: { usage: AIUsageState }) {
+function UsagePill({ usage, language }: { usage: AIUsageState; language: NexoLanguage }) {
+  const copy = getAIUICopy(language);
+
   return (
     <div className="inline-flex items-center gap-2 rounded-2xl border border-[#2A2A2A] bg-[#141414] px-3 py-2 text-xs text-[#BDBDBD]">
       <span className="font-mono text-[#F5F5F5]">
         {usage.used}/{usage.limit}
       </span>
-      <span>{usage.window === "day" ? "hoje" : "no mês"}</span>
+      <span>{usage.window === "day" ? copy.today : copy.monthWindow}</span>
     </div>
   );
 }
@@ -2143,12 +2179,14 @@ function SettingsToggle({
 
 function PythonInsightGrid({
   insights,
+  language,
   mode,
 }: {
   insights: AIPythonInsights;
+  language: NexoLanguage;
   mode: AIVisibleMode;
 }) {
-  const cards = buildPythonInsightCards(insights, mode);
+  const cards = buildPythonInsightCards(insights, mode, language);
 
   if (cards.length === 0) {
     return null;
@@ -2178,9 +2216,11 @@ function PythonInsightGrid({
 
 function buildPythonInsightCards(
   insights: AIPythonInsights,
-  mode: AIVisibleMode
+  mode: AIVisibleMode,
+  language: NexoLanguage
 ) {
   const cards: Array<{ title: string; value: string; description: string }> = [];
+  const copy = getPythonInsightCopy(language);
 
   if (
     insights.risk?.status === "ok" &&
@@ -2191,14 +2231,21 @@ function buildPythonInsightCards(
       mode === "recommendations")
   ) {
     cards.push({
-      title: "Índice de risco",
+      title: copy.riskIndex,
       value: `${Math.round(insights.risk.result.score0to100)}/100`,
-      description: `${capitalize(insights.risk.result.level)} | saldo negativo ${insights.risk.result.negativeBalanceRisk} | runway ${formatCompactNumber(insights.risk.result.runwayDays)} dias.`,
+      description: copy.riskDescription(
+        capitalize(insights.risk.result.level),
+        insights.risk.result.negativeBalanceRisk,
+        formatCompactNumber(insights.risk.result.runwayDays)
+      ),
     });
     cards.push({
-      title: "Estabilidade",
+      title: copy.stability,
       value: `${Math.round(insights.risk.result.stabilityScore)}/100`,
-      description: `Pressão histórica ${insights.risk.result.historyPressure}. ${insights.risk.result.summary}`,
+      description: copy.stabilityDescription(
+        insights.risk.result.historyPressure,
+        insights.risk.result.summary
+      ),
     });
   }
 
@@ -2211,14 +2258,21 @@ function buildPythonInsightCards(
       mode === "recommendations")
   ) {
     cards.push({
-      title: "Projeção do mês",
+      title: copy.monthProjection,
       value: formatCurrency(insights.predict.result.projectedSpent),
-      description: `Faixa provável ${formatCurrency(insights.predict.result.projectedRangeLow)} a ${formatCurrency(insights.predict.result.projectedRangeHigh)}.`,
+      description: copy.projectionRange(
+        formatCurrency(insights.predict.result.projectedRangeLow),
+        formatCurrency(insights.predict.result.projectedRangeHigh)
+      ),
     });
     cards.push({
-      title: "Fechamento projetado",
+      title: copy.projectedClosing,
       value: formatCurrency(insights.predict.result.projectedBalance),
-      description: `${capitalize(insights.predict.result.trend)} | risco ${insights.predict.result.monthEndRisk} | ${insights.predict.result.daysRemaining} dias restantes.`,
+      description: copy.projectedClosingDescription(
+        capitalize(insights.predict.result.trend),
+        insights.predict.result.monthEndRisk,
+        insights.predict.result.daysRemaining
+      ),
     });
   }
 
@@ -2231,14 +2285,20 @@ function buildPythonInsightCards(
       mode === "indicators")
   ) {
     cards.push({
-      title: "Comportamento",
+      title: copy.behavior,
       value: `${Math.round(insights.patterns.result.impulsivityScore)}/100`,
-      description: `Impulsividade | sabotagem ${Math.round(insights.patterns.result.sabotageScore)}/100 | categoria dominante ${insights.patterns.result.dominantCategory}.`,
+      description: copy.behaviorDescription(
+        Math.round(insights.patterns.result.sabotageScore),
+        insights.patterns.result.dominantCategory
+      ),
     });
     cards.push({
-      title: "Pressão de consumo",
+      title: copy.consumptionPressure,
       value: `${Math.round(insights.patterns.result.concentrationScore)}/100`,
-      description: `${Math.round(insights.patterns.result.weekendSpendRatio)}% do gasto caiu no fim de semana e houve ${insights.patterns.result.burstDaysCount} dias de explosão.`,
+      description: copy.consumptionPressureDescription(
+        Math.round(insights.patterns.result.weekendSpendRatio),
+        insights.patterns.result.burstDaysCount
+      ),
     });
   }
 
@@ -2253,26 +2313,449 @@ function hasRenderablePythonInsights(insights: AIPythonInsights | null | undefin
   );
 }
 
-function getLoadingCopy(mode: AIVisibleMode) {
-  switch (mode) {
-    case "risk":
-      return "Cruzando risco, caixas e folga do mês...";
-    case "indicators":
-      return "Montando indicadores e traduzindo o que eles significam...";
-    case "predict":
-      return "Projetando o restante do mês com base no seu ritmo atual...";
-    case "recommendations":
-      return "Transformando seu contexto em próximos passos práticos...";
-    case "chat":
-    default:
-      return "Lendo seu mês atual e organizando uma resposta útil...";
+function getPythonInsightCopy(language: NexoLanguage) {
+  const copies = {
+    "pt-BR": {
+      behavior: "Comportamento",
+      consumptionPressure: "Pressão de consumo",
+      monthProjection: "Projeção do mês",
+      projectedClosing: "Fechamento projetado",
+      riskIndex: "Índice de risco",
+      stability: "Estabilidade",
+      behaviorDescription: (sabotageScore: number, dominantCategory: string) =>
+        `Impulsividade | sabotagem ${sabotageScore}/100 | categoria dominante ${dominantCategory}.`,
+      consumptionPressureDescription: (weekendSpendRatio: number, burstDaysCount: number) =>
+        `${weekendSpendRatio}% do gasto caiu no fim de semana e houve ${burstDaysCount} dias de explosão.`,
+      projectedClosingDescription: (trend: string, monthEndRisk: string, daysRemaining: number) =>
+        `${trend} | risco ${monthEndRisk} | ${daysRemaining} dias restantes.`,
+      projectionRange: (low: string, high: string) => `Faixa provável ${low} a ${high}.`,
+      riskDescription: (level: string, negativeBalanceRisk: string, runwayDays: string) =>
+        `${level} | saldo negativo ${negativeBalanceRisk} | runway ${runwayDays} dias.`,
+      stabilityDescription: (historyPressure: string, summary: string) =>
+        `Pressão histórica ${historyPressure}. ${summary}`,
+    },
+    "en-US": {
+      behavior: "Behavior",
+      consumptionPressure: "Consumption pressure",
+      monthProjection: "Monthly projection",
+      projectedClosing: "Projected closing",
+      riskIndex: "Risk index",
+      stability: "Stability",
+      behaviorDescription: (sabotageScore: number, dominantCategory: string) =>
+        `Impulsivity | sabotage ${sabotageScore}/100 | dominant category ${dominantCategory}.`,
+      consumptionPressureDescription: (weekendSpendRatio: number, burstDaysCount: number) =>
+        `${weekendSpendRatio}% of spending happened on weekends, with ${burstDaysCount} burst days.`,
+      projectedClosingDescription: (trend: string, monthEndRisk: string, daysRemaining: number) =>
+        `${trend} | risk ${monthEndRisk} | ${daysRemaining} days remaining.`,
+      projectionRange: (low: string, high: string) => `Likely range from ${low} to ${high}.`,
+      riskDescription: (level: string, negativeBalanceRisk: string, runwayDays: string) =>
+        `${level} | negative balance ${negativeBalanceRisk} | runway ${runwayDays} days.`,
+      stabilityDescription: (historyPressure: string, summary: string) =>
+        `Historical pressure ${historyPressure}. ${summary}`,
+    },
+    "es-ES": {
+      behavior: "Comportamiento",
+      consumptionPressure: "Presión de consumo",
+      monthProjection: "Proyección del mes",
+      projectedClosing: "Cierre proyectado",
+      riskIndex: "Índice de riesgo",
+      stability: "Estabilidad",
+      behaviorDescription: (sabotageScore: number, dominantCategory: string) =>
+        `Impulsividad | sabotaje ${sabotageScore}/100 | categoría dominante ${dominantCategory}.`,
+      consumptionPressureDescription: (weekendSpendRatio: number, burstDaysCount: number) =>
+        `${weekendSpendRatio}% del gasto cayó en fin de semana y hubo ${burstDaysCount} días de explosión.`,
+      projectedClosingDescription: (trend: string, monthEndRisk: string, daysRemaining: number) =>
+        `${trend} | riesgo ${monthEndRisk} | ${daysRemaining} días restantes.`,
+      projectionRange: (low: string, high: string) => `Rango probable de ${low} a ${high}.`,
+      riskDescription: (level: string, negativeBalanceRisk: string, runwayDays: string) =>
+        `${level} | saldo negativo ${negativeBalanceRisk} | runway ${runwayDays} días.`,
+      stabilityDescription: (historyPressure: string, summary: string) =>
+        `Presión histórica ${historyPressure}. ${summary}`,
+    },
+  } satisfies Record<NexoLanguage, Record<string, unknown>>;
+
+  return copies[language] ?? copies["pt-BR"];
+}
+
+const MODE_COPY: Record<
+  NexoLanguage,
+  Record<AIVisibleMode, { label: string; shortLabel: string; description: string; starter: string }>
+> = {
+  "pt-BR": {
+    chat: {
+      label: "Chat livre",
+      shortLabel: "Chat",
+      description: "Conversa livre sobre seu momento financeiro.",
+      starter: "O que está me travando financeiramente este mês?",
+    },
+    risk: {
+      label: "Índice de risco",
+      shortLabel: "Risco",
+      description: "Calcula vulnerabilidade financeira, aponta fragilidades e sugere mitigação imediata.",
+      starter: "Calcule meu índice de risco financeiro e me diga onde estou vulnerável.",
+    },
+    indicators: {
+      label: "Indicadores",
+      shortLabel: "Indicadores",
+      description: "Resume os indicadores do mês com leitura clara, objetiva e útil para decisão.",
+      starter: "Mostre meus indicadores principais e explique o que eles querem dizer.",
+    },
+    predict: {
+      label: "Previsão",
+      shortLabel: "Previsão",
+      description: "Projeta a tendência do restante do mês com base no ritmo de gastos e nas caixas mais pressionadas.",
+      starter: "Se eu continuar assim, corro risco de ficar sem dinheiro antes do fim do mês?",
+    },
+    recommendations: {
+      label: "Recomendações",
+      shortLabel: "Recomendações",
+      description: "Cria um plano de ação curto e prático usando seu contexto real do mês.",
+      starter: "Monte um plano de ação prático para eu melhorar minhas finanças.",
+    },
+  },
+  "en-US": {
+    chat: {
+      label: "Free chat",
+      shortLabel: "Chat",
+      description: "A free conversation about your current financial moment.",
+      starter: "What is holding me back financially this month?",
+    },
+    risk: {
+      label: "Risk index",
+      shortLabel: "Risk",
+      description: "Calculates financial vulnerability, highlights weak points, and suggests immediate mitigation.",
+      starter: "Calculate my financial risk index and tell me where I am vulnerable.",
+    },
+    indicators: {
+      label: "Indicators",
+      shortLabel: "Indicators",
+      description: "Summarizes this month’s indicators with a clear and decision-ready reading.",
+      starter: "Show my main indicators and explain what they mean.",
+    },
+    predict: {
+      label: "Forecast",
+      shortLabel: "Forecast",
+      description: "Projects the rest of the month from your spending pace and pressured boxes.",
+      starter: "If I keep going like this, do I risk running out of money before month-end?",
+    },
+    recommendations: {
+      label: "Recommendations",
+      shortLabel: "Recommendations",
+      description: "Creates a short practical action plan using your real monthly context.",
+      starter: "Build a practical action plan to improve my finances.",
+    },
+  },
+  "es-ES": {
+    chat: {
+      label: "Chat libre",
+      shortLabel: "Chat",
+      description: "Conversación libre sobre tu momento financiero.",
+      starter: "¿Qué me está frenando financieramente este mes?",
+    },
+    risk: {
+      label: "Índice de riesgo",
+      shortLabel: "Riesgo",
+      description: "Calcula vulnerabilidad financiera, señala fragilidades y sugiere mitigación inmediata.",
+      starter: "Calcula mi índice de riesgo financiero y dime dónde soy vulnerable.",
+    },
+    indicators: {
+      label: "Indicadores",
+      shortLabel: "Indicadores",
+      description: "Resume los indicadores del mes con una lectura clara, objetiva y útil para decidir.",
+      starter: "Muestra mis indicadores principales y explica qué significan.",
+    },
+    predict: {
+      label: "Previsión",
+      shortLabel: "Previsión",
+      description: "Proyecta la tendencia del resto del mes según tu ritmo de gastos y cajas presionadas.",
+      starter: "Si sigo así, ¿corro riesgo de quedarme sin dinero antes de fin de mes?",
+    },
+    recommendations: {
+      label: "Recomendaciones",
+      shortLabel: "Recomendaciones",
+      description: "Crea un plan de acción corto y práctico usando tu contexto real del mes.",
+      starter: "Monta un plan de acción práctico para mejorar mis finanzas.",
+    },
+  },
+};
+
+const SOURCE_COPY: Record<NexoLanguage, Record<AISourceView, string>> = {
+  "pt-BR": {
+    dashboard: "Dashboard",
+    caixas: "Caixas",
+    metas: "Metas",
+    historico: "Histórico",
+    ia: "Nexo IA",
+  },
+  "en-US": {
+    dashboard: "Dashboard",
+    caixas: "Boxes",
+    metas: "Goals",
+    historico: "History",
+    ia: "Nexo AI",
+  },
+  "es-ES": {
+    dashboard: "Dashboard",
+    caixas: "Cajas",
+    metas: "Metas",
+    historico: "Historial",
+    ia: "Nexo IA",
+  },
+};
+
+const AI_UI_COPY: Record<
+  NexoLanguage,
+  {
+    addAttachments: string;
+    aiErrorPrefix: string;
+    attachedFilesFallback: string;
+    attachedFilesHeader: string;
+    attachedFilesOnly: string;
+    backToChat: string;
+    backToAIStart: string;
+    chatDescription: string;
+    chatFree: string;
+    closeWindow: string;
+    closeHistory: string;
+    conversations: string;
+    fileAttachment: string;
+    fileAttachmentDescription: string;
+    higherPlanRequired: string;
+    hideConversations: string;
+    historyEmpty: string;
+    mediaAttachment: string;
+    mediaAttachmentDescription: string;
+    monthWindow: string;
+    newConversation: string;
+    noSearchResults: string;
+    openConversations: string;
+    placeholder: string;
+    quotaReached: string;
+    quickSuggestions: string;
+    quickSuggestionsDescription: string;
+    renameConversation: string;
+    searchConversations: string;
+    searchConversationsAction: string;
+    selectMonthFirst: string;
+    settingsDescription: string;
+    settingsTitle: string;
+    structuredInsights: string;
+    structuredInsightsDescription: string;
+    today: string;
+    tools: string;
+    unknownFileType: string;
+    viewPlans: string;
+    limitReached: (limit: number, window: AIChatWindow) => string;
   }
+> = {
+  "pt-BR": {
+    addAttachments: "Adicionar anexos",
+    aiErrorPrefix: "Erro ao consultar a IA",
+    attachedFilesFallback: "Considere os arquivos anexados junto com o meu contexto financeiro atual.",
+    attachedFilesHeader: "Arquivos anexados pelo usuário (contexto textual, sem leitura binária direta):",
+    attachedFilesOnly: "Arquivos anexados para contexto.",
+    backToChat: "Voltar ao chat",
+    backToAIStart: "Voltar para o início da IA",
+    chatDescription: "Conversa livre sobre seu momento financeiro.",
+    chatFree: "Chat livre",
+    closeWindow: "Fechar a janela da IA",
+    closeHistory: "Fechar histórico",
+    conversations: "Conversas",
+    fileAttachment: "Arquivo",
+    fileAttachmentDescription: "PDF, planilha, texto, JSON e documentos.",
+    higherPlanRequired: "Esse modo exige um plano superior.",
+    hideConversations: "Ocultar conversas",
+    historyEmpty: "Suas conversas vão aparecer aqui conforme você usar a IA neste mês.",
+    mediaAttachment: "Imagem ou vídeo",
+    mediaAttachmentDescription: "Anexe mídia para usar como referência da conversa.",
+    monthWindow: "no mês",
+    newConversation: "Nova conversa",
+    noSearchResults: "Nenhuma conversa corresponde a essa pesquisa.",
+    openConversations: "Abrir conversas",
+    placeholder: "Pergunte algo com contexto real do seu mês...",
+    quotaReached: "Seu limite desta janela foi atingido.",
+    quickSuggestions: "Sugestões rápidas",
+    quickSuggestionsDescription: "Mantém sugestões rápidas abaixo da barra de conversa.",
+    renameConversation: "Clique para renomear",
+    searchConversations: "Pesquisar conversas",
+    searchConversationsAction: "Buscar conversas",
+    selectMonthFirst: "Selecione um mês primeiro",
+    settingsDescription: "Ajustes visuais da conversa e da camada analítica.",
+    settingsTitle: "Configurações da IA",
+    structuredInsights: "Cartões analíticos",
+    structuredInsightsDescription: "Mostra blocos analíticos nas respostas quando houver leitura rica.",
+    today: "hoje",
+    tools: "Ferramentas",
+    unknownFileType: "tipo desconhecido",
+    viewPlans: "Ver planos",
+    limitReached: (limit, window) =>
+      `Você atingiu o limite de ${limit} mensagens nesta ${window === "day" ? "janela diária" : "janela mensal"}.`,
+  },
+  "en-US": {
+    addAttachments: "Add attachments",
+    aiErrorPrefix: "Error while consulting AI",
+    attachedFilesFallback: "Consider the attached files together with my current financial context.",
+    attachedFilesHeader: "Files attached by the user (text context only, no direct binary reading):",
+    attachedFilesOnly: "Files attached for context.",
+    backToChat: "Back to chat",
+    backToAIStart: "Back to AI start",
+    chatDescription: "A free conversation about your current financial moment.",
+    chatFree: "Free chat",
+    closeWindow: "Close AI window",
+    closeHistory: "Close history",
+    conversations: "Conversations",
+    fileAttachment: "File",
+    fileAttachmentDescription: "PDF, spreadsheet, text, JSON, and documents.",
+    higherPlanRequired: "This mode requires a higher plan.",
+    hideConversations: "Hide conversations",
+    historyEmpty: "Your conversations will appear here as you use AI this month.",
+    mediaAttachment: "Image or video",
+    mediaAttachmentDescription: "Attach media to use as conversation reference.",
+    monthWindow: "this month",
+    newConversation: "New conversation",
+    noSearchResults: "No conversation matches this search.",
+    openConversations: "Open conversations",
+    placeholder: "Ask something with real context from your month...",
+    quotaReached: "Your limit for this window has been reached.",
+    quickSuggestions: "Quick suggestions",
+    quickSuggestionsDescription: "Keeps quick suggestions below the conversation bar.",
+    renameConversation: "Click to rename",
+    searchConversations: "Search conversations",
+    searchConversationsAction: "Search conversations",
+    selectMonthFirst: "Select a month first",
+    settingsDescription: "Visual settings for the conversation and analytics layer.",
+    settingsTitle: "AI settings",
+    structuredInsights: "Analytical cards",
+    structuredInsightsDescription: "Shows analytical blocks in responses when there is a rich reading.",
+    today: "today",
+    tools: "Tools",
+    unknownFileType: "unknown type",
+    viewPlans: "View plans",
+    limitReached: (limit, window) =>
+      `You reached the limit of ${limit} messages in this ${window === "day" ? "daily" : "monthly"} window.`,
+  },
+  "es-ES": {
+    addAttachments: "Agregar adjuntos",
+    aiErrorPrefix: "Error al consultar la IA",
+    attachedFilesFallback: "Considera los archivos adjuntos junto con mi contexto financiero actual.",
+    attachedFilesHeader: "Archivos adjuntos por el usuario (contexto textual, sin lectura binaria directa):",
+    attachedFilesOnly: "Archivos adjuntos para contexto.",
+    backToChat: "Volver al chat",
+    backToAIStart: "Volver al inicio de la IA",
+    chatDescription: "Conversación libre sobre tu momento financiero.",
+    chatFree: "Chat libre",
+    closeWindow: "Cerrar ventana de IA",
+    closeHistory: "Cerrar historial",
+    conversations: "Conversaciones",
+    fileAttachment: "Archivo",
+    fileAttachmentDescription: "PDF, hoja de cálculo, texto, JSON y documentos.",
+    higherPlanRequired: "Este modo exige un plan superior.",
+    hideConversations: "Ocultar conversaciones",
+    historyEmpty: "Tus conversaciones aparecerán aquí a medida que uses la IA este mes.",
+    mediaAttachment: "Imagen o video",
+    mediaAttachmentDescription: "Adjunta medios para usarlos como referencia de la conversación.",
+    monthWindow: "en el mes",
+    newConversation: "Nueva conversación",
+    noSearchResults: "Ninguna conversación coincide con esta búsqueda.",
+    openConversations: "Abrir conversaciones",
+    placeholder: "Pregunta algo con contexto real de tu mes...",
+    quotaReached: "Se alcanzó tu límite de esta ventana.",
+    quickSuggestions: "Sugerencias rápidas",
+    quickSuggestionsDescription: "Mantiene sugerencias rápidas debajo de la barra de conversación.",
+    renameConversation: "Haz clic para renombrar",
+    searchConversations: "Buscar conversaciones",
+    searchConversationsAction: "Buscar conversaciones",
+    selectMonthFirst: "Selecciona un mes primero",
+    settingsDescription: "Ajustes visuales de la conversación y de la capa analítica.",
+    settingsTitle: "Configuración de IA",
+    structuredInsights: "Tarjetas analíticas",
+    structuredInsightsDescription: "Muestra bloques analíticos en las respuestas cuando haya una lectura rica.",
+    today: "hoy",
+    tools: "Herramientas",
+    unknownFileType: "tipo desconocido",
+    viewPlans: "Ver planes",
+    limitReached: (limit, window) =>
+      `Alcanzaste el límite de ${limit} mensajes en esta ventana ${window === "day" ? "diaria" : "mensual"}.`,
+  },
+};
+
+function getAIUICopy(language: NexoLanguage) {
+  return AI_UI_COPY[language] ?? AI_UI_COPY["pt-BR"];
+}
+
+function getModeLabel(mode: AIVisibleMode, language: NexoLanguage) {
+  return MODE_COPY[language]?.[mode]?.label ?? AI_MODE_LABELS[mode];
+}
+
+function getModeShortLabel(mode: AIVisibleMode, language: NexoLanguage) {
+  return MODE_COPY[language]?.[mode]?.shortLabel ?? AI_MODE_SHORT_LABELS[mode];
+}
+
+function getModeDescription(mode: AIVisibleMode, language: NexoLanguage) {
+  return MODE_COPY[language]?.[mode]?.description ?? MODE_META[mode].description;
+}
+
+function getModeStarter(mode: AIVisibleMode, language: NexoLanguage) {
+  return MODE_COPY[language]?.[mode]?.starter ?? MODE_META[mode].starter;
+}
+
+function getSourceLabel(sourceView: AISourceView, language: NexoLanguage) {
+  return SOURCE_COPY[language]?.[sourceView] ?? AI_SOURCE_LABELS[sourceView];
+}
+
+function getLockedModeMessage(
+  mode: AIVisibleMode,
+  requiredPlan: PlanTier,
+  language: NexoLanguage
+) {
+  const modeLabel = getModeLabel(mode, language);
+  const planName = PLAN_NAMES[requiredPlan];
+
+  if (language === "en-US") {
+    return `${modeLabel} is available from the ${planName} plan.`;
+  }
+
+  if (language === "es-ES") {
+    return `${modeLabel} está disponible desde el plan ${planName}.`;
+  }
+
+  return `${modeLabel} está disponível a partir do plano ${planName}.`;
+}
+
+function getLoadingCopy(mode: AIVisibleMode, language: NexoLanguage) {
+  const copies: Record<NexoLanguage, Record<AIVisibleMode, string>> = {
+    "pt-BR": {
+      risk: "Cruzando risco, caixas e folga do mês...",
+      indicators: "Montando indicadores e traduzindo o que eles significam...",
+      predict: "Projetando o restante do mês com base no seu ritmo atual...",
+      recommendations: "Transformando seu contexto em próximos passos práticos...",
+      chat: "Lendo seu mês atual e organizando uma resposta útil...",
+    },
+    "en-US": {
+      risk: "Cross-checking risk, boxes, and monthly breathing room...",
+      indicators: "Building indicators and translating what they mean...",
+      predict: "Projecting the rest of the month from your current pace...",
+      recommendations: "Turning your context into practical next steps...",
+      chat: "Reading your current month and organizing a useful answer...",
+    },
+    "es-ES": {
+      risk: "Cruzando riesgo, cajas y margen del mes...",
+      indicators: "Montando indicadores y traduciendo lo que significan...",
+      predict: "Proyectando el resto del mes según tu ritmo actual...",
+      recommendations: "Transformando tu contexto en próximos pasos prácticos...",
+      chat: "Leyendo tu mes actual y organizando una respuesta útil...",
+    },
+  };
+
+  return copies[language]?.[mode] ?? copies["pt-BR"][mode];
 }
 
 function buildQuestionWithAttachments(
   question: string,
-  attachments: AIAttachment[]
+  attachments: AIAttachment[],
+  language: NexoLanguage
 ) {
+  const copy = getAIUICopy(language);
   const trimmedQuestion = question.trim();
 
   if (attachments.length === 0) {
@@ -2281,12 +2764,12 @@ function buildQuestionWithAttachments(
 
   const attachmentLines = attachments.map(
     (attachment) =>
-      `- ${attachment.name} | ${attachment.kind} | ${attachment.type || "tipo desconhecido"} | ${formatFileSize(attachment.size)}`
+      `- ${attachment.name} | ${attachment.kind} | ${attachment.type || copy.unknownFileType} | ${formatFileSize(attachment.size)}`
   );
 
-  return `${trimmedQuestion || "Considere os arquivos anexados junto com o meu contexto financeiro atual."}
+  return `${trimmedQuestion || copy.attachedFilesFallback}
 
-Arquivos anexados pelo usuário (contexto textual, sem leitura binária direta):
+${copy.attachedFilesHeader}
 ${attachmentLines.join("\n")}`.trim();
 }
 
@@ -2311,30 +2794,45 @@ function formatFileSize(sizeInBytes: number) {
 function getEmptyStateTitle(
   activeMode: AIVisibleMode,
   sourceView: AISourceView,
-  userName?: string | null
+  userName: string | null | undefined,
+  language: NexoLanguage
 ) {
-  const greeting = getTimeGreeting();
+  const greeting = getTimeGreeting(language);
   const firstName = getFirstName(userName);
   const prefix = firstName ? `${greeting}, ${firstName}.` : `${greeting}.`;
 
   if (activeMode !== "chat") {
-    return `${prefix} Vamos abrir ${MODE_META[activeMode].shortLabel.toLowerCase()}?`;
+    const modeLabel = getModeShortLabel(activeMode, language).toLowerCase();
+    if (language === "en-US") return `${prefix} Shall we open ${modeLabel}?`;
+    if (language === "es-ES") return `${prefix} ¿Abrimos ${modeLabel}?`;
+    return `${prefix} Vamos abrir ${modeLabel}?`;
   }
 
   if (sourceView !== "ia") {
-    return `${prefix} Vamos olhar ${AI_SOURCE_LABELS[sourceView]} juntos?`;
+    const sourceLabel = getSourceLabel(sourceView, language);
+    if (language === "en-US") return `${prefix} Let’s look at ${sourceLabel} together?`;
+    if (language === "es-ES") return `${prefix} ¿Miramos ${sourceLabel} juntos?`;
+    return `${prefix} Vamos olhar ${sourceLabel} juntos?`;
   }
 
+  if (language === "en-US") return `${prefix} Ready to talk.`;
+  if (language === "es-ES") return `${prefix} Listo para conversar.`;
   return `${prefix} Pronto para conversar.`;
 }
 
-function getTimeGreeting() {
+function getTimeGreeting(language: NexoLanguage) {
   const hour = new Date().getHours();
+  const period = hour < 5 ? "night" : hour < 12 ? "morning" : hour < 18 ? "afternoon" : "night";
 
-  if (hour < 5) return "Boa noite";
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+  if (language === "en-US") {
+    return period === "morning" ? "Good morning" : period === "afternoon" ? "Good afternoon" : "Good evening";
+  }
+
+  if (language === "es-ES") {
+    return period === "morning" ? "Buenos días" : period === "afternoon" ? "Buenas tardes" : "Buenas noches";
+  }
+
+  return period === "morning" ? "Bom dia" : period === "afternoon" ? "Boa tarde" : "Boa noite";
 }
 
 function getFirstName(userName?: string | null) {

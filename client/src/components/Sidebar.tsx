@@ -174,9 +174,9 @@ export function Sidebar({
 
     return visibleMonthIds.map((value) => ({
       value,
-      label: formatMonthYear(value),
+      label: formatMonthYear(value, language),
     }));
-  }, [currentMonthId, months]);
+  }, [currentMonthId, language, months]);
 
   const handleMonthChange = (monthId: string) => {
     initMonth(monthId);
@@ -185,8 +185,8 @@ export function Sidebar({
   };
 
   const monthLabel = collapsed
-    ? formatMonthYear(currentMonthId).slice(0, 3).toUpperCase()
-    : formatMonthYear(currentMonthId);
+    ? formatMonthYear(currentMonthId, language).slice(0, 3).toUpperCase()
+    : formatMonthYear(currentMonthId, language);
   const animatedNavIconClass =
     theme === "light" ? "text-foreground" : "text-[#F5F5F5]";
 
@@ -305,7 +305,7 @@ export function Sidebar({
                 ? "justify-center px-2 py-2.5"
                 : "justify-between px-3 py-2.5"
             }`}
-            title={formatMonthYear(currentMonthId)}
+            title={formatMonthYear(currentMonthId, language)}
           >
             <span
               className={`font-medium ${

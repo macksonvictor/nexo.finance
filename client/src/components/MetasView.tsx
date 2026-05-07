@@ -15,6 +15,8 @@ import { AnimatedNumber } from './AnimatedNumber';
 import { EditMetaModal } from './EditMetaModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import type { Meta } from '@/types/finance';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import type { NexoLanguage } from '@/lib/language';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -27,6 +29,204 @@ const stagger = {
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
+const GOALS_COPY: Record<NexoLanguage, {
+  askAI: string;
+  currentMonth: string;
+  selectedPeriod: string;
+  title: (month: string) => string;
+  currentSummary: string;
+  historicalSummary: string;
+  inProgress: string;
+  closedHistory: string;
+  activeGoals: string;
+  oneGoalHint: string;
+  manyGoalsHint: string;
+  saved: string;
+  savedHint: string;
+  period: string;
+  currentMonthHint: string;
+  closedMonthHint: string;
+  consolidatedProgress: string;
+  progressDescription: string;
+  targetValue: string;
+  goalEvolution: string;
+  evolutionProgress: (value: string) => string;
+  emptyEvolution: string;
+  noGoalsLabel: string;
+  emptyTitle: string;
+  emptyHistorical: string;
+  emptyCurrent: string;
+  createFirstGoal: string;
+  newGoal: string;
+  newGoalDescription: string;
+  goalNamePlaceholder: string;
+  targetPlaceholder: string;
+  create: string;
+  cancel: string;
+  closedPeriodNote: string;
+  card: {
+    accumulated: string;
+    targetValue: string;
+    addContribution: string;
+    register: string;
+    editTitle: string;
+    deleteTitle: string;
+    readOnlyNote: string;
+    deadlineClosed: string;
+    deadlineOpenAtClose: string;
+    deadlineOverdue: string;
+    daysLeft: (days: number) => string;
+  };
+}> = {
+  "pt-BR": {
+    askAI: "Perguntar à IA",
+    currentMonth: "Mês atual",
+    selectedPeriod: "Período selecionado",
+    title: (month) => `Metas de ${month}`,
+    currentSummary: "Acompanhe os objetivos do mês, veja quanto já foi acumulado e mantenha o foco no que precisa receber prioridade.",
+    historicalSummary: "Você está vendo o retrato consolidado desse período. As metas mostram apenas o que foi definido e acumulado naquele mês, sem novos aportes surgindo depois.",
+    inProgress: "Metas em andamento",
+    closedHistory: "Histórico consolidado",
+    activeGoals: "Metas ativas",
+    oneGoalHint: "meta criada neste período",
+    manyGoalsHint: "metas criadas neste período",
+    saved: "Acumulado",
+    savedHint: "valor já reservado nas metas",
+    period: "Período",
+    currentMonthHint: "mês em andamento",
+    closedMonthHint: "mês consolidado",
+    consolidatedProgress: "Progresso consolidado",
+    progressDescription: "Esse indicador mostra quanto das metas do período já foi acumulado em relação ao valor-alvo total.",
+    targetValue: "Valor-alvo",
+    goalEvolution: "Evolução das metas",
+    evolutionProgress: (value) => `${value} do valor-alvo já foi acumulado nas metas deste período.`,
+    emptyEvolution: "Crie metas para começar a acompanhar o avanço do que você quer conquistar.",
+    noGoalsLabel: "Nenhuma meta criada ainda",
+    emptyTitle: "Transforme prioridade em objetivo concreto",
+    emptyHistorical: "Nenhuma meta foi criada nesse período. Os meses anteriores ficam preservados como histórico da sua evolução.",
+    emptyCurrent: "Crie metas com valor-alvo e prazo para acompanhar o que precisa ser construído com intenção ao longo do mês.",
+    createFirstGoal: "Criar primeira meta",
+    newGoal: "Nova meta",
+    newGoalDescription: "Defina o objetivo, o valor-alvo e o prazo para incluir essa meta no período atual.",
+    goalNamePlaceholder: "Nome da meta",
+    targetPlaceholder: "Valor alvo",
+    create: "Criar",
+    cancel: "Cancelar",
+    closedPeriodNote: "Este período está fechado. As metas abaixo mostram exatamente o que foi definido e acumulado nesse mês.",
+    card: {
+      accumulated: "Acumulado",
+      targetValue: "Valor-alvo",
+      addContribution: "Adicionar aporte",
+      register: "Registrar",
+      editTitle: "Editar meta",
+      deleteTitle: "Excluir meta",
+      readOnlyNote: "Este mês está preservado como histórico. Os aportes continuam visíveis, sem novos registros.",
+      deadlineClosed: "Prazo encerrado no período",
+      deadlineOpenAtClose: "Prazo seguia aberto no fechamento",
+      deadlineOverdue: "Prazo vencido",
+      daysLeft: (days) => `${days} dia${days === 1 ? "" : "s"} restantes`,
+    },
+  },
+  "en-US": {
+    askAI: "Ask AI",
+    currentMonth: "Current month",
+    selectedPeriod: "Selected period",
+    title: (month) => `Goals for ${month}`,
+    currentSummary: "Track this month's goals, see how much has already been saved, and keep focus on what should receive priority.",
+    historicalSummary: "You are viewing a consolidated snapshot for this period. Goals show only what was defined and saved that month, without new contributions appearing later.",
+    inProgress: "Goals in progress",
+    closedHistory: "Consolidated history",
+    activeGoals: "Active goals",
+    oneGoalHint: "goal created in this period",
+    manyGoalsHint: "goals created in this period",
+    saved: "Saved",
+    savedHint: "amount already reserved for goals",
+    period: "Period",
+    currentMonthHint: "month in progress",
+    closedMonthHint: "closed month",
+    consolidatedProgress: "Consolidated progress",
+    progressDescription: "This indicator shows how much of the period's goals has already been saved against the total target value.",
+    targetValue: "Target value",
+    goalEvolution: "Goal evolution",
+    evolutionProgress: (value) => `${value} of the target value has already been saved for this period's goals.`,
+    emptyEvolution: "Create goals to start tracking progress toward what you want to achieve.",
+    noGoalsLabel: "No goals created yet",
+    emptyTitle: "Turn priorities into concrete goals",
+    emptyHistorical: "No goal was created in this period. Previous months remain preserved as your progress history.",
+    emptyCurrent: "Create goals with a target value and deadline to track what needs to be built intentionally throughout the month.",
+    createFirstGoal: "Create first goal",
+    newGoal: "New goal",
+    newGoalDescription: "Set the objective, target value, and deadline to include this goal in the current period.",
+    goalNamePlaceholder: "Goal name",
+    targetPlaceholder: "Target value",
+    create: "Create",
+    cancel: "Cancel",
+    closedPeriodNote: "This period is closed. The goals below show exactly what was defined and saved that month.",
+    card: {
+      accumulated: "Saved",
+      targetValue: "Target value",
+      addContribution: "Add contribution",
+      register: "Register",
+      editTitle: "Edit goal",
+      deleteTitle: "Delete goal",
+      readOnlyNote: "This month is preserved as history. Contributions remain visible, without new records.",
+      deadlineClosed: "Deadline closed in this period",
+      deadlineOpenAtClose: "Deadline was still open at close",
+      deadlineOverdue: "Deadline overdue",
+      daysLeft: (days) => `${days} day${days === 1 ? "" : "s"} left`,
+    },
+  },
+  "es-ES": {
+    askAI: "Preguntar a la IA",
+    currentMonth: "Mes actual",
+    selectedPeriod: "Periodo seleccionado",
+    title: (month) => `Metas de ${month}`,
+    currentSummary: "Acompaña los objetivos del mes, mira cuánto ya fue acumulado y mantén el foco en lo que necesita prioridad.",
+    historicalSummary: "Estás viendo el retrato consolidado de este periodo. Las metas muestran solo lo definido y acumulado en ese mes.",
+    inProgress: "Metas en curso",
+    closedHistory: "Historial consolidado",
+    activeGoals: "Metas activas",
+    oneGoalHint: "meta creada en este periodo",
+    manyGoalsHint: "metas creadas en este periodo",
+    saved: "Acumulado",
+    savedHint: "valor ya reservado en metas",
+    period: "Periodo",
+    currentMonthHint: "mes en curso",
+    closedMonthHint: "mes consolidado",
+    consolidatedProgress: "Progreso consolidado",
+    progressDescription: "Este indicador muestra cuánto de las metas del periodo ya fue acumulado en relación con el valor objetivo total.",
+    targetValue: "Valor objetivo",
+    goalEvolution: "Evolución de metas",
+    evolutionProgress: (value) => `${value} del valor objetivo ya fue acumulado en las metas de este periodo.`,
+    emptyEvolution: "Crea metas para comenzar a acompañar el avance de lo que quieres conquistar.",
+    noGoalsLabel: "Ninguna meta creada todavía",
+    emptyTitle: "Transforma prioridad en objetivo concreto",
+    emptyHistorical: "Ninguna meta fue creada en este periodo. Los meses anteriores quedan preservados como historial de tu evolución.",
+    emptyCurrent: "Crea metas con valor objetivo y plazo para acompañar lo que necesita construirse con intención durante el mes.",
+    createFirstGoal: "Crear primera meta",
+    newGoal: "Nueva meta",
+    newGoalDescription: "Define el objetivo, valor objetivo y plazo para incluir esta meta en el periodo actual.",
+    goalNamePlaceholder: "Nombre de la meta",
+    targetPlaceholder: "Valor objetivo",
+    create: "Crear",
+    cancel: "Cancelar",
+    closedPeriodNote: "Este periodo está cerrado. Las metas abajo muestran exactamente lo definido y acumulado en ese mes.",
+    card: {
+      accumulated: "Acumulado",
+      targetValue: "Valor objetivo",
+      addContribution: "Agregar aporte",
+      register: "Registrar",
+      editTitle: "Editar meta",
+      deleteTitle: "Eliminar meta",
+      readOnlyNote: "Este mes está preservado como historial. Los aportes continúan visibles, sin nuevos registros.",
+      deadlineClosed: "Plazo cerrado en el periodo",
+      deadlineOpenAtClose: "El plazo seguía abierto al cierre",
+      deadlineOverdue: "Plazo vencido",
+      daysLeft: (days) => `${days} día${days === 1 ? "" : "s"} restantes`,
+    },
+  },
 };
 
 function getMonthReferenceDate(monthId: string, isHistoricalMonth: boolean) {
@@ -45,6 +245,8 @@ function getDaysUntilDeadline(deadline: string, referenceDate: Date) {
 export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
   const store = useFinanceStore();
   const month = store.getCurrentMonth();
+  const { language } = useLanguagePreference();
+  const copy = GOALS_COPY[language];
   const [showForm, setShowForm] = useState(false);
   const [editingMetaId, setEditingMetaId] = useState<string | null>(null);
   const [deletingMetaId, setDeletingMetaId] = useState<string | null>(null);
@@ -60,7 +262,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
   const currentCalendarMonthId = getCurrentCalendarMonthId();
   const isCurrentCalendarMonth = month.id === currentCalendarMonthId;
   const isHistoricalMonth = compareMonthIds(month.id, currentCalendarMonthId) < 0;
-  const monthLabel = formatMonthYear(month.id);
+  const monthLabel = formatMonthYear(month.id, language);
 
   useEffect(() => {
     if (!isHistoricalMonth) return;
@@ -111,19 +313,19 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
         <div className="nexo-depth-3 rounded-2xl p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="nexo-label mb-2">{isCurrentCalendarMonth ? 'Mês atual' : 'Período selecionado'}</p>
+              <p className="nexo-label mb-2">{isCurrentCalendarMonth ? copy.currentMonth : copy.selectedPeriod}</p>
               <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-[2.1rem]">
-                Metas de {monthLabel}
+                {copy.title(monthLabel)}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {isCurrentCalendarMonth
-                  ? 'Acompanhe os objetivos do mês, veja quanto já foi acumulado e mantenha o foco no que precisa receber prioridade.'
-                  : 'Você está vendo o retrato consolidado desse período. As metas mostram apenas o que foi definido e acumulado naquele mês, sem novos aportes surgindo depois.'}
+                  ? copy.currentSummary
+                  : copy.historicalSummary}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                {isCurrentCalendarMonth ? 'Metas em andamento' : 'Histórico consolidado'}
+                {isCurrentCalendarMonth ? copy.inProgress : copy.closedHistory}
               </div>
               {onAskAI && (
                 <button
@@ -131,7 +333,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
                   className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  Perguntar à IA
+                  {copy.askAI}
                 </button>
               )}
             </div>
@@ -140,40 +342,40 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <MiniStat
               icon={<Target className="h-4 w-4" />}
-              label="Metas ativas"
+              label={copy.activeGoals}
               value={month.metas.length.toString()}
-              hint={month.metas.length === 1 ? 'meta criada neste período' : 'metas criadas neste período'}
+              hint={month.metas.length === 1 ? copy.oneGoalHint : copy.manyGoalsHint}
             />
             <MiniStat
               icon={<Wallet className="h-4 w-4" />}
-              label="Acumulado"
+              label={copy.saved}
               value={formatCurrency(totalMetasValue)}
-              hint="valor já reservado nas metas"
+              hint={copy.savedHint}
             />
             <MiniStat
               icon={<CalendarDays className="h-4 w-4" />}
-              label="Período"
+              label={copy.period}
               value={monthLabel}
-              hint={isCurrentCalendarMonth ? 'mês em andamento' : 'mês consolidado'}
+              hint={isCurrentCalendarMonth ? copy.currentMonthHint : copy.closedMonthHint}
             />
           </div>
         </div>
 
         <div className="nexo-depth-2 rounded-2xl p-6">
-          <p className="nexo-label mb-2">Progresso consolidado</p>
+          <p className="nexo-label mb-2">{copy.consolidatedProgress}</p>
           <p className="text-3xl font-mono font-medium nexo-value">
             {totalMetasTarget > 0 ? formatPercentage(totalProgress) : '—'}
           </p>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Esse indicador mostra quanto das metas do período já foi acumulado em relação ao valor-alvo total.
+            {copy.progressDescription}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">Valor-alvo</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">{copy.targetValue}</p>
               <p className="mt-1 text-sm font-medium text-foreground">{formatCurrency(totalMetasTarget)}</p>
             </div>
             <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">Acumulado</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80">{copy.saved}</p>
               <p className="mt-1 text-sm font-medium text-foreground">{formatCurrency(totalMetasValue)}</p>
             </div>
           </div>
@@ -183,11 +385,11 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
       <motion.div variants={fadeUp} className="nexo-depth-1 rounded-xl p-5">
         <div className="mb-3 flex items-center justify-between gap-4">
           <div>
-            <span className="nexo-label">Evolução das metas</span>
+            <span className="nexo-label">{copy.goalEvolution}</span>
             <p className="mt-2 text-sm text-muted-foreground">
               {totalMetasTarget > 0
-                ? `${formatPercentage(totalProgress)} do valor-alvo já foi acumulado nas metas deste período.`
-                : 'Crie metas para começar a acompanhar o avanço do que você quer conquistar.'}
+                ? copy.evolutionProgress(formatPercentage(totalProgress))
+                : copy.emptyEvolution}
             </p>
           </div>
           <span className="text-sm font-mono">{totalMetasTarget > 0 ? formatPercentage(totalProgress) : '0%'}</span>
@@ -201,8 +403,8 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
           />
         </div>
         <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-          <span>Acumulado: {formatCurrency(totalMetasValue)}</span>
-          <span>Valor-alvo: {formatCurrency(totalMetasTarget)}</span>
+          <span>{copy.saved}: {formatCurrency(totalMetasValue)}</span>
+          <span>{copy.targetValue}: {formatCurrency(totalMetasTarget)}</span>
         </div>
       </motion.div>
 
@@ -211,12 +413,12 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
         <motion.div variants={fadeUp} className="nexo-depth-2 rounded-2xl p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="nexo-label mb-2">Nenhuma meta criada ainda</p>
-              <h3 className="text-2xl font-semibold text-foreground">Transforme prioridade em objetivo concreto</h3>
+              <p className="nexo-label mb-2">{copy.noGoalsLabel}</p>
+              <h3 className="text-2xl font-semibold text-foreground">{copy.emptyTitle}</h3>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {isHistoricalMonth
-                  ? 'Nenhuma meta foi criada nesse período. Os meses anteriores ficam preservados como histórico da sua evolução.'
-                  : 'Crie metas com valor-alvo e prazo para acompanhar o que precisa ser construído com intenção ao longo do mês.'}
+                  ? copy.emptyHistorical
+                  : copy.emptyCurrent}
               </p>
             </div>
             {!showForm && !isHistoricalMonth && (
@@ -225,7 +427,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
               >
                 <Plus className="w-4 h-4" />
-                Criar primeira meta
+                {copy.createFirstGoal}
               </button>
             )}
           </div>
@@ -242,6 +444,8 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
                 isReadOnly={isHistoricalMonth}
                 onEdit={() => setEditingMetaId(meta.id)}
                 onDelete={() => setDeletingMetaId(meta.id)}
+                language={language}
+                copy={copy.card}
               />
             ))}
           </AnimatePresence>
@@ -256,7 +460,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
           className="w-full nexo-depth-1 rounded-xl flex items-center justify-center gap-2 py-4 text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
-          <span className="text-sm font-medium">Nova meta</span>
+          <span className="text-sm font-medium">{copy.newGoal}</span>
         </motion.button>
       )}
 
@@ -271,21 +475,21 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
             className="nexo-depth-3 rounded-xl p-5 space-y-3"
           >
             <div>
-              <p className="nexo-label mb-2">Nova meta</p>
+              <p className="nexo-label mb-2">{copy.newGoal}</p>
               <p className="text-sm text-muted-foreground">
-                Defina o objetivo, o valor-alvo e o prazo para incluir essa meta no período atual.
+                {copy.newGoalDescription}
               </p>
             </div>
             <input
               type="text"
-              placeholder="Nome da meta"
+              placeholder={copy.goalNamePlaceholder}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full bg-secondary px-3 py-2 rounded-md text-sm placeholder:text-muted-foreground/50 outline-none focus:ring-1 focus:ring-foreground/30"
             />
             <input
               type="text"
-              placeholder="Valor alvo"
+              placeholder={copy.targetPlaceholder}
               value={formData.targetAmount}
               onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
               className="w-full bg-secondary px-3 py-2 rounded-md text-sm placeholder:text-muted-foreground/50 outline-none focus:ring-1 focus:ring-foreground/30"
@@ -301,13 +505,13 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
                 onClick={handleAddMeta}
                 className="flex-1 bg-foreground text-background px-3 py-2 rounded-md text-sm font-medium hover:bg-foreground/90 transition-colors"
               >
-                Criar
+                {copy.create}
               </button>
               <button
                 onClick={() => setShowForm(false)}
                 className="flex-1 bg-secondary text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors"
               >
-                Cancelar
+                {copy.cancel}
               </button>
             </div>
           </motion.div>
@@ -335,7 +539,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
           caixaName={month.metas.find((m) => m.id === deletingMetaId)?.name || ''}
           caixaAllocated={month.metas.find((m) => m.id === deletingMetaId)?.targetAmount || 0}
           entityLabel="Meta"
-          valueLabel="Valor-alvo da meta"
+          valueLabel={copy.targetValue}
         />
       )}
 
@@ -344,7 +548,7 @@ export function MetasView({ onAskAI }: { onAskAI?: () => void }) {
           variants={fadeUp}
           className="rounded-2xl border border-border/60 bg-background/40 px-5 py-4 text-sm leading-6 text-muted-foreground"
         >
-          Este período está fechado. As metas abaixo mostram exatamente o que foi definido e acumulado nesse mês.
+          {copy.closedPeriodNote}
         </motion.div>
       )}
     </motion.div>
@@ -359,6 +563,8 @@ function MetaCard({
   isReadOnly,
   onEdit,
   onDelete,
+  language,
+  copy,
 }: {
   meta: Meta;
   monthId: string;
@@ -366,6 +572,8 @@ function MetaCard({
   isReadOnly: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  language: NexoLanguage;
+  copy: (typeof GOALS_COPY)[NexoLanguage]['card'];
 }) {
   const { addToMeta } = useFinanceStore();
   const [addAmount, setAddAmount] = useState('');
@@ -374,11 +582,11 @@ function MetaCard({
   const daysLeft = getDaysUntilDeadline(meta.deadline, referenceDate);
   const deadlineStatus = isReadOnly
     ? daysLeft < 0
-      ? 'Prazo encerrado no período'
-      : 'Prazo seguia aberto no fechamento'
+      ? copy.deadlineClosed
+      : copy.deadlineOpenAtClose
     : daysLeft > 0
-      ? `${daysLeft} dia${daysLeft === 1 ? '' : 's'} restantes`
-      : 'Prazo vencido';
+      ? copy.daysLeft(daysLeft)
+      : copy.deadlineOverdue;
 
   const handleAddAmount = () => {
     if (isReadOnly) return;
@@ -404,7 +612,7 @@ function MetaCard({
           <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {formatDate(meta.deadline)}
+              {formatDate(meta.deadline, language)}
             </span>
             <span className={daysLeft <= 0 ? 'text-[#8B2500]' : undefined}>{deadlineStatus}</span>
           </div>
@@ -414,14 +622,14 @@ function MetaCard({
             <button
               onClick={onEdit}
               className="text-muted-foreground hover:text-foreground transition-colors"
-              title="Editar meta"
+              title={copy.editTitle}
             >
               <Edit2 className="w-4 h-4" />
             </button>
             <button
               onClick={onDelete}
               className="text-muted-foreground hover:text-[#8B2500] transition-colors"
-              title="Excluir meta"
+              title={copy.deleteTitle}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -451,8 +659,8 @@ function MetaCard({
           />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Acumulado: {formatCurrency(meta.currentAmount)}</span>
-          <span>Valor-alvo: {formatCurrency(meta.targetAmount)}</span>
+          <span>{copy.accumulated}: {formatCurrency(meta.currentAmount)}</span>
+          <span>{copy.targetValue}: {formatCurrency(meta.targetAmount)}</span>
         </div>
       </div>
 
@@ -461,7 +669,7 @@ function MetaCard({
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Adicionar aporte"
+            placeholder={copy.addContribution}
             value={addAmount}
             onChange={(e) => setAddAmount(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddAmount()}
@@ -471,12 +679,12 @@ function MetaCard({
             onClick={handleAddAmount}
             className="px-3 py-1.5 bg-secondary hover:bg-accent text-foreground rounded-md text-xs font-medium transition-colors"
           >
-            Registrar
+            {copy.register}
           </button>
         </div>
       ) : (
         <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-xs leading-5 text-muted-foreground">
-          Este mês está preservado como histórico. Os aportes continuam visíveis, sem novos registros.
+          {copy.readOnlyNote}
         </div>
       )}
     </motion.div>

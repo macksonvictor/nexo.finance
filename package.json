@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:py": "python -m pytest services/nexo-ai-python/tests",
+    "test:python-core": "python -m pytest python-core/tests",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {

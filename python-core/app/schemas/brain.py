@@ -189,3 +189,56 @@ class BrainAnalyzeResponse(BaseModel):
     financial_summary: FinancialSummary
     rive_state: RiveState
 
+
+class BrainSimulateRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    user_id: str | None = Field(default=None, alias="userId")
+    base_context: BrainAnalyzeRequest = Field(alias="baseContext")
+    scenario: dict[str, Any] = Field(default_factory=dict)
+    months_ahead: int = Field(default=3, alias="monthsAhead", ge=1, le=24)
+    language: str = "pt-BR"
+    currency: str = "BRL"
+
+
+class TimelinePoint(BaseModel):
+    month_offset: int
+    projected_income: float
+    projected_expenses: float
+    projected_balance: float
+    risk_score: int
+
+
+class BrainSimulateResponse(BaseModel):
+    scenario_id: str
+    baseline_summary: FinancialSummary
+    projected_summary: FinancialSummary
+    risk_delta: int
+    timeline: list[TimelinePoint]
+    recommendations: list[str]
+    explanation: str
+    rive_state: RiveState
+
+
+ContextQuality = Literal["low", "medium", "high"]
+
+
+class BrainCoachContextRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    user_id: str | None = Field(default=None, alias="userId")
+    source_view: str = Field(default="dashboard", alias="sourceView")
+    user_message: str | None = Field(default=None, alias="userMessage")
+    financial_context: BrainAnalyzeRequest = Field(alias="financialContext")
+    language: str = "pt-BR"
+    currency: str = "BRL"
+
+
+class BrainCoachContextResponse(BaseModel):
+    coach_context: str
+    context_quality: ContextQuality
+    missing_data: list[str]
+    suggested_questions: list[str]
+    safe_prompt_context: str
+    rive_state: RiveState
+

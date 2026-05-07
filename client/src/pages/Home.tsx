@@ -38,8 +38,10 @@ import {
 import { exportToCSV } from "@/lib/exportService";
 import { buildAIExplicitContext } from "@/lib/aiExplicitContext";
 import { BRAND_AI_NAME } from "@/lib/branding";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import type { ViewType } from "@/types/finance";
 import type { AISourceView, AIVisibleMode } from "@shared/ai";
+import type { NexoLanguage } from "@/lib/language";
 import { toast } from "sonner";
 import { getLoginUrl, getSignUpUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -72,6 +74,36 @@ type AIEntryState = {
 };
 
 type AIWindowMode = "official" | "contextual";
+
+const AI_QUICK_PROMPTS: Record<NexoLanguage, Record<AISourceView | "relatorios" | "indicadores", string>> = {
+  "pt-BR": {
+    dashboard: "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+    caixas: "Quais caixas deste mês estão mais pressionadas e como devo ajustar?",
+    metas: "Quais metas deste mês estão em risco e o que priorizar?",
+    historico: "O que o meu histórico recente diz sobre meu comportamento financeiro?",
+    ia: "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+    relatorios: "Analise meus relatórios do mês e destaque os pontos que merecem atenção.",
+    indicadores: "Leia meus indicadores financeiros e me diga qual ajuste faria mais diferença agora.",
+  },
+  "en-US": {
+    dashboard: "Read my current month and tell me what needs attention.",
+    caixas: "Which boxes are under the most pressure this month, and how should I adjust them?",
+    metas: "Which goals are at risk this month, and what should I prioritize?",
+    historico: "What does my recent history say about my financial behavior?",
+    ia: "Read my current month and tell me what needs attention.",
+    relatorios: "Analyze my monthly reports and highlight the points that need attention.",
+    indicadores: "Read my financial indicators and tell me which adjustment would make the biggest difference now.",
+  },
+  "es-ES": {
+    dashboard: "Haz una lectura general de mi mes actual y dime qué merece atención.",
+    caixas: "¿Qué cajas están más presionadas este mes y cómo debo ajustarlas?",
+    metas: "¿Qué metas están en riesgo este mes y qué debo priorizar?",
+    historico: "¿Qué dice mi historial reciente sobre mi comportamiento financiero?",
+    ia: "Haz una lectura general de mi mes actual y dime qué merece atención.",
+    relatorios: "Analiza mis reportes del mes y destaca los puntos que merecen atención.",
+    indicadores: "Lee mis indicadores financieros y dime qué ajuste haría más diferencia ahora.",
+  },
+};
 
 function mapViewToAISource(view: ViewType): AISourceView {
   switch (view) {
@@ -137,6 +169,8 @@ export default function Home() {
   const [activeProfilePanel, setActiveProfilePanel] =
     useState<ProfilePanelType | null>(null);
   const [aiWindowMode, setAIWindowMode] = useState<AIWindowMode | null>(null);
+  const { language } = useLanguagePreference();
+  const aiPrompts = AI_QUICK_PROMPTS[language];
   const [aiEntry, setAIEntry] = useState<AIEntryState>({
     sourceView: "ia",
     initialMode: "chat",
@@ -171,9 +205,10 @@ export default function Home() {
             sourceView: "ia" as AISourceView,
             timeZone: aiTimeZone,
             explicitContext: profileAIExplicitContext,
+            language,
           }
         : undefined,
-    [aiTimeZone, currentMonthId, profileAIExplicitContext]
+    [aiTimeZone, currentMonthId, language, profileAIExplicitContext]
   );
   const { data: profileAISessionData } = trpc.ai.session.useQuery(
     profileAISessionInput!,
@@ -570,8 +605,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+                initialPrompt: aiPrompts.dashboard,
               })
             }
           />
@@ -582,8 +616,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "caixas",
-                initialPrompt:
-                  "Quais caixas deste mês estão mais pressionadas e como devo ajustar?",
+                initialPrompt: aiPrompts.caixas,
               })
             }
           />
@@ -594,8 +627,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "metas",
-                initialPrompt:
-                  "Quais metas deste mês estão em risco e o que priorizar?",
+                initialPrompt: aiPrompts.metas,
               })
             }
           />
@@ -607,8 +639,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "historico",
-                initialPrompt:
-                  "O que o meu histórico recente diz sobre meu comportamento financeiro?",
+                initialPrompt: aiPrompts.historico,
               })
             }
           />
@@ -621,8 +652,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Analise meus relatórios do mês e destaque os pontos que merecem atenção.",
+                initialPrompt: aiPrompts.relatorios,
               })
             }
           />
@@ -633,8 +663,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Leia meus indicadores financeiros e me diga qual ajuste faria mais diferença agora.",
+                initialPrompt: aiPrompts.indicadores,
               })
             }
             onNavigate={(view) => handleViewChange(view as ViewType)}
@@ -657,8 +686,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+                initialPrompt: aiPrompts.dashboard,
               })
             }
           />
@@ -671,8 +699,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+                initialPrompt: aiPrompts.dashboard,
               })
             }
           />
@@ -685,8 +712,7 @@ export default function Home() {
             onAskAI={() =>
               openAIOverlay({
                 sourceView: "dashboard",
-                initialPrompt:
-                  "Faça uma leitura geral do meu mês atual e me diga o que merece atenção.",
+                initialPrompt: aiPrompts.dashboard,
               })
             }
           />
@@ -841,6 +867,7 @@ export default function Home() {
                   entryKey={aiEntry.nonce}
                   overlayMode={aiWindowMode === "contextual"}
                   resetOnEntry={aiWindowMode === "official"}
+                  language={language}
                   onClose={closeAIWindow}
                 />
               </div>

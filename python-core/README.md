@@ -169,7 +169,7 @@ Returns:
 
 ### `POST /brain/simulate`
 
-Projects conservative financial scenarios.
+Projects conservative financial scenarios before the user changes the budget. This is the endpoint for questions such as "what if I create this box?", "what if my income drops?", or "what if I increase this goal?".
 
 ```bash
 curl -X POST http://127.0.0.1:8010/brain/simulate \
@@ -199,14 +199,14 @@ Returns:
 
 ```json
 {
-  "scenarioId": "sim_...",
-  "baselineSummary": {},
-  "projectedSummary": {},
-  "riskDelta": 4,
+  "scenario_id": "sim_...",
+  "baseline_summary": {},
+  "projected_summary": {},
+  "risk_delta": 4,
   "timeline": [],
   "recommendations": [],
   "explanation": "Conservative scenario reading.",
-  "riveState": "confident"
+  "rive_state": "confident"
 }
 ```
 
@@ -240,14 +240,40 @@ Returns:
 
 ```json
 {
-  "coachContext": {},
-  "contextQuality": "empty | partial | usable | strong",
-  "missingData": [],
-  "safePromptContext": "Safe context summary for the assistant.",
-  "suggestedQuestions": [],
-  "riveState": "reading"
+  "coach_context": "Assistant-facing context.",
+  "context_quality": "low | medium | high",
+  "missing_data": [],
+  "safe_prompt_context": "Safe context summary for the assistant.",
+  "suggested_questions": [],
+  "rive_state": "reading"
 }
 ```
+
+---
+
+## Railway deployment notes
+
+Recommended production shape:
+
+```txt
+Railway Service 1: NEXO Node/Vite app
+Railway Service 2: NEXO Python Core
+```
+
+Set these variables on the Node service:
+
+```env
+NEXO_PYTHON_CORE_URL=https://your-python-core.railway.app
+NEXO_PYTHON_CORE_TIMEOUT_MS=2500
+```
+
+Set the Python service start command to:
+
+```bash
+python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir python-core
+```
+
+Do not commit `.env`. Keep real Railway, Clerk, Stripe, GitHub, database, and notification secrets only in the deployment dashboard.
 
 ---
 

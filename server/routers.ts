@@ -57,11 +57,13 @@ import {
   createAIUsageState,
   deriveAIContextState,
   enforceAIContextIntegrity,
+  getAIErrorFallback,
   getAvailableModesForPlan,
   getLockedModesForPlan,
   getRequiredPlanForMode,
   isModeAvailableForPlan,
   type AIContextSnapshot,
+  type AILanguage,
 } from "./ai";
 import { collectPythonInsights, getPythonAiHealth } from "./_core/pythonAi";
 
@@ -147,6 +149,7 @@ const aiSessionInputSchema = z.object({
   sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
   sourceEntityId: z.string().optional(),
   timeZone: z.string().optional(),
+  language: z.enum(["pt-BR", "en-US", "es-ES"]).default("pt-BR"),
   explicitContext: aiExplicitContextSchema.optional(),
 });
 
@@ -382,6 +385,7 @@ function mergeAISnapshotWithExplicitContext(
 async function buildAISnapshot(params: {
   userId: number;
   monthId: string;
+  language?: AILanguage;
   sourceView: AISourceView;
   plan: PlanTier;
   explicitContext?: AIExplicitContextInput;
@@ -502,6 +506,7 @@ async function buildAISnapshot(params: {
 
   const snapshot: AIContextSnapshot = {
     monthId: params.monthId,
+    language: params.language ?? "pt-BR",
     sourceView: params.sourceView,
     plan: params.plan,
     planName: params.plan === "elite" ? "Elite" : params.plan.charAt(0).toUpperCase() + params.plan.slice(1),
@@ -950,6 +955,7 @@ export const appRouter = router({
           buildAISnapshot({
             userId: ctx.user.id,
             monthId: input.monthId,
+            language: input.language,
             sourceView: input.sourceView,
             plan,
             explicitContext: input.explicitContext,
@@ -967,7 +973,7 @@ export const appRouter = router({
           availableModes: getAvailableModesForPlan(plan),
           lockedModes: getLockedModesForPlan(plan),
           usage,
-          suggestions: buildAISuggestions(snapshot),
+          suggestions: buildAISuggestions(snapshot, input.language),
           contextState: snapshot.contextState,
           python,
         };
@@ -983,6 +989,7 @@ export const appRouter = router({
           sourceView: z.enum(AI_SOURCE_VIEWS).default("ia"),
           sourceEntityId: z.string().optional(),
           timeZone: z.string().optional(),
+          language: z.enum(["pt-BR", "en-US", "es-ES"]).default("pt-BR"),
           explicitContext: aiExplicitContextSchema.optional(),
         })
       )
@@ -1004,6 +1011,7 @@ export const appRouter = router({
           buildAISnapshot({
             userId: ctx.user.id,
             monthId: input.monthId,
+            language: input.language,
             sourceView: input.sourceView,
             plan,
             explicitContext: input.explicitContext,
@@ -1028,7 +1036,7 @@ export const appRouter = router({
         });
 
         const systemPrompt = [
-          buildAISystemPrompt(snapshot, input.mode),
+          buildAISystemPrompt(snapshot, input.mode, input.language),
           pythonInsights.promptBlock,
         ]
           .filter(Boolean)
@@ -1040,13 +1048,13 @@ export const appRouter = router({
               role: "system",
               content: systemPrompt,
             },
-            ...buildConversationMessages(input.mode, input.messages, input.question),
+            ...buildConversationMessages(input.mode, input.messages, input.question, input.language),
           ],
         });
 
         const rawContent =
           normalizeLLMContent(response.choices?.[0]?.message?.content) ||
-          "Não foi possível gerar análise.";
+          getAIErrorFallback(input.language);
         const content = enforceAIContextIntegrity(rawContent, snapshot, input.mode);
 
         try {
