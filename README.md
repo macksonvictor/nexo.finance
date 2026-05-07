@@ -553,12 +553,7 @@ Details:
 
 <a href="https://github.com/macksonvictor">
   <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
-</a>
-<img
-  src={(https://github.com/macksonvictor)}
-  alt={(https://github.com/macksonvictor)}
-  className="w-16 h-16 rounded-full object-cover"
-/>
+
 ---
 
 ## Maintainers
