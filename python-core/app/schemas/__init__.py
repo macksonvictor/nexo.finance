@@ -1,13 +1,19 @@
 from app.schemas.brain import (
     BrainAnalyzeRequest,
     BrainAnalyzeResponse,
+    BrainCoachContextRequest,
+    BrainCoachContextResponse,
+    BrainSimulateRequest,
+    BrainSimulateResponse,
     CaixaContext,
+    ContextQuality,
     FinancialSummary,
     GoalContext,
     HistoricalMonthContext,
     MonthSummary,
     RiskLevel,
     RiveState,
+    TimelinePoint,
     TransactionContext,
 )
 from app.schemas.health import HealthResponse
@@ -15,7 +21,12 @@ from app.schemas.health import HealthResponse
 __all__ = [
     "BrainAnalyzeRequest",
     "BrainAnalyzeResponse",
+    "BrainCoachContextRequest",
+    "BrainCoachContextResponse",
+    "BrainSimulateRequest",
+    "BrainSimulateResponse",
     "CaixaContext",
+    "ContextQuality",
     "FinancialSummary",
     "GoalContext",
     "HealthResponse",
@@ -23,6 +34,7 @@ __all__ = [
     "MonthSummary",
     "RiskLevel",
     "RiveState",
+    "TimelinePoint",
     "TransactionContext",
 ]
 

@@ -1,5 +1,5 @@
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
+export function formatCurrency(value: number, locale = "pt-BR"): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
@@ -21,8 +21,8 @@ export function formatPercentage(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-export function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat("pt-BR", {
+export function formatDate(dateString: string, locale = "pt-BR"): string {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

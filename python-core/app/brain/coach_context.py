@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from app.brain.budget_engine import BudgetSnapshot
+from app.brain.budget_engine import build_budget_snapshot
+from app.brain.memory import build_safe_prompt_context, find_missing_data, score_context_quality
 from app.brain.risk_engine import RiskResult
+from app.brain.rive import resolve_rive_state
+from app.schemas import BrainCoachContextRequest, BrainCoachContextResponse
 
 
 def build_assistant_message(snapshot: BudgetSnapshot, risk: RiskResult) -> str:
@@ -49,4 +53,91 @@ def build_suggested_action(snapshot: BudgetSnapshot, risk: RiskResult) -> str:
         return "Registrar transações pendentes e revisar o saldo livre antes do próximo gasto."
 
     return "Manter o acompanhamento e registrar novos movimentos no histórico."
+
+
+def build_coach_context_response(
+    request: BrainCoachContextRequest,
+) -> BrainCoachContextResponse:
+    snapshot = build_budget_snapshot(request.financial_context)
+    quality = score_context_quality(snapshot)
+    missing_data = find_missing_data(snapshot)
+
+    suggested_questions = _suggest_questions(
+        source_view=request.source_view,
+        missing_data=missing_data,
+        language=request.language,
+    )
+
+    return BrainCoachContextResponse(
+        coach_context=_build_coach_context_text(request, snapshot, missing_data),
+        context_quality=quality,
+        missing_data=missing_data,
+        suggested_questions=suggested_questions,
+        safe_prompt_context=build_safe_prompt_context(snapshot, request.source_view),
+        rive_state=resolve_rive_state("medium" if quality == "low" else "low", snapshot),
+    )
+
+
+def _build_coach_context_text(
+    request: BrainCoachContextRequest,
+    snapshot: BudgetSnapshot,
+    missing_data: list[str],
+) -> str:
+    base = (
+        f"Tela atual: {request.source_view}. Receita: {snapshot.income}. "
+        f"Gasto: {snapshot.spent}. Saldo: {snapshot.balance}. "
+        f"Caixas: {snapshot.caixas_count}. Metas: {snapshot.metas_count}. "
+        f"Transações: {snapshot.transactions_count}."
+    )
+
+    if request.user_message:
+        base += f" Mensagem do usuário: {request.user_message.strip()[:280]}."
+
+    if missing_data:
+        base += f" Dados faltantes para melhorar a leitura: {', '.join(missing_data)}."
+
+    return base
+
+
+def _suggest_questions(source_view: str, missing_data: list[str], language: str) -> list[str]:
+    english = language == "en-US"
+    spanish = language == "es-ES"
+
+    if english:
+        questions = [
+            "What should I adjust first this month?",
+            "Which data is still missing for a better reading?",
+            "What is the safest next financial move?",
+        ]
+    elif spanish:
+        questions = [
+            "¿Qué debo ajustar primero este mes?",
+            "¿Qué datos faltan para una mejor lectura?",
+            "¿Cuál es el próximo movimiento financiero más seguro?",
+        ]
+    else:
+        questions = [
+            "O que devo ajustar primeiro este mês?",
+            "Quais dados ainda faltam para uma leitura melhor?",
+            "Qual é o próximo movimento financeiro mais seguro?",
+        ]
+
+    if "boxes" in missing_data:
+        questions[1] = (
+            "How do I create my first boxes?"
+            if english
+            else "¿Cómo creo mis primeras cajas?"
+            if spanish
+            else "Como crio minhas primeiras caixas?"
+        )
+    elif source_view in {"caixas", "metas"}:
+        questions[0] = (
+            "Which item deserves priority now?"
+            if english
+            else "¿Qué elemento merece prioridad ahora?"
+            if spanish
+            else "Qual item merece prioridade agora?"
+        )
+
+    return questions
 
