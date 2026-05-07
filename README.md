@@ -552,7 +552,7 @@ Details:
 ## Contributors
 
 <a href="https://github.com/macksonvictor">
-  <img src="https://github.com/macksonvictor.png" width="70" alt="Mackson Victor" />
+  <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
 </a>
 
 **Mackson** — Product development and project direction.
