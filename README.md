@@ -571,11 +571,6 @@ Repository presentation, documentation, and GitHub organization are maintained w
   <img src="./docs/nexofinance-logo.svg" alt="NEXO Finance" width="120" />
 </p>
 
-<p align="center">
-  <strong>Nexo Finance</strong><br />
-  Developed by Mackson · Repository maintained with project staff support
-</p>
-
 ---
 
 ## License
