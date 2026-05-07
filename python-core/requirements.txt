@@ -1,5 +1,5 @@
 fastapi>=0.116,<1
-pydantic>=2.12,<3
+pydantic>=2.13.4,<3
 pydantic-settings>=2.10,<3
 uvicorn[standard]>=0.35,<1
 pytest>=8,<9
