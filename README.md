@@ -554,9 +554,11 @@ Details:
 <a href="https://github.com/macksonvictor">
   <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
 </a>
-
-**Mackson** — Product development and project direction.
-
+<img
+  src={[contributor.avatar_url](https://github.com/macksonvictor)}
+  alt={[contributor.login](https://github.com/macksonvictor)}
+  className="w-16 h-16 rounded-full object-cover"
+/>
 ---
 
 ## Maintainers
