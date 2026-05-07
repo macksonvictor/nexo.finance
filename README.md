@@ -556,6 +556,17 @@ Details:
 
 ---
 
+## Contributors
+
+<a href="https://github.com/macksonvictor">
+  <img
+    src="https://github.com/macksonvictor.png"
+    width="80px"
+    alt="Mackson"
+  />
+</a>
+---
+
 ## Maintainers
 
 Nexo Finance is developed by **Mackson and Bruno Souto**.
