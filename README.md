@@ -561,7 +561,7 @@ Details:
 
 ## Maintainers
 
-Nexo Finance is developed by **Mackson**.
+Nexo Finance is developed by **Mackson and Bruno Souto**.
 
 Repository presentation, documentation, and GitHub organization are maintained with project staff support.
 
