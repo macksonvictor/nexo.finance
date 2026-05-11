@@ -16,6 +16,7 @@ Core capabilities:
 - Monthly budget analysis
 - Spending and transaction interpretation
 - Risk scoring
+- Real Balance calculation
 - Conservative scenario simulation
 - Coach-ready context generation
 - Explainable financial recommendations
@@ -251,6 +252,85 @@ Returns:
 
 ---
 
+### `POST /brain/real-balance`
+
+Calculates the amount that is truly available after known obligations inside a forecast window.
+
+Real Balance:
+
+```txt
+bank balance
+- future bills
+- subscriptions
+- credit obligations
+```
+
+```bash
+curl -X POST http://127.0.0.1:8010/brain/real-balance \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "local-user",
+    "currency": "BRL",
+    "horizonDays": 30,
+    "referenceDate": "2026-05-07",
+    "accounts": [
+      {
+        "id": "acc_1",
+        "name": "Nubank",
+        "balance": 3200
+      }
+    ],
+    "futureBills": [
+      {
+        "id": "bill_1",
+        "name": "Aluguel",
+        "amount": 1200,
+        "dueDate": "2026-05-10"
+      }
+    ],
+    "subscriptions": [
+      {
+        "id": "sub_1",
+        "name": "Spotify",
+        "amount": 21.9,
+        "nextChargeDate": "2026-05-15"
+      }
+    ],
+    "creditObligations": [
+      {
+        "id": "card_1",
+        "name": "Cartao principal",
+        "statementDue": 650,
+        "dueDate": "2026-05-20"
+      }
+    ]
+  }'
+```
+
+Returns:
+
+```json
+{
+  "bank_balance": 3200,
+  "reserved_total": 1871.9,
+  "real_balance": 1328.1,
+  "safe_to_spend_daily": 44.27,
+  "horizon_days": 30,
+  "currency": "BRL",
+  "risk_level": "medium",
+  "assistant_message": "Seu saldo bancário é 3200.00, mas seu saldo real para os próximos 30 dias é 1328.10 depois de contas, assinaturas e obrigações de crédito conhecidas.",
+  "suggested_action": "Use 44.27 por dia como limite conservador de gasto.",
+  "breakdown": {
+    "future_bills": 1200,
+    "subscriptions": 21.9,
+    "credit_obligations": 650
+  },
+  "rive_state": "reading"
+}
+```
+
+---
+
 ## Railway deployment notes
 
 Recommended production shape:
@@ -283,6 +363,7 @@ Do not commit `.env`. Keep real Railway, Clerk, Stripe, GitHub, database, and no
 budget_engine.py          Builds the monthly budget snapshot.
 transaction_analyzer.py   Interprets transaction totals, categories, and largest expenses.
 risk_engine.py            Calculates risk score, risk level, and risk drivers.
+real_balance_engine.py    Calculates bank balance minus future obligations.
 future_simulator.py       Projects conservative financial scenarios.
 coach_context.py          Builds assistant-facing financial context.
 explainability.py         Explains recommendations and simulations.

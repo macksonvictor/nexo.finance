@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.brain import (
     analyze_financial_context,
     build_coach_context_response,
+    calculate_real_balance,
     simulate_financial_scenario,
 )
 from app.schemas.brain import (
@@ -12,6 +13,8 @@ from app.schemas.brain import (
     BrainAnalyzeResponse,
     BrainCoachContextRequest,
     BrainCoachContextResponse,
+    BrainRealBalanceRequest,
+    BrainRealBalanceResponse,
     BrainSimulateRequest,
     BrainSimulateResponse,
 )
@@ -35,4 +38,11 @@ async def brain_coach_context(
     context: BrainCoachContextRequest,
 ) -> BrainCoachContextResponse:
     return build_coach_context_response(context)
+
+
+@router.post("/real-balance", response_model=BrainRealBalanceResponse)
+async def brain_real_balance(
+    context: BrainRealBalanceRequest,
+) -> BrainRealBalanceResponse:
+    return calculate_real_balance(context)
 
