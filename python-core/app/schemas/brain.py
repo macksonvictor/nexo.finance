@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -240,5 +241,82 @@ class BrainCoachContextResponse(BaseModel):
     missing_data: list[str]
     suggested_questions: list[str]
     safe_prompt_context: str
+    rive_state: RiveState
+
+
+class RealBalanceAccount(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    id: str | None = None
+    name: str = ""
+    balance: float = 0
+    currency: str = "BRL"
+
+
+class FutureBill(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    id: str | None = None
+    name: str = ""
+    amount: float = 0
+    due_date: date | None = Field(default=None, alias="dueDate")
+    is_paid: bool = Field(default=False, alias="isPaid")
+
+
+class SubscriptionObligation(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    id: str | None = None
+    name: str = ""
+    amount: float = 0
+    next_charge_date: date | None = Field(default=None, alias="nextChargeDate")
+    status: str = "active"
+
+
+class CreditObligation(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    id: str | None = None
+    name: str = ""
+    statement_due: float = Field(default=0, alias="statementDue")
+    minimum_payment: float = Field(default=0, alias="minimumPayment")
+    due_date: date | None = Field(default=None, alias="dueDate")
+    status: str = "open"
+
+
+class RealBalanceBreakdown(BaseModel):
+    future_bills: float
+    subscriptions: float
+    credit_obligations: float
+
+
+class BrainRealBalanceRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    user_id: str | None = Field(default=None, alias="userId")
+    currency: str = "BRL"
+    language: str = "pt-BR"
+    horizon_days: int = Field(default=30, alias="horizonDays", ge=1, le=120)
+    reference_date: date = Field(default_factory=date.today, alias="referenceDate")
+    accounts: list[RealBalanceAccount] = Field(default_factory=list)
+    future_bills: list[FutureBill] = Field(default_factory=list, alias="futureBills")
+    subscriptions: list[SubscriptionObligation] = Field(default_factory=list)
+    credit_obligations: list[CreditObligation] = Field(
+        default_factory=list,
+        alias="creditObligations",
+    )
+
+
+class BrainRealBalanceResponse(BaseModel):
+    bank_balance: float
+    reserved_total: float
+    real_balance: float
+    safe_to_spend_daily: float
+    horizon_days: int
+    currency: str
+    risk_level: RiskLevel
+    assistant_message: str
+    suggested_action: str
+    breakdown: RealBalanceBreakdown
     rive_state: RiveState
 

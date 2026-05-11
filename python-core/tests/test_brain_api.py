@@ -111,3 +111,39 @@ def test_brain_coach_context_returns_safe_prompt_context() -> None:
     assert data["context_quality"] in {"low", "medium", "high"}
     assert "income=" in data["safe_prompt_context"]
     assert len(data["suggested_questions"]) >= 1
+
+
+def test_brain_real_balance_returns_available_money_after_obligations() -> None:
+    response = client.post(
+        "/brain/real-balance",
+        json={
+            "user_id": "local-user",
+            "currency": "BRL",
+            "horizonDays": 30,
+            "referenceDate": "2026-05-07",
+            "accounts": [
+                {"id": "acc_1", "name": "Main account", "balance": 3200},
+            ],
+            "futureBills": [
+                {"id": "bill_1", "name": "Rent", "amount": 1200, "dueDate": "2026-05-10"},
+                {"id": "bill_2", "name": "Paid bill", "amount": 300, "dueDate": "2026-05-12", "isPaid": True},
+            ],
+            "subscriptions": [
+                {"id": "sub_1", "name": "Music", "amount": 21.9, "nextChargeDate": "2026-05-15"},
+            ],
+            "creditObligations": [
+                {"id": "card_1", "name": "Credit card", "statementDue": 650, "dueDate": "2026-05-20"},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["bank_balance"] == 3200
+    assert data["breakdown"]["future_bills"] == 1200
+    assert data["breakdown"]["subscriptions"] == 21.9
+    assert data["breakdown"]["credit_obligations"] == 650
+    assert data["reserved_total"] == 1871.9
+    assert data["real_balance"] == 1328.1
+    assert data["risk_level"] == "medium"
+    assert data["rive_state"] == "reading"
