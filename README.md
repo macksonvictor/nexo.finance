@@ -551,10 +551,8 @@ Details:
 
 ## Contributors
 
-## Contributors
-
 <a href="https://github.com/macksonvictor/nexo.finance/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=macksonvictor/nexo.finance" alt="Contributors" />
+  <img src="https://avatars.githubusercontent.com/u/225006969?v=4" width="60" style="border-radius: 50%;" title="macksonvictor" />
 </a>
 ---
 
