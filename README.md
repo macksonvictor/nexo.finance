@@ -551,9 +551,25 @@ Details:
 
 ## Contributors
 
-<a href="https://github.com/macksonvictor">
-  <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
-
+<p align="center">
+  <a href="https://github.com/macksonvictor">
+    <img src="https://github.com/macksonvictor.png" width="90" alt="Mackson Victor" style="border-radius: 50%;" />
+    <br />
+    <sub><b>Mackson Victor</b></sub>
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/brunosouto">
+    <img src="https://github.com/brunosouto.png" width="90" alt="Bruno Souto" style="border-radius: 50%;" />
+    <br />
+    <sub><b>Bruno Souto</b></sub>
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/Emerson2378">
+    <img src="https://github.com/Emerson2378.png" width="90" alt="Emerson" style="border-radius: 50%;" />
+    <br />
+    <sub><b>Emerson</b></sub>
+  </a>
+</p>
 ---
 
 ## Maintainers
